@@ -1,0 +1,30 @@
+#!/bin/bash
+[[ -z $HOME ]] && export HOME="/home/$(id -un)"
+[[ -z $USER ]] && export USER="$(id -un)"
+
+if [[ -z "$3" ]] ; then
+   echo "Usage: $(basename $0) 'to' 'subject' 'message/body'"
+   exit 1
+fi
+
+to="$1"
+shift
+subject="$1"
+shift
+
+#echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@domain.com
+if [[ -x "$(which heirloom-mailx)" ]] ; then
+    echo "$@" | heirloom-mailx \
+        -r "no-reply@domain.com" \
+        -s "$subject" "$to"
+    #echo "$@" | heirloom-mailx \
+        #-s "$subject" \
+        #-S smtp-use-starttls -S smtp-auth=login -S ssl-verify=ignore \
+        #-r "no-reply@domain.com" \
+        #-S smtp="domain.com:587" \
+        #-S smtp-auth-user="no-reply@domain.com" -S smtp-auth-password="yourpass" \
+        #"$to"
+else
+    #echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@domain.com
+    echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to"
+fi
