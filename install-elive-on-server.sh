@@ -505,7 +505,7 @@ update_variables(){
         if which php 1>/dev/null ; then
             php_version="$( php -i 2>&1 | grep -iE "^PHP Version => [[:digit:]]+\.[[:digit:]]+\." | sed -e 's|^.*=> ||g' | head -1 )"
             # get x.x from x.x.x version
-            php_version="${php_version%.*}"
+            php_version="$( printf "%0.2f\n" "$php_version" 2>/dev/null )"
         fi
     fi
 
@@ -1311,7 +1311,9 @@ EOF
 final_steps(){
     # clean all
     apt-get -q clean
-    rm -rf "$sources"
+    if ((is_production)) ; then
+        rm -rf "$sources"
+    fi
 
     echo -e "\n"
 
