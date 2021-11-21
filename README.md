@@ -34,6 +34,9 @@ _This is the login of your server after to install it, example details:_
 * shell sessions automatically starts in tmux where you will not lose the work when disconnecting the terminal
 * press ctrl + down to open more shells, ctrl + arrows to switch between them
 * name of server is shown, datetime, opened windows, returned codes, etc
+ 
+ ## Services
+ You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... _[WORK IN PROGRESS, not ready for production]_
 
 
 
