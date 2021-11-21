@@ -501,8 +501,13 @@ install_elive(){
             cat elive-key.gpg | apt-key add -
             rm -f elive-key.gpg
             ;;
-        *)
+        bullseye)
             wget -q -O /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg "http://main.elivecd.org/tmp/elive-archive-bullseye-automatic.gpg"
+            ;;
+        *)
+            # TODO: add a default message saying github collaboration
+            echo -e "E: debian version '$debian_version' not supported"
+            exit
             ;;
     esac
 
@@ -538,7 +543,7 @@ install_elive(){
     # TODO: in our elive server we have it, do we need it? (better: just check which packages we had installed that are not in the new/next server)
     #apt-get install -y imagemagick # note: it installs many dependencies, do we need it?
 
-    update-command-not-found
+    update-command-not-found || true
 
     #mv /etc/apt/preferences.d/elive*pref "/tmp"
     #apt-get install --allow-downgrades -y zsh-elive
