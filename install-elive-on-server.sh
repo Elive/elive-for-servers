@@ -532,7 +532,7 @@ install_elive(){
             cat elive-key.gpg | apt-key add -
             rm -f elive-key.gpg
             ;;
-        bullseye|impish)
+        bullseye)
             wget -q -O /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg "http://main.elivecd.org/tmp/elive-archive-bullseye-automatic.gpg"
             ;;
         *)
@@ -548,7 +548,7 @@ install_elive(){
         #buster)
             #packages_extra="openntpd ntpdate $packages_extra"
             #;;
-        bullseye|impish|*)
+        bullseye|*)
             packages_extra="apt-transport-https $packages_extra"
             #if ! dpkg -l | grep -qsE "^ii .*(ntp|systemd-timesyncd)" ; then
                 #packages_extra="ntp $packages_extra"
@@ -767,25 +767,27 @@ install_php(){
     # packages to install
     local packages_extra
 
-    case "$debian_version" in
-        buster)
-            packages_extra="php-xmlrpc php-inotify php-zstd $packages_extra"
-            ;;
-        bullseye)
-            packages_extra="php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
+    if ! ((is_ubuntu)) ; then
+        case "$debian_version" in
+            buster)
+                packages_extra="php-xmlrpc php-inotify php-zstd $packages_extra"
+                ;;
+            bullseye)
+                packages_extra="php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
 
-            # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
-            if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
-                notimplemented
-                NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
-                sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-                sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
-            fi
-            ;;
-        impish)
-            packages_extra="$packages_extra"
-            ;;
-    esac
+                # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
+                if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
+                    notimplemented
+                    NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
+                    sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+                    sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+                fi
+                ;;
+            #impish)
+                #packages_extra="$packages_extra"
+                #;;
+        esac
+    fi
 
     packages_install \
         php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
@@ -900,7 +902,7 @@ install_mariadb(){
                 #mysql -u root -D mysql -e "flush privileges; update mysql.user set password=password('${pass_mariadb_root}') where user='root'; flush privileges; update mysql.user set plugin='mysql_native_password' where user='root'; flush privileges;"
                 mysql -u root -D mysql -e "flush privileges; update user set password=password('${pass_mariadb_root}') where user='root'; flush privileges; update user set plugin='mysql_native_password' where user='root'; flush privileges;"
                 ;;
-            bullseye|impish|*)
+            bullseye|*)
                 mariadbd-safe --skip-grant-tables &
                 sleep 3
                 mysql -u root -D mysql -e "flush privileges; SET PASSWORD FOR root@localhost = PASSWORD('${pass_mariadb_root}'); flush privileges;"
@@ -1419,7 +1421,7 @@ main(){
             elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         *)
-            echo -e "E: sorry, this version of debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
+            echo -e "E: sorry, this version of Debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
             exit 1
             ;;
     esac
@@ -1428,12 +1430,16 @@ main(){
     source /etc/lsb-release || true
     if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
         is_ubuntu=1
-        debian_version="$DISTRIB_CODENAME"
-        case "$debian_version" in
-            impish)
+        case "$DISTRIB_CODENAME" in
+            impish|hirsute)
                 # bullseye like
+                debian_version="bullseye"
                 elive_version="bullseye"
                 elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+                ;;
+            *)
+                echo -e "E: sorry, this version of Ubuntu is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
+                exit 1
                 ;;
         esac
     fi
