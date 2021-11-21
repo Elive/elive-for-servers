@@ -343,7 +343,7 @@ packages_install(){
                 apt-get install $apt_options $package
             done
         else
-            el_error "Something failed ^ installing packages: $@"
+            echo -e "E: Something failed ^ installing packages: $@" 1>&2
             exit 1
         fi
     fi
@@ -359,7 +359,7 @@ packages_remove(){
                 apt-get remove $apt_options $package || ret="$?"
             done
         else
-            el_error "Something failed ^ removing packages: $@"
+            echo -e "E: Something failed ^ removing packages: $@" 1>&2
             exit 1
         fi
     fi
@@ -1410,12 +1410,12 @@ main(){
 
     # debian version
     case "$(cat /etc/debian_version)" in
-        "10."|"buster"*)
+        "10."*|"buster"*)
             debian_version="buster"
             elive_version="buster"
             elive_repo="deb http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
-        "11."|"bullseye"*)
+        "11."*|"bullseye"*)
             debian_version="bullseye"
             elive_version="bullseye"
             elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
