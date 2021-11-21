@@ -895,6 +895,10 @@ install_php(){
     addconfig "#If you use Unix sockets with PHP-FPM, you might encounter random 502 Bad Gateway errors with busy websites. To avoid this, we raise the max. number of allowed connections to a socket:" /etc/sysctl.conf
     addconfig "net.core.somaxconn = 4096" /etc/sysctl.conf
 
+    if ((is_ubuntu)) ; then
+        systemctl stop apache2.service 2>/dev/null || true
+        packages_remove apache2 apache2-data apache2-bin || true
+    fi
 
     systemctl restart php${php_version}-fpm.service
     systemctl restart nginx.service
@@ -1439,9 +1443,9 @@ main(){
 
     # TODO: in production mode, add the -y parameter:
     if ((is_production)) ; then
-        apt_options="-q --allow-downgrades"
+        apt_options="-q --allow-downgrades --no-install-recommends"
     else
-        apt_options="-q -y --allow-downgrades"
+        apt_options="-q -y --allow-downgrades --no-install-recommends"
     fi
 
     #domain_names="www.${domain} ${domain} blog.${domain} forum.${domain}"
