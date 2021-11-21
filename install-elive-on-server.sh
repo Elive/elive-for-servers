@@ -514,6 +514,7 @@ install_elive(){
     apt-get update
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
         apt-get -q dist-upgrade $apt_options
+
     packages_install \
         gnupg wget curl
     #apt-get dist-upgrade $apt_options
@@ -797,7 +798,7 @@ install_php(){
     update_variables
     require_variables "php_version"
 
-    unset packages_install
+    unset packages_extra
     case "$php_version" in
         "7."*)
             packages_extra="php${php_version}-geoip $packages_extra"
