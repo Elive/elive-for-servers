@@ -919,9 +919,10 @@ install_mariadb(){
 
         systemctl mariadb stop 1>/dev/null 2>&1 || true
         sleep 2
-        killall mariadbd 1>/dev/null 2>&1 || true
         killall mysqld 1>/dev/null 2>&1 || true
+        killall mariadbd 1>/dev/null 2>&1 || true
         killall mysqld_safe 1>/dev/null 2>&1 || true
+        killall mariadbd-safe 1>/dev/null 2>&1 || true
         sleep 3
         case "$debian_version" in
             buster)
@@ -940,11 +941,16 @@ install_mariadb(){
         #mysql -u root -D mysql -e "update user set password=password('${pass_mariadb_root}') where user='root'"
         # make the user root being able to be used from the user (needed for backup-restore)
         #mysql -u root -D mysql -e "update user set plugin='mysql_native_password' where user='root'; flush privileges;"
-        killall mariadbd 1>/dev/null 2>&1 || true
         killall mysqld 1>/dev/null 2>&1 || true
+        killall mariadbd 1>/dev/null 2>&1 || true
         killall mysqld_safe 1>/dev/null 2>&1 || true
-        wait
-        sleep 2
+        killall mariadbd-safe 1>/dev/null 2>&1 || true
+        wait ; sleep 2
+        killall mysqld 1>/dev/null 2>&1 || true
+        killall mariadbd 1>/dev/null 2>&1 || true
+        killall mysqld_safe 1>/dev/null 2>&1 || true
+        killall mariadbd-safe 1>/dev/null 2>&1 || true
+        wait ; sleep 2
         systemctl restart mariadb.service 2>/dev/null || true
 
         el_info "Your MYSQL root Password will be '${pass_mariadb_root}'. KEEP IT SAFE and do not lose it!"
@@ -1464,13 +1470,13 @@ main(){
         fi
         is_ubuntu=1
         case "$DISTRIB_CODENAME" in
-            impish|hirsute|focal)
+            impish|hirsute)
                 # bullseye like
                 debian_version="bullseye"
                 elive_version="bullseye"
                 elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
                 ;;
-            bionic)
+            bionic|focal)
                 # buster like
                 debian_version="buster"
                 elive_version="buster"
