@@ -142,7 +142,7 @@ get_args(){
         fi
     fi
 
-    if [[ "$0" != "/"* ]] ; then
+    if echo "$0" | grep -qsE "^[[:digit:]]+$" ; then
         is_mode_curl=1
     fi
 
