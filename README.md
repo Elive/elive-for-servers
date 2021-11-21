@@ -7,7 +7,7 @@ Run it:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-Distros supported: Debian buster, Debian bullseye, Ubuntu impish
+Distros supported: Debian buster, Debian bullseye, Ubuntu impish, Ubuntu irsute
 _Note: ubuntu is added for compatibility, but we **strongly** suggest to use Debian instead_
 
 ## Features:

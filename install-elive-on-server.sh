@@ -1461,6 +1461,12 @@ main(){
                 elive_version="bullseye"
                 elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
                 ;;
+            bionic)
+                # buster like
+                debian_version="buster"
+                elive_version="buster"
+                elive_repo="deb http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+                ;;
             *)
                 echo -e "E: sorry, this version of Ubuntu is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
                 exit 1
