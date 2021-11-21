@@ -1443,9 +1443,9 @@ main(){
 
     # TODO: in production mode, add the -y parameter:
     if ((is_production)) ; then
-        apt_options="-q --allow-downgrades --no-install-recommends"
+        apt_options="-q --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0 "
     else
-        apt_options="-q -y --allow-downgrades --no-install-recommends"
+        apt_options="-q -y --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0"
     fi
 
     #domain_names="www.${domain} ${domain} blog.${domain} forum.${domain}"
