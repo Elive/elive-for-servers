@@ -139,6 +139,11 @@ get_args(){
         esac
     done
 
+    source /etc/lsb-release || true
+    if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
+        is_ubuntu=1
+    fi
+
     if ((is_production)) ; then
 
         if ((is_extra_service)) ; then
