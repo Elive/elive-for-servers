@@ -142,6 +142,7 @@ get_args(){
         fi
     fi
 
+    set -x
     if echo "$0" | grep -qsE "^[[:digit:]]+$" ; then
         is_mode_curl=1
     fi
@@ -161,6 +162,7 @@ get_args(){
             usage
         fi
     fi
+    set +x
 
     # - arguments & features }}}
 }
