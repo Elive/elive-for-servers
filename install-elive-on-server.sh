@@ -676,16 +676,6 @@ EOF
 
     #apt-get install -y vim-common zsh-elive || bash # try if possible
 
-    # TODO: add a beautiful list to show to the user
-    # TODO: move it to the "exit" script, showing the total of all features installed, this one with like a big title
-    el_info "Features installed:"
-
-    # delete temporally or may conflict: TODO: why? leave it here, maybe something that is not wanted is installed from our repo?
-    #rm -f /etc/apt/sources.list.d/elive.list
-
-    echo -e "Press Enter to continue..."
-    read nothing
-
     installed_set "elive"
 }
 
@@ -928,11 +918,17 @@ install_mariadb(){
 
         systemctl mariadb stop 1>/dev/null 2>&1 || true
         sleep 2
-        killall mysqld 1>/dev/null 2>&1 || true
-        killall mariadbd 1>/dev/null 2>&1 || true
-        killall mysqld_safe 1>/dev/null 2>&1 || true
-        killall mariadbd-safe 1>/dev/null 2>&1 || true
-        sleep 3
+
+        # this ugly code needs to be made thanks to ubuntu that cannot close mysql process normally, dammit
+        for i in mysqld mariadbd mysqld_safe mariadbd-safe ; do
+            killall "$i" 1>/dev/null 2>&1 || true
+        done
+        sync ; sleep 5
+        for i in mysqld mariadbd mysqld_safe mariadbd-safe ; do
+            killall -9 "$i" 1>/dev/null 2>&1 || true
+        done
+        sync ; sleep 5
+
         case "$debian_version" in
             buster)
                 mysqld_safe --skip-grant-tables &
@@ -950,16 +946,16 @@ install_mariadb(){
         #mysql -u root -D mysql -e "update user set password=password('${pass_mariadb_root}') where user='root'"
         # make the user root being able to be used from the user (needed for backup-restore)
         #mysql -u root -D mysql -e "update user set plugin='mysql_native_password' where user='root'; flush privileges;"
-        killall mysqld 1>/dev/null 2>&1 || true
-        killall mariadbd 1>/dev/null 2>&1 || true
-        killall mysqld_safe 1>/dev/null 2>&1 || true
-        killall mariadbd-safe 1>/dev/null 2>&1 || true
-        wait ; sleep 2
-        killall mysqld 1>/dev/null 2>&1 || true
-        killall mariadbd 1>/dev/null 2>&1 || true
-        killall mysqld_safe 1>/dev/null 2>&1 || true
-        killall mariadbd-safe 1>/dev/null 2>&1 || true
-        wait ; sleep 2
+        for i in mysqld mariadbd mysqld_safe mariadbd-safe ; do
+            killall "$i" 1>/dev/null 2>&1 || true
+        done
+        sync ; sleep 5
+        for i in mysqld mariadbd mysqld_safe mariadbd-safe ; do
+            killall -9 "$i" 1>/dev/null 2>&1 || true
+        done
+        sync ; sleep 5
+
+        wait
         systemctl restart mariadb.service 2>/dev/null || true
 
         el_info "Your MYSQL root Password will be '${pass_mariadb_root}'. KEEP IT SAFE and do not lose it!"
@@ -1369,6 +1365,13 @@ final_steps(){
     if ((is_mode_curl)) ; then
         el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
     fi
+
+    # TODO: add a beautiful list to show to the user
+    if ((is_installed_elive)) ; then
+        el_info "Elive Features installed:"
+        el_info " * many, see github page "
+    fi
+
 
     el_info "Reboot your server and enjoy everything ready"
 }
