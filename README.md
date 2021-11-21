@@ -7,7 +7,7 @@ Run it:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-## Shell Features:
+## Features:
 * Turn an ugly server into a full Elive powered one
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
