@@ -1410,12 +1410,12 @@ main(){
 
     # debian version
     case "$(cat /etc/debian_version)" in
-        "10."*)
+        "10."|"buster"*)
             debian_version="buster"
             elive_version="buster"
             elive_repo="deb http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
-        "11."*)
+        "11."|"bullseye"*)
             debian_version="bullseye"
             elive_version="bullseye"
             elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
