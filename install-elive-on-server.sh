@@ -145,7 +145,7 @@ get_args(){
     if [[ "$EL_DEBUG" -gt 2 ]] ; then
         echo -e "D: \$0 is $0" 1>&2
     fi
-    if [[ "$0" = "/proc/self/fd/"* ]] ; then
+    if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
         is_mode_curl=1
     fi
 
