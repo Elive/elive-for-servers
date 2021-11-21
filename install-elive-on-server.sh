@@ -143,6 +143,7 @@ get_args(){
     fi
 
     set -x
+    echo "$0"
     if echo "$0" | grep -qsE "^[[:digit:]]+$" ; then
         is_mode_curl=1
     fi
