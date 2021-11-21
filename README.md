@@ -7,8 +7,9 @@ Run it:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-Distros supported: Debian buster, Debian bullseye, Ubuntu 21.10 impish, Ubuntu 21.04 irsute, Ubuntu 20.04 focal, Ubuntu 18.04 bionic
-_Note: ubuntu is added for compatibility, but we **strongly** suggest to use Debian instead_
+**Distros supported**: **Debian** buster, **Debian** bullseye, Ubuntu versions: 21.10 impish, 21.04 irsute, 20.04 focal, 18.04 bionic
+
+_Note: ubuntu is added for compatibility, but we **strongly** suggest to use Debian instead, do not report bugs for ubuntu installs_
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
