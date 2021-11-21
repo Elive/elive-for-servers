@@ -1,8 +1,15 @@
 # elive-for-servers
-Enjoy your server with the Elive cli super-powers and other special features
+Enjoy your server with some Elive super-powers, and you can also optionally install well-tuned services in one shot!
 
-* Turn an ugly server into a full Elive powered one + Wordpress running with all the dependencies and special customizations in less than 2 minutes
-
+Some Features:
+* Turn an ugly server into a full Elive powered one
+* Enjoy of the most featured and friendly Shell in the world!
+* Don't lose your working terminals if your connection is lost or while you sleep
+* Have multiple terminal sessions, split windows, history saved, etc
+* Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
+* Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
+* Well tunned and optimized customizations for the services
+* Everything ready to be used!
 
 
 ## Collaboration:
