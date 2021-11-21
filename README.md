@@ -5,7 +5,7 @@ _Important: this tool will install packages in your server to improve it with El
 
 **Install it**:
 
-`$ bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
 **Distros supported**: Debian buster, Debian bullseye.
 **Ubuntu versions**: 21.10 impish, 21.04 irsute, 20.04 focal, 18.04 bionic
