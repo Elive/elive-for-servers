@@ -280,6 +280,12 @@ prepare_environment(){
             mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
             ln -s /bin/true "/usr/sbin/update-initramfs"
             fi
+
+            # stop processes that can annoy us
+            for i in apt-daily-upgrade unattended-upgrades
+            do
+                service stop "$i" 1>/dev/null 2>&1 || true
+            done
             ;;
         stop)
             if [[ -e /usr/sbin/update-initramfs.orig ]] ; then
@@ -291,6 +297,12 @@ prepare_environment(){
                 rm -f /boot/initrd.img* 2>/dev/null || true
                 update-initramfs -k all -d -c || true
             fi
+
+            # restart needed services
+            for i in apt-daily-upgrade unattended-upgrades
+            do
+                service start "$i" 1>/dev/null 2>&1 || true
+            done
             ;;
     esac
 }
