@@ -827,15 +827,17 @@ install_php(){
     require_variables "php_version"
 
     unset packages_extra
-    case "$php_version" in
-        "7."*)
-            packages_extra="php${php_version}-geoip $packages_extra"
-            ;;
-    esac
+    if ! ((is_ubuntu)) ; then
+        case "$php_version" in
+            "7."*)
+                packages_extra="php${php_version}-geoip $packages_extra"
+                ;;
+        esac
+
+        packages_extra="php${php_version}-opcache php${php_version}-imagick $packages_extra"
+    fi
 
     packages_install \
-        php${php_version}-opcache \
-        php${php_version}-imagick \
         $packages_extra
 
     # configure php default options
