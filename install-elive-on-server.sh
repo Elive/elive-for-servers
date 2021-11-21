@@ -412,10 +412,9 @@ sources_update_adapt(){
     #fi
 
     # set the date of builded elive as the last commit date on the repo
-    cd "$sources"
+    #cd "$sources"
     touch /etc/elive-version
     changeconfig "^date-builded:" "date-builded: $( git log -1 --format=%cs )" /etc/elive-version
-    cd "$( dirname "$sources" )"
 
 
     el_debug "Replacing template conf files with your values:"
@@ -448,6 +447,7 @@ EOF
             "{}" \;
     fi
 
+
     # checks
     echo -en "${el_c_y2}"
     ack -i "elive" "$templates" || true
@@ -472,6 +472,7 @@ install_templates(){
 
     cd "${templates}/$1"
     find . -type f -o -type l -o -type p -o -type s | sed -e 's|^\./||g' | cpio -padu -- "${2%/}"
+    cd ~
 
     el_info "Installed template '$1'"
 }
