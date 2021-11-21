@@ -1,4 +1,4 @@
-# Elive for Servers ! w00t
+# Elive superpowers on your Server ! w00t
 Enjoy your server with some Elive super-powers, and you can also optionally install well-tuned services in one shot!
 
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
