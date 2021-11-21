@@ -813,11 +813,14 @@ install_php(){
         esac
     fi
 
+    # first install this one independently, because the buggy ubuntu wants to install apache if not
+    packages_install php-fpm
+
     packages_install \
         php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
         php php-bz2 php-mbstring php-phpseclib php-zip php-bcmath php-mysql php-json \
-        php-fpm $packages_extra \
         composer \
+        $packages_extra \
         $NULL
 
     # get php version
