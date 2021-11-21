@@ -246,10 +246,36 @@ error_signal_trapped(){
     #echo -e "\nE: Trapped error signal, continue? (simply logout)"
     echo -e "\n\nE: Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
+    prepare_environment stop
+
     exit 1
 }
 trap "error_signal_trapped" ERR
 #trap "exit_error" 1 2 3 6 9 11 13 14 15
+
+prepare_environment(){
+    case "$1" in
+        start)
+            if ! [[ "$( readlink -f "/usr/sbin/update-initramfs" )" = "/bin/true" ]] \
+                && ! [[ -e "/usr/sbin/update-initramfs.orig" ]] ; then
+
+            mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
+            ln -s /bin/true "/usr/sbin/update-initramfs"
+            fi
+            ;;
+        stop)
+            if [[ -e /usr/sbin/update-initramfs.orig ]] ; then
+                rm -f /usr/sbin/update-initramfs || true
+                mv -f /usr/sbin/update-initramfs.orig /usr/sbin/update-initramfs || true
+            fi
+
+            ;;
+        regenerate)
+            rm -f /boot/initrd.img* 2>/dev/null || true
+            LC_ALL="$EL_LC_EN" update-initramfs -k all -d -c 2>&1 | grep -vE '(^mkdir:|mdadm:|Generating /|live-boot)'
+            ;;
+    esac
+}
 
 
 #===  FUNCTION  ================================================================
@@ -1402,6 +1428,10 @@ main(){
     # Create / import back users
     #
 
+    # comment {{{
+    # - comment }}}
+
+    prepare_environment start
 
     # root pass change {{{
     if ((is_change_pass_root)) ; then
@@ -1626,6 +1656,9 @@ main(){
     #
     # FINAL STEPS
     #
+    prepare_environment stop
+    prepare_environment regenerate
+
     final_steps
 }
 
