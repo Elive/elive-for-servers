@@ -412,8 +412,8 @@ sources_update_adapt(){
     #fi
 
     # set the date of builded elive as the last commit date on the repo
-    #cd "$sources"
     touch /etc/elive-version
+    cd "$sources"
     changeconfig "^date-builded:" "date-builded: $( git log -1 --format=%cs )" /etc/elive-version
 
 
