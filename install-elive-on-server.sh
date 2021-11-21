@@ -505,8 +505,7 @@ update_variables(){
         if which php 1>/dev/null ; then
             php_version="$( php -i 2>&1 | grep -iE "^PHP Version => [[:digit:]]+\.[[:digit:]]+\." | sed -e 's|^.*=> ||g' | head -1 )"
             # get x.x from x.x.x version
-            php_version="$( echo "$php_version" | sed -e 's/[^0-9.\-]/ /g' )"
-            php_version="$( printf "%0.2f\n" "$php_version" 2>/dev/null || true )"
+            php_version="$( echo "$php_version" | awk -v FS="." '{print $1"."$2}' )"
         fi
     fi
 
