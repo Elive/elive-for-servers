@@ -83,6 +83,18 @@ get_args(){
                 is_wanted_wordpress=1
                 is_extra_service=1
                 ;;
+            "--install=all")
+                # used for debug purposes, nobody is meant to want all
+                is_wanted_wordpress=1
+                is_wanted_exim=1
+                is_wanted_elive=1
+                is_wanted_fail2ban=1
+                is_wanted_monit=1
+                is_wanted_rootkitcheck=1
+                is_wanted_vnstat=1
+                is_wanted_swapfile=1
+                #is_wanted_iptables=1
+                ;;
             #"--install=phpmyadmin")
                 #is_wanted_phpmyadmin=1
                 #is_wanted_nginx=1
@@ -347,6 +359,8 @@ packages_install(){
             exit 1
         fi
     fi
+
+    is_packages_installed=1
 }
 packages_remove(){
     local package
@@ -1695,7 +1709,9 @@ main(){
     # FINAL STEPS
     #
     prepare_environment stop
-    prepare_environment regenerate
+    if ((is_packages_installed)) ; then
+        prepare_environment regenerate
+    fi
 
     final_steps
 }
