@@ -483,7 +483,8 @@ install_elive(){
     # upgrade the system first
     apt-get -qq clean
     apt-get update
-    apt-get -q dist-upgrade $apt_options
+    TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
+        apt-get -q dist-upgrade $apt_options
     packages_install \
         gnupg wget curl
     #apt-get dist-upgrade $apt_options
@@ -532,7 +533,8 @@ install_elive(){
     packages_extra="vim-colorscheme-elive-molokai elive-security elive-tools elive-skel elive-skel-default-all elive-skel-default-vim vim-common zsh-elive $packages_extra"
 
     # upgrade possible packages from elive:
-    apt-get dist-upgrade $apt_options -qq
+    TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
+        apt-get dist-upgrade $apt_options -qq
 
     # install extra features
     # obsolete ones: tidy zsync
