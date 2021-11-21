@@ -306,7 +306,11 @@ el_confirm(){
     # }}}
     # return answer {{{
 
-    echo -en "\n$question [y/n]: "
+    if ((is_ubuntu)) ; then
+        echo -e "\n$question [y/n]: "
+    else
+        echo -en "\n$question [y/n]: "
+    fi
     if [[ -n "$ZSH_VERSION" ]] ; then
         read reply
     else
@@ -1455,7 +1459,7 @@ main(){
         fi
         is_ubuntu=1
         case "$DISTRIB_CODENAME" in
-            impish|hirsute)
+            impish|hirsute|focal)
                 # bullseye like
                 debian_version="bullseye"
                 elive_version="bullseye"
