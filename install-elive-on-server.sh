@@ -256,6 +256,7 @@ error_signal_trapped(){
     rm -rf "$sources"
 
     #echo -e "\nE: Trapped error signal, continue? (simply logout)"
+    # TODO: most failed installs is because apt install fails, try to catch the error message to a log file and report it
     echo -e "\n\nE: Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
     prepare_environment stop
@@ -281,10 +282,10 @@ prepare_environment(){
                 mv -f /usr/sbin/update-initramfs.orig /usr/sbin/update-initramfs || true
             fi
 
-            ;;
-        regenerate)
-            rm -f /boot/initrd.img* 2>/dev/null || true
-            update-initramfs -k all -d -c || true
+            if ((is_packages_installed)) ; then
+                rm -f /boot/initrd.img* 2>/dev/null || true
+                update-initramfs -k all -d -c || true
+            fi
             ;;
     esac
 }
@@ -1709,9 +1710,6 @@ main(){
     # FINAL STEPS
     #
     prepare_environment stop
-    if ((is_packages_installed)) ; then
-        prepare_environment regenerate
-    fi
 
     final_steps
 }
