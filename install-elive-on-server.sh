@@ -817,7 +817,7 @@ install_php(){
 
     packages_install \
         php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
-        php php-bz2 php-mbstring php-php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json \
+        php php-bz2 php-mbstring php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json \
         php-fpm $packages_extra \
         composer \
         $NULL
