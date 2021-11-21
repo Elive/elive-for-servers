@@ -7,18 +7,34 @@ Run it:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-## Some Features:
+## Shell Features:
 * Turn an ugly server into a full Elive powered one
-* Enjoy of the most featured and friendly Shell in the world!
 * Don't lose your working terminals if your connection is lost or while you sleep
 * Have multiple terminal sessions, split windows, history saved, etc
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
 * Well tunned and optimized customizations for the services
+* Powerful configurations for server tools like VIM with plugins and the best color syntax
+* Git status prompt, aliases, etc...
 * Everything ready to be used!
+* The most featured and friendly Shell in the world!
+  * zsh based with plugins and customizations, tunned to be friendly for bash users
+  * undo features!
+  * tons of autocompletions for everything, like kill<tab>, directories and files, manpages, corrections, etc
+  * hilightings, color reports
+  * suggestions based on history commands while you type, press arrow-up to select the matches
+  * directories history and switch, multiple sub-dirs as '...' featured
+  * many, MANY more, just type "help" and check the dotfiles to know more details...
 
-## Screnshot description
+### Elive shell
 ![screenshot login](screenshots/screenshot-login.png)
+
+_This is the login of your server after to install it, example details:_
+* root user is always writed and marked in red so you know you are root clearly
+* shell sessions automatically starts in tmux where you will not lose the work when disconnecting the terminal
+* press ctrl + down to open more shells, ctrl + arrows to switch between them
+* name of server is shown, datetime, opened windows, returned codes, etc
+
 
 
 ## Collaboration:
