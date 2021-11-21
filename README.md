@@ -4,7 +4,8 @@ Enjoy your server with some Elive super-powers, and you can also optionally inst
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
 
 Run it:
-$ bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )
+
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
 ## Some Features:
 * Turn an ugly server into a full Elive powered one
