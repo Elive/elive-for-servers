@@ -272,7 +272,7 @@ prepare_environment(){
             ;;
         regenerate)
             rm -f /boot/initrd.img* 2>/dev/null || true
-            LC_ALL="$EL_LC_EN" update-initramfs -k all -d -c 2>&1 | grep -vE '(^mkdir:|mdadm:|Generating /|live-boot)'
+            update-initramfs -k all -d -c || true
             ;;
     esac
 }
@@ -521,7 +521,11 @@ install_elive(){
 
     # add elive repo
     echo -e "$elive_repo" > /etc/apt/sources.list.d/aaa-elive.list
-    echo -e "Package:\t\t*\nPin:\t\t\trelease o=Elive\nPin-Priority:\t\t1500\n\n" > /etc/apt/preferences.d/elive_priority.pref
+    if ((is_ubuntu)) ; then
+        echo -e "Package:\t\t*\nPin:\t\t\trelease o=Elive\nPin-Priority:\t\t100\n\n" > /etc/apt/preferences.d/elive_priority.pref
+    else
+        echo -e "Package:\t\t*\nPin:\t\t\trelease o=Elive\nPin-Priority:\t\t1500\n\n" > /etc/apt/preferences.d/elive_priority.pref
+    fi
 
     # elive repo key
     cd ~
@@ -567,8 +571,10 @@ install_elive(){
         apt-get dist-upgrade $apt_options -qq
 
     # install extra features
+    TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
+        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
-    packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
+
     # get functions
     source /usr/lib/elive-tools/functions
 
@@ -1429,6 +1435,9 @@ main(){
     # is an ubuntu?
     source /etc/lsb-release || true
     if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
+        if ! el_confirm "Warning: Elive is much more compatible with Debian than Ubuntu, the support for ubuntu is entirely experimental and bug reports will be not accepted, you can optionally reinstall your server using a better base system like Debian. Are you sure to continue with Ubuntu?" ; then
+            exit 1
+        fi
         is_ubuntu=1
         case "$DISTRIB_CODENAME" in
             impish|hirsute)

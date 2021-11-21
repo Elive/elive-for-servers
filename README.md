@@ -7,6 +7,9 @@ Run it:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
+Distros supported: Debian buster, Debian bullseye, Ubuntu impish
+_Note: ubuntu is added for compatibility, but we **strongly** suggest to use Debian instead_
+
 ## Features:
 * Turn an ugly server into a full Elive powered one
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
