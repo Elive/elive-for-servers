@@ -770,7 +770,7 @@ install_php(){
         buster)
             packages_extra="php-xmlrpc php-inotify php-zstd $packages_extra"
             ;;
-        bullseye|*)
+        bullseye)
             packages_extra="php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
 
             # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
@@ -787,8 +787,8 @@ install_php(){
     esac
 
     packages_install \
-        php-common php-xmlrpc php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
-        php php-bz2 php-mbstring php-php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json php-inotify php-zstd \
+        php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
+        php php-bz2 php-mbstring php-php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json \
         php-fpm $packages_extra \
         composer \
         $NULL
