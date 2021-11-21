@@ -352,15 +352,17 @@ sources_update_adapt(){
     git clone -q https://github.com/Elive/elive-for-servers.git "$sources"
 
     # check for updated tool
-    if [[ -s "$sources/install-elive-on-server.sh" ]] ; then
-        if [[ "$( diff "$0" "$sources/install-elive-on-server.sh" | wc -l )" -gt 4 ]] ; then
-            #if el_confirm "Seems like this tool has new updates from its git version, do you want to update it first?" ; then
-                cp -f "$sources/install-elive-on-server.sh" "$0"
+    if ! ((is_mode_curl)) ; then
+        if [[ -s "$sources/install-elive-on-server.sh" ]] ; then
+            if [[ "$( diff "$0" "$sources/install-elive-on-server.sh" | wc -l )" -gt 4 ]] ; then
+                #if el_confirm "Seems like this tool has new updates from its git version, do you want to update it first?" ; then
+                    cp -f "$sources/install-elive-on-server.sh" "$0"
 
-                el_warning "tool updated: running it again..."
-                "$0" "$args"
-                exit
-            #fi
+                    el_warning "tool updated: running it again..."
+                    "$0" "$args"
+                    exit
+                #fi
+            fi
         fi
     fi
 
