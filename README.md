@@ -3,13 +3,13 @@ Enjoy your server with some Elive super-powers, and you can also optionally inst
 
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
 
-Run it:
+**Install it**:
 
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
+`$ bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-**Distros supported**: **Debian** buster, **Debian** bullseye, Ubuntu versions: 21.10 impish, 21.04 irsute, 20.04 focal, 18.04 bionic
-
-_Note: ubuntu is added for compatibility, but we **strongly** suggest to use Debian instead, do not report bugs for ubuntu installs_
+**Distros supported**: Debian buster, Debian bullseye.
+**Ubuntu versions**: 21.10 impish, 21.04 irsute, 20.04 focal, 18.04 bionic
+_Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead, do not report bugs if you use ubuntu_ 
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
