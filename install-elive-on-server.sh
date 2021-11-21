@@ -368,6 +368,7 @@ sources_update_adapt(){
 
     # set the date of builded elive as the last commit date on the repo
     cd "$sources"
+    touch /etc/elive-version
     changeconfig "^date-builded:" "date-builded: $( git log -1 --format=%cs )" /etc/elive-version
     cd "$( dirname "$sources" )"
 
@@ -547,7 +548,7 @@ install_elive(){
     # TODO: in our elive server we have it, do we need it? (better: just check which packages we had installed that are not in the new/next server)
     #apt-get install -y imagemagick # note: it installs many dependencies, do we need it?
 
-    update-command-not-found || true
+    update-command-not-found 2>/dev/null || true
 
     #mv /etc/apt/preferences.d/elive*pref "/tmp"
     #apt-get install --allow-downgrades -y zsh-elive
