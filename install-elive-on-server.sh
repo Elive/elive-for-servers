@@ -1,5 +1,5 @@
 #!/bin/bash
-SOURCE="$0"
+SOURCE="install-elive-on-server.sh"
 #
 # This tool should be run from a screen/tmux if possible, in order to avoid possible disconnections
 #
@@ -142,10 +142,24 @@ get_args(){
         fi
     fi
 
+    if [[ "$0" != "/"* ]] ; then
+        is_mode_curl=1
+    fi
+
     # checks
     if [[ -z "$domain" ]] ; then
-        echo -e "E: Your 'domain' must be set:\n"
-        usage
+        # running from curl?
+        if ((is_mode_curl)) ; then
+            echo -e "What is the domain for your server?"
+            read domain
+            if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this is correct?" ; then
+                echo -e "Exiting..."
+                exit
+            fi
+        else
+            echo -e "E: Your 'domain' must be set:\n"
+            usage
+        fi
     fi
 
     # - arguments & features }}}
@@ -1257,6 +1271,10 @@ final_steps(){
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
     fi
 
+    if ((is_mode_curl)) ; then
+        el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
+    fi
+
     el_info "Reboot your server and enjoy everything ready"
 }
 
@@ -1273,7 +1291,7 @@ notimplemented(){
 
 usage(){
     echo -e "
-Usage: $(basename $BASH_SOURCE) --domain=yourdomain [--email=admin@email] [--pass-root=changepass] [--pass-mariadb=pass] [--user=user:pass]
+Usage: install-elive-on-server.sh --domain=yourdomain [--email=admin@email] [--pass-root=changepass] [--pass-mariadb=pass] [--user=user:pass]
 
 Services:
     * user: create a user if don't exist, or use the existing one for setup other services (like wordpress)
