@@ -531,7 +531,7 @@ install_elive(){
             cat elive-key.gpg | apt-key add -
             rm -f elive-key.gpg
             ;;
-        bullseye)
+        bullseye|impish)
             wget -q -O /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg "http://main.elivecd.org/tmp/elive-archive-bullseye-automatic.gpg"
             ;;
         *)
@@ -547,7 +547,7 @@ install_elive(){
         #buster)
             #packages_extra="openntpd ntpdate $packages_extra"
             #;;
-        bullseye|*)
+        bullseye|impish|*)
             packages_extra="apt-transport-https $packages_extra"
             #if ! dpkg -l | grep -qsE "^ii .*(ntp|systemd-timesyncd)" ; then
                 #packages_extra="ntp $packages_extra"
@@ -637,6 +637,10 @@ kernel: $(uname -r)
 machine-id: $(el_get_machine_id)
 first-user: elivewp
 EOF
+
+    if ((is_ubuntu)) ; then
+        sed -i -e 's|Debian|Ubuntu|g' /etc/os-release 2>/dev/null || true
+    fi
 
     #apt-get install -y vim-common zsh-elive || bash # try if possible
 
@@ -761,12 +765,13 @@ install_nginx(){
 install_php(){
     # packages to install
     local packages_extra
+
     case "$debian_version" in
         buster)
-            packages_extra=""
+            packages_extra="php-xmlrpc php-inotify php-zstd $packages_extra"
             ;;
         bullseye|*)
-            packages_extra="php-tcpdf"
+            packages_extra="php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
 
             # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
             if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
@@ -776,12 +781,15 @@ install_php(){
                 sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
             fi
             ;;
+        impish)
+            packages_extra="$packages_extra"
+            ;;
     esac
 
     packages_install \
         php-common php-xmlrpc php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
         php php-bz2 php-mbstring php-php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json php-inotify php-zstd \
-        php-fpm \
+        php-fpm $packages_extra \
         composer \
         $NULL
 
@@ -891,7 +899,7 @@ install_mariadb(){
                 #mysql -u root -D mysql -e "flush privileges; update mysql.user set password=password('${pass_mariadb_root}') where user='root'; flush privileges; update mysql.user set plugin='mysql_native_password' where user='root'; flush privileges;"
                 mysql -u root -D mysql -e "flush privileges; update user set password=password('${pass_mariadb_root}') where user='root'; flush privileges; update user set plugin='mysql_native_password' where user='root'; flush privileges;"
                 ;;
-            bullseye|*)
+            bullseye|impish|*)
                 mariadbd-safe --skip-grant-tables &
                 sleep 3
                 mysql -u root -D mysql -e "flush privileges; SET PASSWORD FOR root@localhost = PASSWORD('${pass_mariadb_root}'); flush privileges;"
@@ -1414,6 +1422,20 @@ main(){
             exit 1
             ;;
     esac
+
+    # is an ubuntu?
+    source /etc/lsb-release || true
+    if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
+        is_ubuntu=1
+        debian_version="$DISTRIB_CODENAME"
+        case "$debian_version" in
+            impish)
+                # bullseye like
+                elive_version="bullseye"
+                elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+                ;;
+        esac
+    fi
 
 
     # backup etc before to install things
