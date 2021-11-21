@@ -797,10 +797,10 @@ install_php(){
     if ! ((is_ubuntu)) ; then
         case "$debian_version" in
             buster)
-                packages_extra="php-xmlrpc php-inotify php-zstd $packages_extra"
+                packages_extra="php-gettext php-xmlrpc php-inotify php-zstd $packages_extra"
                 ;;
             bullseye)
-                packages_extra="php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
+                packages_extra="php-gettext php-xmlrpc php-inotify php-zstd php-tcpdf $packages_extra"
 
                 # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
                 if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
@@ -818,7 +818,7 @@ install_php(){
 
     packages_install \
         php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
-        php php-bz2 php-mbstring php-gettext php-phpseclib php-zip php-bcmath php-mysql php-json \
+        php php-bz2 php-mbstring php-phpseclib php-zip php-bcmath php-mysql php-json \
         php-fpm $packages_extra \
         composer \
         $NULL
