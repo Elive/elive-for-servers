@@ -152,7 +152,7 @@ get_args(){
         if ((is_mode_curl)) ; then
             echo -e "What is the domain for your server?"
             read domain
-            if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this is correct?" ; then
+            if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this machine is '$(hostname).$domain' this is correct?" ; then
                 echo -e "Exiting..."
                 exit
             fi
