@@ -142,9 +142,7 @@ get_args(){
         fi
     fi
 
-    set -x
-    echo "$0"
-    if echo "$0" | grep -qsE "^[[:digit:]]+$" ; then
+    if [[ "$0" = "/proc/self/fd/"* ]] ; then
         is_mode_curl=1
     fi
 
@@ -163,7 +161,6 @@ get_args(){
             usage
         fi
     fi
-    set +x
 
     # - arguments & features }}}
 }
