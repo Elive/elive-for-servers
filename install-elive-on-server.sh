@@ -473,7 +473,7 @@ install_templates(){
     name="$1" ; shift
     dest="$1" ; shift
 
-    if [[ -z "$mode" ]] || [[ -z "$name" ]] || [[ -z "$dest" ]] ; then
+    if [[ -z "$name" ]] || [[ -z "$dest" ]] ; then
         echo -e "E: variables missing" 1>&2
         exit 1
     fi
