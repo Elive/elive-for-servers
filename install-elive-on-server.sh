@@ -473,10 +473,7 @@ install_templates(){
     name="$1" ; shift
     dest="$1" ; shift
 
-    if [[ -z "$name" ]] || [[ -z "$dest" ]] ; then
-        echo -e "E: variables missing" 1>&2
-        exit 1
-    fi
+    require_variables "name|dest"
 
     sources_update_adapt
 
@@ -595,9 +592,14 @@ install_elive(){
             ;;
     esac
 
-
-    # install templates before to use apt:
-    install_templates "root" "/"
+    mkdir -p "/etc/apt/apt.conf.d/"
+    cat > "/etc/apt/apt.conf.d/temporal.conf" << EOF
+APT::Install-Recommends "false";
+APT::Install-Suggests "false";
+#Aptitude::Recommends-Important "false";
+DSELECT::Clean always;
+APT::Get::Clean always;
+EOF
 
     apt-get -qq clean
     apt-get -q update
@@ -614,8 +616,15 @@ install_elive(){
         packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
 
+    # clean temporal things
+    rm -f "/etc/apt/apt.conf.d/temporal.conf"
+
     # get functions
     source /usr/lib/elive-tools/functions
+
+    # install templates before to do more steps
+    install_templates "root" "/"
+
 
     # TODO: in our elive server we have it, do we need it? (better: just check which packages we had installed that are not in the new/next server)
     #apt-get install -y imagemagick # note: it installs many dependencies, do we need it?
