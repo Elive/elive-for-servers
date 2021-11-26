@@ -473,7 +473,10 @@ install_templates(){
     name="$1" ; shift
     dest="$1" ; shift
 
-    require_variables "mode|name|dest"
+    if [[ -z "$mode" ]] || [[ -z "$name" ]] || [[ -z "$dest" ]] ; then
+        echo -e "E: variables missing" 1>&2
+        exit 1
+    fi
 
     sources_update_adapt
 
