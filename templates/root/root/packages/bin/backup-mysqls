@@ -1,0 +1,78 @@
+#!/bin/bash
+SOURCE="$@"
+source /usr/lib/elive-tools/functions
+set -e
+renice +20 -p $$
+ionice -c3 -p$$
+
+
+act_date="$(date +%F)"
+act_year="${act_date%%-*}"
+act_year_tmp="${act_year}"
+act_month="${act_date#*-}"
+act_month="${act_month%-*}"
+#act_month_tmp="${act_month}"
+#act_month_tmp="$( echo "${act_month} + 1 - 1" | bc -l )" # remove first zero (like 06)
+#[[ $act_month_tmp -lt 10 ]] && act_month_tmp_completenumber="0$act_month_tmp" || act_month_tmp_completenumber="$act_month_tmp"
+
+# dest
+destdir="/root/backups/mysqls"
+mkdir -p "$destdir"
+cd "$destdir"
+
+
+backup_all(){
+   echo -e "backuping databases..."
+
+   # Site WP
+   dbname="EXAMPLE_DB_NAME"
+   dbuser="EXAMPLE_DB_USER"
+   dbpass="EXAMPLE_DB_PASS"
+   target="${destdir}/${dbname}"
+   mkdir -p "$target"
+   el_info "backuping ${dbname}..."
+   mysqldump -u "$dbuser" --password="${dbpass}" --skip-lock-tables --host=localhost "$dbname" | gzip -9fc > "${target}/${dbname}-$(date +%F_%H:%M:%S).sql.gz"
+   # optimize database
+   el_info "optimizing ${dbname}..."
+   mysqlcheck -o -s -u "${dbuser}" -p"${dbpass}" --host=localhost "${dbname}"
+
+   # phpmyadmin
+   dbname="EXAMPLE_DB_NAME"
+   dbuser="root"
+   dbpass="EXAMPLE_DB_PASS"  # your ROOT mysql password
+   target="${destdir}/${dbname}"
+   mkdir -p "$target"
+   el_info "backuping ${dbname}..."
+   mysqldump -u "${dbuser}" --password="${dbpass}" --skip-lock-tables --host=localhost "$dbname" | gzip -9fc > "${target}/${dbname}-$(date +%F_%H:%M:%S).sql.gz"
+   # optimize database
+   #el_info "optimizing ${dbname}..."
+   #mysqlcheck -o -s -u "${dbuser}" -p"${dbpass}" --host=localhost "${dbname}"
+}
+
+
+remove_olds(){
+   # remove old databases:
+   echo -e "removing olds..."
+
+   cd "$destdir"
+   lugar="$destdir"
+
+   for dir in $(find $destdir -type d )
+   do
+      i=0
+      find "$dir" -mindepth 1 -maxdepth 1 -type f -iname '*'.sql'*' -printf '%T@ %p\0' | sort -znr | while read -rd '' time file
+      do
+          # 200 files ~= 1 year backups
+          ((i++ < 20)) && continue
+
+          el_info "removing $file"
+          rm -f "$file"
+      done
+   done
+}
+
+
+backup_all
+remove_olds
+
+tree "$destdir"

@@ -12,19 +12,19 @@ shift
 subject="$1"
 shift
 
-#echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@domain.com
+#echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@elivecd.org
 if [[ -x "$(which heirloom-mailx)" ]] ; then
     echo "$@" | heirloom-mailx \
-        -r "no-reply@domain.com" \
+        -r "no-reply@elivecd.org" \
         -s "$subject" "$to"
     #echo "$@" | heirloom-mailx \
         #-s "$subject" \
         #-S smtp-use-starttls -S smtp-auth=login -S ssl-verify=ignore \
-        #-r "no-reply@domain.com" \
-        #-S smtp="domain.com:587" \
-        #-S smtp-auth-user="no-reply@domain.com" -S smtp-auth-password="yourpass" \
+        #-r "no-reply@elivecd.org" \
+        #-S smtp="elivecd.org:587" \
+        #-S smtp-auth-user="no-reply@elivecd.org" -S smtp-auth-password="yourpass" \
         #"$to"
 else
-    #echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@domain.com
+    #echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@elivecd.org
     echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to"
 fi

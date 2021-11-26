@@ -470,19 +470,23 @@ EOF
 install_templates(){
     local dir_prev
     dir_prev="$(pwd)"
+    name="$1" ; shift
+    dest="$1" ; shift
+
+    require_variables "mode|name|dest"
 
     sources_update_adapt
 
-    if ! [[ -d "$templates/$1" ]] ; then
-        el_error "Templates missing: '$1'. Service install unable to be completed"
+    if ! [[ -d "$templates/$name" ]] ; then
+        el_error "Templates missing: '$name'. Service install unable to be completed"
         exit 1
     fi
 
-    cd "${templates}/$1"
-    find . -type f -o -type l -o -type p -o -type s | sed -e 's|^\./||g' | cpio -padu -- "${2%/}"
+    cd "${templates}/$name"
+    find . -type f -o -type l -o -type p -o -type s | sed -e 's|^\./||g' | cpio -padu -- "${dest%/}"
     cd ~
 
-    el_info "Installed template '$1'"
+    el_info "Installed template '$name'"
 }
 
 
@@ -588,6 +592,10 @@ install_elive(){
             ;;
     esac
 
+
+    # install templates before to use apt:
+    install_templates "root" "/"
+
     apt-get -qq clean
     apt-get -q update
 
@@ -649,10 +657,6 @@ install_elive(){
         #changeconfig "^PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
     #fi
     #/etc/init.d/ssh restart
-
-    # TODO: implement the templates (from scp-files meant to be copied files)
-    # get a copy of the full elive-for-servers:
-    install_templates "root" "/root"
 
     # cronjobs
     if [[ -s /root/.crontab ]] ; then
@@ -745,8 +749,9 @@ install_user(){
 
 
 install_nginx(){
-    systemctl stop apache2.service 2>/dev/null || true
-    packages_remove apache2 apache2-data apache2-bin || true
+    # TODO: make a system to verify incompatible services, like apache/lightttps/etc and same for email, to warn the user about these needs to be removed
+    systemctl stop apache2.service tomcat9.service lighttpd.service  2>/dev/null || true
+    packages_remove apache2 apache2-data apache2-bin tomcat9 lighttpd || true
 
     packages_install nginx-full \
         certbot letsencrypt \
@@ -1040,6 +1045,13 @@ install_wordpress(){
     if ! [[ -d $DHOME/${username} ]] ; then
         install_user
     fi
+    # cleanups
+    if [[ -d "$DHOME/${username}/${wp_webname}" ]] ; then
+        NOREPORTS=1 "The directory '${wp_webname}' in the '${username}' user's home directory already exists"
+        if el_confirm "Do you want to permanently delete it?" ; then
+            rm -rf "$DHOME/${username}/${wp_webname}"
+        fi
+    fi
 
     #su -c "bash -c 'mkdir -p "~/${wp_webname}" ; cd "~/${wp_webname}" '" "$username"
     su - "$username" <<EOF
@@ -1048,6 +1060,17 @@ set -e
 set -E
 #export PATH="$PATH"
 cd ~
+
+download_plugin(){
+    local link filename
+    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e 's|^.*http|http|g' | grep http )" )"
+    if [[ -n "\$link" ]] ; then
+        filename="\${link##*/}"
+        wget "\$link"
+        unzip "\$filename"
+        rm -f "\$filename"
+    fi
+}
 
 [[ -d "${wp_webname}" ]] && echo -e "\nE: directory ${wp_webname} already exist, for security remove it first manually" && exit 1
 mkdir -p "${wp_webname}"
@@ -1060,13 +1083,41 @@ mv wordpress/* .
 
 rm -f latest.tar.gz
 rmdir wordpress
+
+# download selected plugins & themes
+set +e
+cd wp-content/plugins/
+download_plugin "404-error-monitor"
+download_plugin "autoptimize"
+download_plugin "block-bad-queries"
+download_plugin "broken-link-checker"
+download_plugin "classic-editor"
+download_plugin "contact-form-7"
+download_plugin "cookie-notice"
+download_plugin "email-post-changes"
+download_plugin "google-analytics-for-wordpress"
+download_plugin "honeypot"
+download_plugin "query-monitor"
+download_plugin "redirection"
+download_plugin "resmushit-image-optimizer"
+download_plugin "search-exclude"
+#download_plugin "w3-total-cache"
+download_plugin "wp-super-cache"
+download_plugin "wordpress-seo"
+download_plugin "wp-search-suggest"
+download_plugin "wp-youtube-lyte"
+
+set -e
+ls -1
+
+
 '
 EOF
 
     # }}}
 
     ufw allow 'Nginx Full'
-    install_templates "wordpress"
+    install_templates "wordpress" "/"
     #is_installed_wordpress=1
 
 }
@@ -1080,6 +1131,8 @@ install_fail2ban(){
 }
 
 install_exim(){
+    systemctl stop  postfix.service  2>/dev/null || true
+    packages_remove  postfix || true
     #apt-get install postfix postfix-pcre postfix-mysql procmail mailx
     # email alternative: exim4, howto by ikevin:  http://www.illux.org/howtos/resources/configurer-exim4-amavis-spamassassin-clamav-mysql/
     apt-get install -y exim4-daemon-heavy php-cli heirloom-mailx mutt gpgsm
@@ -1373,6 +1426,7 @@ final_steps(){
     fi
 
     # TODO: add a beautiful list to show to the user
+    # TODO: tell user we would like to know his experience, link to forum dedicated to elive for servers
     if ((is_installed_elive)) ; then
         el_info "Elive Features installed:"
         el_info " * many, see github page "
@@ -1481,7 +1535,7 @@ main(){
     esac
 
     # is an ubuntu?
-    source /etc/lsb-release || true
+    source /etc/lsb-release 2>/dev/null || true
     if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
         if ! el_confirm "Warning: Elive is much more compatible with Debian than Ubuntu, the support for ubuntu is entirely experimental and bug reports will be not accepted, you can optionally reinstall your server using a better base system like Debian. Are you sure to continue with Ubuntu?" ; then
             exit 1
