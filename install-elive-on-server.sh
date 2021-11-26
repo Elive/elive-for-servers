@@ -1075,7 +1075,7 @@ cd ~
 
 download_plugin(){
     local link filename
-    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e 's|^.*http|http|g' | grep http )" )"
+    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )" )"
     if [[ -n "\$link" ]] ; then
         filename="\${link##*/}"
         wget "\$link"
