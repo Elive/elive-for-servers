@@ -1161,9 +1161,10 @@ EOF
 sed -i -e "s|^define.*'DB_NAME'.*$|define( 'DB_NAME', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^define.*'DB_USER'.*$|define( 'DB_USER', '${wp_db_user}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
-#sed -i -e "s|^define.*'DB_HOST'.*$|define( 'DB_HOST', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
-#sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
-#sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+#sed -i -e "s|^define.*'DB_HOST'.*$|define( 'DB_HOST', '${wp_webname}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', 'utf8mb4' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', 'utf8mb4_general_ci' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^table_prefix =.*$|table_prefix = 'elive_wp_';|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 echo -e "define('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 
 
