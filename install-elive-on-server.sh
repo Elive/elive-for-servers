@@ -1154,12 +1154,13 @@ EOF
 
     # configure WP in nginx
     require_variables "php_version"
-    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
     ln -s "/etc/nginx/sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
 
     cp "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/nginx/sites-available/${wp_webname}"
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
 
 

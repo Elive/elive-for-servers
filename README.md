@@ -40,7 +40,8 @@ _This is the login of your server after to install it, description:_
 * name of server is shown, datetime, opened windows, returned codes, etc
  
  ## Services
- You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... _[WORK IN PROGRESS, not ready for production]_
+ You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... for example using the options:
+ * --install=wordpress
 
 
 
