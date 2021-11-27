@@ -1011,12 +1011,14 @@ install_mariadb(){
 
 install_wordpress(){
     # TODO: betatests
-    pass_mariadb_root=dbpassroot
-    wp_db_name=dbname
-    wp_db_user=dbuser
-    wp_db_pass=dbpass
-    wp_webname=wp.thanatermesis.org
-    username=elivewp
+    if ! ((is_production)) ; then
+        pass_mariadb_root=dbpassroot
+        wp_db_name=dbname
+        wp_db_user=dbuser
+        wp_db_pass=dbpass
+        wp_webname=wp.thanatermesis.org
+        username=elivewp
+    fi
 
     if ! [[ -n "$wp_webname" ]] ; then
         echo -e "Website name for your website? (example: blog.yourdomain.com or www.eliverulez.org)"
@@ -1187,16 +1189,41 @@ echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POS
 
     install_templates "wordpress" "/"
 
-    # configure WP in nginx
+    # configure WP in nginx {{{
     require_variables "php_version"
     changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
-    ln -sf "/etc/nginx/sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
 
+    # redir non-www to www
+    sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
+    if echo "$wp_webname" | grep -qsi "^www\." ; then
+        cat > "/etc/nginx/sites-available/${wp_webname}" << EOF
+
+# Redirect 'mywordpress.com' to 'www.mywordpress.com'
+server {
+    listen 443;
+    listen [::]:443;
+
+    server_name ${wp_webname};
+
+    return 301 https://www.${wp_webname}\$request_uri;
+}
+
+EOF
+    fi
+    addconfig "\n\n# vim: set syn=conf filetype=cfg : #" "/etc/nginx/sites-enabled/${wp_webname}"
+
+    # enable site
+    ln -sf "../sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
+
+
+    # }}}
+    # configure php-fpm for your wordpress {{{
     cp -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
+    # }}}
 
 
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
@@ -1561,9 +1588,10 @@ Notes:
 }
 #}}}
 main(){
+    # TODO: set to 1 for release, to 0 for betatesting more automated installs
+    is_production=0
     # TODO: release:
     is_tool_beta=1
-    #is_production=1
 
     if [[ "$UID" != "0" ]] ; then
         echo -e "E: You need to be root to run this tool" 1>&2
