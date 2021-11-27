@@ -1091,6 +1091,31 @@ set -E
 #export PATH="$PATH"
 cd ~
 
+addconfig(){
+    if [[ -e "\$2" ]] ; then
+        if ! grep -qs "^\${1}\$" "\$2" ; then
+            echo -e "\${1}" >> "\$2"
+        fi
+    else
+        echo -e "E: file '\$2' doesn't exist"
+        exit 1
+    fi
+}
+changeconfig(){
+    if [[ -e "\$3" ]] ; then
+        # if not already set
+        if ! grep -qs "^\${2}\$" "\$3" ; then
+            if grep -qs "\$1" "\$3" ; then
+                sed -i "s|\${1}.*\$|\$2|g" "\$3"
+            else
+                echo -e "\$2" >> "\$3"
+            fi
+        fi
+    else
+        echo -e "E: file '\$3' doesn't exist"
+        exit 1
+    fi
+}
 download_plugin(){
     local link filename
     link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )"
@@ -1142,6 +1167,18 @@ set -e
 echo -e "\n\n\nPlugins installed:"
 ls -1
 echo
+
+# configure wordpress
+cd ~/
+cd"${wp_webname}"
+cat wp-config-sample.php | dos2unix > wp-config.php
+sed -i -e "s|^define.*'DB_NAME'.*$|define( 'DB_NAME', '${wp_db_name}' );|g" wp-config.php
+sed -i -e "s|^define.*'DB_USER'.*$|define( 'DB_USER', '${wp_db_user}' );|g" wp-config.php
+sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );|g" wp-config.php
+#sed -i -e "s|^define.*'DB_HOST'.*$|define( 'DB_HOST', '${wp_db_name}' );|g" wp-config.php
+#sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', '${wp_db_name}' );|g" wp-config.php
+#sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', '${wp_db_name}' );|g" wp-config.php
+echo -e "define('WP_MEMORY_LIMIT', '128M');" >> wp-config.php
 
 '
 EOF
