@@ -795,6 +795,12 @@ install_nginx(){
     addconfig "<h2><i>With Elive super-powers</i></h2>" /var/www/html/index.nginx-debian.html
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" /etc/nginx/sites-enabled/default
 
+    if ! [[ -n "$email_admin" ]] ; then
+        echo -e "Insert the admin email for your web server:"
+        read email_admin
+    fi
+
+    install_templates "nginx" "/"
 
     # enable sites
     # TODO: implement with the templates system
@@ -824,7 +830,7 @@ install_php(){
                 packages_extra="php-gettext php-xmlrpc php-inotify php-zstd $packages_extra"
                 ;;
             bullseye)
-                packages_extra="php-xmlrpc php-tcpdf $packages_extra"
+                packages_extra="php-xmlrpc php-tcpdf php-soap $packages_extra"
 
                 # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
                 if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
@@ -1111,6 +1117,7 @@ set +e
 cd wp-content/plugins/
 download_plugin "404-error-monitor"
 download_plugin "autoptimize"
+download_plugin "better-wp-security"
 download_plugin "block-bad-queries"
 download_plugin "broken-link-checker"
 download_plugin "classic-editor"
@@ -1509,8 +1516,8 @@ main(){
         exit 1
     fi
 
-
-    source /etc/adduser.conf 2>/dev/null || true
+    # update: dhome is not fully compatible because of templates, do not enable it:
+    #source /etc/adduser.conf 2>/dev/null || true
     if [[ -z "$DHOME" ]] || [[ ! -d "$DHOME" ]] ; then
         DHOME="/home"
     fi
