@@ -465,11 +465,9 @@ EOF
 
 
     # checks
-    echo -en "${el_c_y2}"
-    ack -i "elive" "$templates" || true
+    #ack -i "elive" "$templates" || true
     ack -i "thanatermesis" "$templates" || true
     ack -i "hostdo1" "$templates" || true
-    echo -en "${el_c_n}"
     echo
 
     cd ~
@@ -667,7 +665,7 @@ EOF
     # configure root user
     elive-skel user root
     addconfig "export PATH=\"~/packages/bin:\$PATH\"" "/root/.zshrc"
-    addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo " "/root/.zshrc"
+    addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo\n" "/root/.zshrc"
     chsh -s /bin/zsh
     # configure ssh if was not yet
     #rm -rf ~/.ssh || true
