@@ -455,6 +455,14 @@ EOF
             "{}" \;
     fi
 
+    if [[ -n "$wp_webname" ]] ; then
+        zsh <<EOF
+rename "s/mywordpress.com/${wp_webname}/" ${templates}/**/*(.)
+EOF
+        find "$templates" -type f -exec sed -i "s|mywordpress.com|${wp_webname}|g" "{}" \;
+    fi
+
+
 
     # checks
     echo -en "${el_c_y2}"
@@ -1075,7 +1083,7 @@ cd ~
 
 download_plugin(){
     local link filename
-    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )" )"
+    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )"
     if [[ -n "\$link" ]] ; then
         filename="\${link##*/}"
         wget "\$link"
@@ -1120,8 +1128,9 @@ download_plugin "wp-search-suggest"
 download_plugin "wp-youtube-lyte"
 
 set -e
+echo -e "\n\n\nPlugins installed:"
 ls -1
-
+echo
 
 '
 EOF
@@ -1493,6 +1502,12 @@ main(){
     is_tool_beta=1
     #is_production=1
 
+    if [[ "$UID" != "0" ]] ; then
+        echo -e "E: You need to be root to run this tool" 1>&2
+        exit 1
+    fi
+
+
     source /etc/adduser.conf 2>/dev/null || true
     if [[ -z "$DHOME" ]] || [[ ! -d "$DHOME" ]] ; then
         DHOME="/home"
@@ -1527,18 +1542,26 @@ main(){
     domain_names="www.${domain} ${domain}"
 
     #ssh_authorized_key="ssh-rsa xxxxxxxxx example@hostname"
+    case "$(uname -m)" in
+        x86_64|x86-64|amd64|*i?86*)
+            true
+            ;;
+        *)
+            repoarch="[arch=amd64]"
+            ;;
+    esac
 
     # debian version
     case "$(cat /etc/debian_version)" in
         "10."*|"buster"*)
             debian_version="buster"
             elive_version="buster"
-            elive_repo="deb http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+            elive_repo="deb [arch=amd64] http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         "11."*|"bullseye"*)
             debian_version="bullseye"
             elive_version="bullseye"
-            elive_repo="deb https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+            elive_repo="deb [arch=amd64] https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         *)
             echo -e "E: sorry, this version of Debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
