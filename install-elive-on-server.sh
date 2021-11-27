@@ -907,6 +907,8 @@ install_php(){
     #addconfig "session.save_path = \"tcp://localhost:11211\"" /etc/php/$php_version/mods-available/memcache.ini
 
     if [[ -s /etc/php/$php_version/fpm/pool.d/www.conf ]] ; then
+        # enable monitoring state
+        changeconfig ";ping" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
@@ -1147,8 +1149,23 @@ EOF
     # }}}
 
     ufw allow 'Nginx Full'
+
     install_templates "wordpress" "/"
-    #is_installed_wordpress=1
+
+    # configure WP in nginx
+    require_variables "php_version"
+    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    ln -s "/etc/nginx/sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
+
+    cp "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
+
+
+    systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
+
+    is_installed_wordpress=1
 
 }
 
