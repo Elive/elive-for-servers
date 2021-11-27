@@ -501,10 +501,14 @@ install_templates(){
 
 update_variables(){
     if [[ -z "$domain_ip" ]] ; then
-        domain_ip="$( curl -A 'Mozilla' --max-time 8 -s http://icanhazip.com | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | tail -1 )"
+        if [[ -x "$( which showmyip )" ]] ; then
+            domain_ip="$( showmyip )"
+        else
+            domain_ip="$( curl -A 'Mozilla' --max-time 8 -s http://icanhazip.com | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | tail -1 )"
+        fi
         read -r domain_ip <<< "$domain_ip"
         if ! echo "$domain_ip" | grep -qs "^[[:digit:]]" ; then
-            echo -e "E: unable to get ip, please install 'curl' first"
+            echo -e "E: unable to get ip"
             exit 1
         fi
     fi
