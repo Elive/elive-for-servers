@@ -274,7 +274,7 @@ prepare_environment(){
                 && ! [[ -e "/usr/sbin/update-initramfs.orig" ]] ; then
 
             mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
-            ln -s /bin/true "/usr/sbin/update-initramfs"
+            ln -sf /bin/true "/usr/sbin/update-initramfs"
             fi
 
             # stop processes that can annoy us
@@ -1167,9 +1167,9 @@ EOF
     # configure WP in nginx
     require_variables "php_version"
     changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
-    ln -s "/etc/nginx/sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
+    ln -sf "/etc/nginx/sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
 
-    cp "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    cp -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/nginx/sites-available/${wp_webname}"
