@@ -1016,7 +1016,7 @@ install_wordpress(){
         wp_db_name=dbname
         wp_db_user=dbuser
         wp_db_pass=dbpass
-        wp_webname=wp.thanatermesis.org
+        wp_webname=www.wp.thanatermesis.org
         username=elivewp
     fi
 
@@ -1106,6 +1106,7 @@ download_plugin(){
         unzip -q "\$filename"
         rm -f "\$filename"
     fi
+    sleep 1
 }
 
 [[ -d "${wp_webname}" ]] && echo -e "\nE: directory ${wp_webname} already exist, for security remove it first manually" && exit 1
