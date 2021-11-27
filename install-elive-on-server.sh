@@ -190,6 +190,7 @@ installed_unset(){
 }
 installed_check(){
     if grep -qs "^Installed: ${1}$" /etc/elive-server ; then
+        echo -e "D: '$1' already set up, use --force to reinstall it" 2>&1
         return 0
     else
         return 1
@@ -1000,12 +1001,12 @@ install_mariadb(){
 }
 
 install_wordpress(){
-    # betatests:
-    pass_mariadb_root=rootpass
-    wp_db_name=name
-    wp_db_user=userdb
-    wp_db_pass=pass
-    wp_webname=www.something.com
+    # TODO: betatests
+    pass_mariadb_root=dbpassroot
+    wp_db_name=dbname
+    wp_db_user=dbuser
+    wp_db_pass=dbpass
+    wp_webname=wp.thanatermesis.org
     username=elivewp
 
     if ! [[ -n "$wp_webname" ]] ; then

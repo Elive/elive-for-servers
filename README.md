@@ -14,6 +14,7 @@ _Note: Ubuntu installs are added for compatibility, but we **strongly** suggest 
 ## Features:
 * Turn an ugly server into a full Elive powered one
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
+  * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
 * Well tunned and optimized customizations for the services
 * Powerful configurations for server tools like VIM with plugins and the best color syntax
