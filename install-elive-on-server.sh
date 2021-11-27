@@ -1091,31 +1091,6 @@ set -E
 #export PATH="$PATH"
 cd ~
 
-addconfig(){
-    if [[ -e "\$2" ]] ; then
-        if ! grep -qs "^\${1}\$" "\$2" ; then
-            echo -e "\${1}" >> "\$2"
-        fi
-    else
-        echo -e "E: file '\$2' doesn't exist"
-        exit 1
-    fi
-}
-changeconfig(){
-    if [[ -e "\$3" ]] ; then
-        # if not already set
-        if ! grep -qs "^\${2}\$" "\$3" ; then
-            if grep -qs "\$1" "\$3" ; then
-                sed -i "s|\${1}.*\$|\$2|g" "\$3"
-            else
-                echo -e "\$2" >> "\$3"
-            fi
-        fi
-    else
-        echo -e "E: file '\$3' doesn't exist"
-        exit 1
-    fi
-}
 download_plugin(){
     local link filename
     link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )"
