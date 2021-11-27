@@ -1145,7 +1145,7 @@ echo
 
 # configure wordpress
 cd ~/
-cd"${wp_webname}"
+cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
 sed -i -e "s|^define.*'DB_NAME'.*$|define( 'DB_NAME', '${wp_db_name}' );|g" wp-config.php
 sed -i -e "s|^define.*'DB_USER'.*$|define( 'DB_USER', '${wp_db_user}' );|g" wp-config.php
