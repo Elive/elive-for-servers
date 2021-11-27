@@ -1655,7 +1655,7 @@ main(){
     # }}}
 
     # create a swap file {{{
-    if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" ; then
+    if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" && ! swapon -s | grep -qs "^/" ; then
         if el_confirm "Your server doesn't has much RAM, do you want to add a swapfile?" ; then
             is_wanted_swapfile=1
         fi
@@ -1669,10 +1669,13 @@ main(){
             swapon /swapfile.swp
             addconfig "/swapfile.swp swap swap defaults 0 0" /etc/fstab
         fi
-        addconfig "vm.swappiness = 10" /etc/sysctl.conf
-        addconfig "vm.watermark_scale_factor = 500" /etc/sysctl.conf
 
         installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's disk"
+    fi
+    # tune
+    if swapon -s | grep -qs "^/" ; then
+        addconfig "vm.swappiness = 10" /etc/sysctl.conf
+        addconfig "vm.watermark_scale_factor = 500" /etc/sysctl.conf
     fi
     # }}}
 
