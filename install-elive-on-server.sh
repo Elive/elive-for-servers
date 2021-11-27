@@ -1096,17 +1096,18 @@ set -E
 #export PATH="$PATH"
 cd ~
 
-download_plugin(){
-    local link filename
-    link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )"
+download_wp_addon(){
+    local link filename addon
+    link="\$( lynx -dump "https://wordpress.org/\$1/\$2/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http | sort -V | tail -1 )"
+    read -r link <<< "\$link"
+
     if [[ -n "\$link" ]] ; then
-        echo -e "downloading plugin \$1" 1>&2
+        echo -e "downloading \${1%s} \$2" 1>&2
         filename="\${link##*/}"
         wget --quiet "\$link"
         unzip -q "\$filename"
         rm -f "\$filename"
     fi
-    sleep 1
 }
 
 [[ -d "${wp_webname}" ]] && echo -e "\nE: directory ${wp_webname} already exist, for security remove it first manually" && exit 1
@@ -1123,38 +1124,48 @@ rmdir wordpress
 
 # download selected plugins & themes
 set +e
-cd wp-content/plugins/
-download_plugin "404-error-monitor"
-download_plugin "autoptimize"
-download_plugin "better-wp-security"
-download_plugin "block-bad-queries"
-download_plugin "broken-link-checker"
-download_plugin "classic-editor"
-download_plugin "contact-form-7"
-download_plugin "cookie-notice"
-download_plugin "elementor"
-download_plugin "email-post-changes"
-download_plugin "google-analytics-for-wordpress"
-download_plugin "honeypot"
-download_plugin "query-monitor"
-download_plugin "redirection"
-download_plugin "resmushit-image-optimizer"
-download_plugin "search-exclude"
-download_plugin "updraftplus"
-download_plugin "woocommerce"
-download_plugin "wordpress-seo"
-download_plugin "wp-mail-smtp"
-download_plugin "wp-search-suggest"
-download_plugin "wp-super-cache"
-#download_plugin "w3-total-cache"
-download_plugin "wp-youtube-lyte"
+cd ~
+cd "${wp_webname}/wp-content/plugins/"
+download_wp_addon "plugins" "404-error-monitor"
+download_wp_addon "plugins" "autoptimize"
+download_wp_addon "plugins" "better-wp-security"
+download_wp_addon "plugins" "block-bad-queries"
+download_wp_addon "plugins" "broken-link-checker"
+download_wp_addon "plugins" "classic-editor"
+download_wp_addon "plugins" "contact-form-7"
+download_wp_addon "plugins" "cookie-notice"
+download_wp_addon "plugins" "elementor"
+download_wp_addon "plugins" "email-post-changes"
+download_wp_addon "plugins" "essential-addons-for-elementor-lite"
+download_wp_addon "plugins" "google-analytics-for-wordpress"
+download_wp_addon "plugins" "honeypot"
+download_wp_addon "plugins" "master-slider"
+download_wp_addon "plugins" "query-monitor"
+download_wp_addon "plugins" "redirection"
+download_wp_addon "plugins" "resmushit-image-optimizer"
+download_wp_addon "plugins" "search-exclude"
+download_wp_addon "plugins" "smart-slider-3"
+download_wp_addon "plugins" "updraftplus"
+download_wp_addon "plugins" "woocommerce"
+download_wp_addon "plugins" "wordpress-seo"
+download_wp_addon "plugins" "wp-mail-smtp"
+download_wp_addon "plugins" "wp-search-suggest"
+download_wp_addon "plugins" "wp-super-cache"
+#download_wp_addon "plugins" "w3-total-cache"
+download_wp_addon "plugins" "wp-youtube-lyte"
 
-set -e
-#echo -e "\n\nPlugins installed:"
-#ls -1
+cd ~
+cd "${wp_webname}/wp-content/themes/"
+download_wp_addon "themes" "bold-photography"
+download_wp_addon "themes" "generatepress"
+download_wp_addon "themes" "hello-elementor"
+download_wp_addon "themes" "neve"
+download_wp_addon "themes" "oceanwp"
+download_wp_addon "themes" "signify-photography"
 
 # configure wordpress
-cd ~/
+set -e
+cd ~
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
 echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker syn=conf" > nginx.conf
@@ -1197,7 +1208,7 @@ echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POS
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
     if echo "$wp_webname" | grep -qsi "^www\." ; then
-        cat > "/etc/nginx/sites-available/${wp_webname}" << EOF
+        cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
 
 # Redirect 'mywordpress.com' to 'www.mywordpress.com'
 server {
@@ -1211,7 +1222,7 @@ server {
 
 EOF
     fi
-    addconfig "\n\n# vim: set syn=conf filetype=cfg : #" "/etc/nginx/sites-enabled/${wp_webname}"
+    addconfig "\n\n# vim: set syn=conf filetype=cfg : #" "/etc/nginx/sites-available/${wp_webname}"
 
     # enable site
     ln -sf "../sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
