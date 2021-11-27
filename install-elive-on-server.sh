@@ -1077,7 +1077,7 @@ install_wordpress(){
     fi
     # cleanups
     if [[ -d "$DHOME/${username}/${wp_webname}" ]] ; then
-        NOREPORTS=1 "The directory '${wp_webname}' in the '${username}' user's home directory already exists"
+        NOREPORTS=1 el_warning "The directory '${wp_webname}' in the '${username}' user's home directory already exists"
         if el_confirm "Do you want to permanently delete it?" ; then
             rm -rf "$DHOME/${username}/${wp_webname}"
         fi
