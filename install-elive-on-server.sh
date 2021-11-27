@@ -1165,7 +1165,10 @@ sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );
 sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', 'utf8mb4' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', 'utf8mb4_general_ci' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^table_prefix =.*$|table_prefix = 'elive_wp_';|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
-echo -e "define('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "define( 'WP_MAX_MEMORY_LIMIT', '128M' );\ndefine('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "/* Turn off automatic updates of WP itself */\n//define( 'WP_AUTO_UPDATE_CORE', false );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+#echo -e "// Set httpS (ssl) mode\ndefine('FORCE_SSL_ADMIN', true);\ndefine('WP_HOME', 'https://www.elivecd.org');\ndefine('WP_SITEURL', 'https://www.elivecd.org');\ndefine('WP_CONTENT_URL', 'https://www.elivecd.org/wp-content' );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 
 
     # }}}
