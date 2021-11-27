@@ -1153,7 +1153,7 @@ sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );
 #sed -i -e "s|^define.*'DB_HOST'.*$|define( 'DB_HOST', '${wp_db_name}' );|g" wp-config.php
 #sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', '${wp_db_name}' );|g" wp-config.php
 #sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', '${wp_db_name}' );|g" wp-config.php
-echo -e "define(\'WP_MEMORY_LIMIT\', \'128M\');" >> wp-config.php
+echo -e "define(\\\'WP_MEMORY_LIMIT\\\', \\\'128M\\\');" >> wp-config.php
 
 '
 EOF
