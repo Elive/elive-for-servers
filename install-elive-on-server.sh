@@ -1096,8 +1096,8 @@ download_plugin(){
     link="\$( lynx -dump "https://wordpress.org/plugins/\$1/" | grep -i "downloads.wordpress.org.*zip" | sed -e "s|^.*http|http|g" | grep http )"
     if [[ -n "\$link" ]] ; then
         filename="\${link##*/}"
-        wget "\$link"
-        unzip "\$filename"
+        wget --quiet "\$link"
+        unzip -q "\$filename"
         rm -f "\$filename"
     fi
 }
@@ -1172,7 +1172,7 @@ EOF
     cp -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
-    changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
 
 
