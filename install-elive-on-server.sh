@@ -165,6 +165,7 @@ get_args(){
     if [[ -z "$domain" ]] ; then
         # running from curl?
         if ((is_mode_curl)) ; then
+            # TODO: do we really need this to be set, here? i dont think so, remove and ask when needed better...
             echo -e "What is the domain for your server?"
             read domain
             if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this machine is '$(hostname).$domain' this is correct?" ; then
@@ -1057,6 +1058,7 @@ install_wordpress(){
 
     require_variables "wp_db_name|wp_db_user|wp_db_pass"
 
+    # TODO: check if DB already exist and ask for delete it if --force
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE USER IF NOT EXISTS ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}';"
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE DATABASE IF NOT EXISTS ${wp_db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
     #GRANT ALL PRIVILEGES ON ${wp_db_name}.* TO ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}' WITH GRANT OPTION;
@@ -1126,6 +1128,7 @@ download_plugin "broken-link-checker"
 download_plugin "classic-editor"
 download_plugin "contact-form-7"
 download_plugin "cookie-notice"
+download_plugin "elementor"
 download_plugin "email-post-changes"
 download_plugin "google-analytics-for-wordpress"
 download_plugin "honeypot"
@@ -1133,10 +1136,13 @@ download_plugin "query-monitor"
 download_plugin "redirection"
 download_plugin "resmushit-image-optimizer"
 download_plugin "search-exclude"
-#download_plugin "w3-total-cache"
-download_plugin "wp-super-cache"
+download_plugin "updraftplus"
+download_plugin "woocommerce"
 download_plugin "wordpress-seo"
+download_plugin "wp-mail-smtp"
 download_plugin "wp-search-suggest"
+download_plugin "wp-super-cache"
+#download_plugin "w3-total-cache"
 download_plugin "wp-youtube-lyte"
 
 set -e
