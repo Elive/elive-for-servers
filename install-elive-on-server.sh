@@ -467,9 +467,8 @@ EOF
 
     # checks
     #ack -i "elive" "$templates" || true
-    ack -i "thanatermesis" "$templates" || true
-    ack -i "hostdo1" "$templates" || true
-    echo
+    #ack -i "thanatermesis" "$templates" || true
+    #ack -i "hostdo1" "$templates" || true
 
     cd ~
 }
@@ -634,7 +633,7 @@ EOF
     source /usr/lib/elive-tools/functions
 
     # install templates before to do more steps
-    install_templates "root" "/"
+    install_templates "elive" "/"
 
 
     # TODO: in our elive server we have it, do we need it? (better: just check which packages we had installed that are not in the new/next server)
