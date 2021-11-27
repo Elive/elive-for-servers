@@ -1152,12 +1152,9 @@ cat wp-config-sample.php | dos2unix > wp-config.php
 EOF
 
 # configure wordpress
-sed -i -e "s|^define.*'DB_NAME'.*$|define( 'DB_NAME', '${wp_db_name}' );|g"
-    "$DHOME/${username}/${wp_webname}/wp-config.php"
-sed -i -e "s|^define.*'DB_USER'.*$|define( 'DB_USER', '${wp_db_user}' );|g"
-    "$DHOME/${username}/${wp_webname}/wp-config.php"
-sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );|g"
-    "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^define.*'DB_NAME'.*$|define( 'DB_NAME', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^define.*'DB_USER'.*$|define( 'DB_USER', '${wp_db_user}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
+sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 #sed -i -e "s|^define.*'DB_HOST'.*$|define( 'DB_HOST', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 #sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 #sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', '${wp_db_name}' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
@@ -1184,6 +1181,7 @@ echo -e "define('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname
 
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
 
+    installed_set "wordpress"
     is_installed_wordpress=1
 
 }
