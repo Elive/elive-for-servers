@@ -668,6 +668,7 @@ EOF
     addconfig "export PATH=\"~/packages/bin:\$PATH\"" "/root/.zshrc"
     addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo\n" "/root/.zshrc"
     chsh -s /bin/zsh
+    changeconfig "DSHELL=" "DSHELL=/bin/zsh" /etc/adduser.conf
     # configure ssh if was not yet
     #rm -rf ~/.ssh || true
     #mkdir -p ~/.ssh
@@ -1153,6 +1154,7 @@ set -e
 cd ~/
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
+echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker syn=conf" > nginx.conf
 
 '
 EOF
@@ -1169,6 +1171,14 @@ echo -e "define( 'WP_MAX_MEMORY_LIMIT', '128M' );\ndefine('WP_MEMORY_LIMIT', '12
 echo -e "/* Turn off automatic updates of WP itself */\n//define( 'WP_AUTO_UPDATE_CORE', false );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 #echo -e "// Set httpS (ssl) mode\ndefine('FORCE_SSL_ADMIN', true);\ndefine('WP_HOME', 'https://www.elivecd.org');\ndefine('WP_SITEURL', 'https://www.elivecd.org');\ndefine('WP_CONTENT_URL', 'https://www.elivecd.org/wp-content' );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+
+    # configure root crontab to reload nginx every hour so plugins can work
+    if grep -qs "nginx reload"  /root/.crontab ; then
+        sed -i -e 's|^.*nginx reload.*$|5 * * * * /etc/init.d/nginx reload 1>/dev/null|g' /root/.crontab
+    else
+        echo "5 * * * * /etc/init.d/nginx reload 1>/dev/null" >> /root/.crontab
+    fi
+    crontab /root/.crontab
 
 
     # }}}
@@ -1562,6 +1572,7 @@ main(){
 
     # update: dhome is not fully compatible because of templates, do not enable it:
     #source /etc/adduser.conf 2>/dev/null || true
+    DSHELL=/bin/zsh
     if [[ -z "$DHOME" ]] || [[ ! -d "$DHOME" ]] ; then
         DHOME="/home"
     fi
