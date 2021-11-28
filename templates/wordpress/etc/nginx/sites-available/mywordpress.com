@@ -1,7 +1,7 @@
 # default Wordpress configuration
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 http2;
+    listen [::]:443 http2;
     # do not show indexed files by defaul
     autoindex off;
     # don't show the nginx version

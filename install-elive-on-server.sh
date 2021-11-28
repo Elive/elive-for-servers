@@ -1294,12 +1294,12 @@ EOF
     el_info "Follow the Letsencrypt wizard to enable SSL (httpS) for your website"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
-            letsencrypt
+            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --uir --staple-ocsp --auto-hsts --no-eff-email --agree-tos
         fi
     else
         if ! letsencrypt ; then
             el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-            letsencrypt
+            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --uir --staple-ocsp --auto-hsts --no-eff-email --agree-tos
         fi
     fi
 
