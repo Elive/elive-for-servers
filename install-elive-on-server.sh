@@ -470,6 +470,7 @@ sources_update_adapt(){
 
     ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
 
+    update_variables
     require_variables "sources|templates|domain_ip|previous_ip|domain|hostname"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
