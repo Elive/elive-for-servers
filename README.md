@@ -33,8 +33,8 @@ _Note: Ubuntu installs are added for compatibility, but we **strongly** suggest 
 ### Elive shell
 ![screenshot login](screenshots/screenshot-login.png)
 
-_This is the login of your server after to install it, description:_
-* root user is always writed and marked in red so you know you are root clearly
+_This is the login of your server after installing it, description:_
+* root user is always written and marked in red so you clearly know if you are root
 * shell sessions automatically starts in tmux where you will not lose the work when disconnecting the terminal
 * press ctrl + down to open more shells, ctrl + arrows to switch between them
 * name of server is shown, datetime, opened windows, returned codes, etc
@@ -46,4 +46,4 @@ _This is the login of your server after to install it, description:_
 
 
 ## Collaboration:
-You are welcome to send push commits for fixes and improvements, especially dynamic compatibility, but to change the behaviour of the tool will require a previous debate / brainstorm since some things can break if done differently, since there's many different operating systems (and so different way to set up things, file locations, compatibilities, versions, etc...) is sometimes better to just stick to a debian base which we know it works good and is made for it.
+You are welcome to send push commits for fixes and improvements, especially dynamic compatibility, but to change the behaviour of the tool will require a previous debate / brainstorm since some things can break if done differently, since there's many different operating systems (and so different way to set up things, file locations, compatibilities, versions, etc...) it's sometimes better to just stick to a debian base of which we know works well and is made for it.
