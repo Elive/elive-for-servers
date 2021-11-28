@@ -912,7 +912,7 @@ install_php(){
     fi
 
     # default version by debian?
-    php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )'"
+    php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
 
     if el_confirm "\nDo you want to use the default PHP version ($php_version) provided by Debian?" ; then
         rm -f "/etc/apt/sources.list.d/php.list"
@@ -936,7 +936,6 @@ install_php(){
     fi
 
     # select all the wanted php packages
-    set -x
     packages="$( apt-cache search php${php_version} | awk '{print $1}' | grep "^php${php_version}-" | sort -u | grep -v "dbgsym$" )"
 
     for package in  bcmath bz2 cli common cropper curl fpm gd geoip gettext gmagick imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib snoopy soap sqlite3 tcpdf tidy xml xmlrpc yaml zip zstd
@@ -946,7 +945,6 @@ install_php(){
         fi
     done
     packages_extra="composer $packages_extra"
-    set +x
 
 
     # first install this one independently, because the buggy ubuntu wants to install apache if not
