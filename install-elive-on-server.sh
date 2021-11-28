@@ -387,7 +387,7 @@ el_confirm(){
             ;;
         *)
             # repeat question until confirmation
-            if el_confirm "$@" ; then
+            if el_confirm "${el_c_b2}${@}${el_c_n}" ; then
                 return 0
             else
                 return 1
@@ -850,7 +850,7 @@ install_nginx(){
     packages_remove apache2 apache2-data apache2-bin tomcat9 lighttpd || true
 
     packages_install nginx-full \
-        certbot letsencrypt \
+        certbot python3-certbot-nginx \
         $NULL
 
     # enable ports
@@ -1114,7 +1114,9 @@ install_wordpress(){
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE DATABASE IF NOT EXISTS ${wp_db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
     #GRANT ALL PRIVILEGES ON ${wp_db_name}.* TO ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}' WITH GRANT OPTION;
     mysql -u root -p"${pass_mariadb_root}" -e "GRANT ALL ON ${wp_db_name}.* TO '${wp_db_user}'@'localhost' IDENTIFIED BY '${wp_db_pass}';"
-    mysql -u root -p"${pass_mariadb_root}" -e "FLUSH PRIVILEGES;"
+    mysql -u root -p"${pass_mariadb_root}" -e "FLUSH; FLUSH PRIVILEGES;"
+    sync
+    systemctl restart mariadb.service
 
     el_info "Created Database '${wp_db_name}' with username '${wp_db_user}' and pass '${wp_db_pass}'. KEEP IT SAFE and do not lose it!"
 
@@ -1247,7 +1249,6 @@ echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POS
     # configure WP in nginx {{{
     require_variables "php_version"
     changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
-    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}_non-ssl"
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
@@ -1258,8 +1259,8 @@ echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POS
 
 # Redirect 'mywordpress.com' to 'www.mywordpress.com'
 server {
-    listen 443;
-    listen [::]:443;
+    #listen 443;
+    #listen [::]:443;
 
     server_name ${wp_webname#www.};
 
@@ -1273,6 +1274,7 @@ EOF
 
     # enable site
     ln -sf "../sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
+    systemctl restart nginx.service
 
 
     # }}}
@@ -1282,12 +1284,23 @@ EOF
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
+    systemctl restart php${php_version}-fpm.service
     # }}}
     # configure SSL {{{
-    rm -f "/etc/nginx/sites-enabled/${wp_webname}"
-    ln -sf "../sites-available/${wp_webname}_non-ssl" "/etc/nginx/sites-enabled/${wp_webname}"
     # reload
-    systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
+
+    # interactively run the configurator
+    el_info "Follow the Letsencrypt wizard to enable SSL (httpS) for your website"
+    if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
+        if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
+            letsencrypt
+        fi
+    else
+        if ! letsencrypt ; then
+            el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
+            letsencrypt
+        fi
+    fi
 
     # - configure SSL }}}
     # TODO: why exim-daemon-light is installed by default when we reach this step? maybe is included by default? and we should install the full one here?
@@ -1295,6 +1308,10 @@ EOF
 
     # reload services
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
+    sleep 5
+
+    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' )'"
+    el_info "HTTP protocol version running is '$http_version'"
 
     installed_set "wordpress"
     is_installed_wordpress=1
@@ -1599,8 +1616,8 @@ final_steps(){
         el_info "Wordpress installed:"
         el_info "Your user is: '${username}' with home in '$DHOME/${username}'"
         el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}'"
-        el_info "Website is: '${wp_webname}'"
-        el_info "Recommended plugins are included, enable or delete them as your choice"
+        el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
+        el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
     fi
 

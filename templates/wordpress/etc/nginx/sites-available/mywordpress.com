@@ -1,31 +1,7 @@
-# redirect http to https, this entry is also needed for your SSL certificate
+# default Wordpress configuration
 server {
-    listen 80;
-    listen [::]:80;
-
-    server_name mywordpress.com;
-
-    error_log /var/log/nginx/error.log ;
-
-    # Necessary for Let's Encrypt Domain Name ownership validation
-    location ^~ /.well-known/acme-challenge/ {
-        try_files $uri /dev/null =404;
-        default_type "text/plain";
-    }
-
-    # Needed for Certbot / Letsencrypt
-    return 301 https://mywordpress.com$request_uri; # auto for certbot, do not remove this comment
-
-    root /home/elivewp/mywordpress.com;
-}
-
-# default wordpress configuration
-server {
-    #listen 80;
-    #listen [::]:80;
-    listen 443;
-    listen [::]:443;
-
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     # do not show indexed files by defaul
     autoindex off;
     # don't show the nginx version
@@ -105,6 +81,7 @@ server {
     }
 
     # INSERT PHPMYADMIN CONF HERE
+    #
 }
 
 # vim: set syn=conf filetype=cfg expandtab : #
