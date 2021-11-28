@@ -470,7 +470,7 @@ sources_update_adapt(){
 
     ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
 
-    require_variables "sources|templates|domain_ip|previous_ip|email_admin|domain|hostname"
+    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
     cd "$( dirname "$sources" )"
@@ -503,7 +503,6 @@ sources_update_adapt(){
     cd "$templates"
     # TODO: search and replace in templates for all extra eliveuser, elivewp, ips, thana... etc, do a standard base templates system
     find "${templates}" -type f -exec sed -i "s|${previous_ip}|${domain_ip}|g" {} \;
-    find "${templates}" -type f -exec sed -i "s|webmaster@elivecd.org|${email_admin}|g" {} \;
     zsh <<EOF
 rename "s/elivecd.org/$domain/" ${templates}/**/*(.)
 rename "s/hostdo1/${hostname}/" ${templates}/**/*(.)
