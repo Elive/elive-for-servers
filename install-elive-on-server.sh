@@ -1115,7 +1115,7 @@ install_wordpress(){
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE DATABASE IF NOT EXISTS ${wp_db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
     #GRANT ALL PRIVILEGES ON ${wp_db_name}.* TO ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}' WITH GRANT OPTION;
     mysql -u root -p"${pass_mariadb_root}" -e "GRANT ALL ON ${wp_db_name}.* TO '${wp_db_user}'@'localhost' IDENTIFIED BY '${wp_db_pass}';"
-    mysql -u root -p"${pass_mariadb_root}" -e "FLUSH; FLUSH PRIVILEGES;"
+    mysql -u root -p"${pass_mariadb_root}" -e "FLUSH PRIVILEGES;"
     sync
     systemctl restart mariadb.service
 
