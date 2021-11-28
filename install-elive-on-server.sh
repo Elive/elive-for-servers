@@ -933,6 +933,14 @@ install_php(){
         apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
         echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
         read php_version
+        # checks
+        if echo "$php_version" | grep -qs "^[[:digit:]].*[[:digit:]]$" ; then
+            if ! apt-cache show php${php_version}-fpm 1>/dev/null 2>&1 ; then
+                unset php_version
+            fi
+        else
+            unset php_version
+        fi
     fi
 
     # select all the wanted php packages
@@ -1302,22 +1310,25 @@ EOF
     # reload
 
     # interactively run the configurator
-    el_info "\n\nLetsencrypt SSL (httpS) certificate setup. Follow the instructions for your website"
-    # register first if needed:
-    if [[ -d "/etc/letsencrypt/accounts" ]] ; then
-        el_debug "letsencrypt account already existing, using it..."
-    else
-        letsencrypt register
-    fi
-
-    if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
-        if el_confirm "\nSSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
-            letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+    el_info "Letsencrypt SSL (httpS) certificate setup. Follow the instructions for your website"
+    NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
+    if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week" ; then
+        # register first if needed:
+        if [[ -d "/etc/letsencrypt/accounts" ]] ; then
+            el_debug "letsencrypt account already existing, using it..."
+        else
+            letsencrypt register
         fi
-    else
-        if ! letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
-            el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-            letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+
+        if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
+            if el_confirm "\nSSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
+                letsencrypt
+            fi
+        else
+            if ! letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
+                el_info "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
+                letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+            fi
         fi
     fi
 
