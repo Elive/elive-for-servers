@@ -225,7 +225,7 @@ get_args(){
     fi
 
     if [[ "$EL_DEBUG" -gt 2 ]] ; then
-        el_debug "D: \$0 is $0" 1>&2
+        el_debug "\$0 is $0"
     fi
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
         is_mode_curl=1
@@ -1676,7 +1676,7 @@ main(){
     is_tool_beta=1
 
     if [[ "$UID" != "0" ]] ; then
-        echo -e "E: You need to be root to run this tool" 1>&2
+        el_error "You need to be root to run this tool"
         exit 1
     fi
 
