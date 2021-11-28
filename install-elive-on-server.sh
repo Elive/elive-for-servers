@@ -1016,9 +1016,8 @@ install_php(){
     fi
 
     systemctl restart php${php_version}-fpm.service
-    systemctl restart nginx.service
+    systemctl restart nginx.service 1>/dev/null 2>&1 || true
 
-    systemctl restart nginx.service
     installed_set "php"
 }
 
@@ -1260,7 +1259,7 @@ echo -e "/* Set amount of Revisions you wish to have saved */\ndefine( 'WP_POST_
 
     # configure WP in nginx {{{
     require_variables "php_version"
-    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;" "/etc/nginx/sites-available/${wp_webname}"
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
@@ -1294,7 +1293,7 @@ EOF
     cp -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
-    changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    changeconfig "listen =" "listen = /run/php/php${php_version}-fpm-${username}.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     # disable default php conf if we are not going to use it
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
     systemctl restart php${php_version}-fpm.service
