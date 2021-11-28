@@ -19,6 +19,79 @@ set +o histexpand
 #export DEBIAN_FRONTEND=noninteractive
 #TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true
 
+# elive functions pre {{{
+if [[ -n "$NOCOLOR" ]] || ! ((is_interactive)) ; then
+    el_c_n=""
+    el_c_r=""
+    el_c_r2=""
+    el_c_g=""
+    el_c_g2=""
+    el_c_y=""
+    el_c_y2=""
+    el_c_m=""
+    el_c_m2=""
+    el_c_c=""
+    el_c_c2=""
+    el_c_b=""
+    el_c_b2=""
+    el_c_gr=""
+    el_c_gr2=""
+    el_c_w=""
+    el_c_w2=""
+
+    el_c_blink=""
+    el_c_underline=""
+    el_c_italic=""
+    el_c_bold=""
+else
+    el_c_gr="\033[1;30m" # Gray color
+    el_c_gr2="\033[0;30m" # Gray2 color
+    el_c_r="\033[1;31m" # Red color  (orig: red)
+    el_c_r2="\033[0;31m" # Red2 color  (orig: red)
+    el_c_g="\033[1;32m" # Green color  (orig: green)
+    el_c_g2="\033[0;32m" # Green2 color  (orig. green2)
+    el_c_y="\033[1;33m" # Yellow color  (orig. yellow)
+    el_c_y2="\033[0;33m" # Yellow2 color  (orig. yellow)
+    el_c_b="\033[1;34m" # Blue color
+    el_c_b2="\033[0;34m" # Blue2 color
+    el_c_m="\033[1;35m" # Magenta color
+    el_c_m2="\033[0;35m" # Magenta2 color
+    el_c_c="\033[1;36m" # Cyan color
+    el_c_c2="\033[0;36m" # Cyan2 color
+    el_c_w="\033[1;37m" # White
+    el_c_w2="\033[0;37m" # White strong
+    el_c_n="\033[0;39m" # Normal color  (orig: normal)
+
+    if ((is_console)) ; then
+        ## gray's are not visible in console when vga=normal (t460s doesnt configure the good one so it fallbacks to normal), use cyan's instead
+        el_c_gr="\033[1;36m" # Gray color
+        #el_c_gr2="\033[0;36m" # Gray2 color
+    fi
+    #else
+        #el_c_gr="\033[1;30m" # Gray color
+        #el_c_gr2="\033[0;30m" # Gray2 color
+    #fi
+
+    el_c_blink="\033[5m" # Blink 'color' effect  (orig. blink)
+    el_c_underline="\033[4m" # Underline 'color' effect  (orig. underline)
+    el_c_italic="\033[3m" # Italic 'color' effect
+    el_c_bold="\033[1m" # Bold 'color' effect
+fi
+
+el_debug(){
+    echo -e "${el_c_c}D: ${el_c_c}${@}${el_c_n}" 1>&2
+}
+el_info(){
+    echo -e "${el_c_c2}I: ${el_c_c2}${@}${el_c_n}" 1>&2
+}
+el_warning(){
+    echo -e "${el_c_y2}W: ${el_c_y2}${@}${el_c_n}" 1>&2
+}
+el_error(){
+    echo -e "${el_c_r}E: ${el_c_r}${@}${el_c_n}" 1>&2
+}
+# - elive functions pre }}}
+
 get_args(){
     # options {{{
 
@@ -152,29 +225,11 @@ get_args(){
     fi
 
     if [[ "$EL_DEBUG" -gt 2 ]] ; then
-        echo -e "D: \$0 is $0" 1>&2
+        el_debug "D: \$0 is $0" 1>&2
     fi
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
         is_mode_curl=1
     fi
-
-    # checks
-    #if [[ -z "$domain" ]] ; then
-        ## running from curl?
-        #if ((is_mode_curl)) ; then
-            ## TODO: do we really need this to be set, here? i dont think so, remove and ask when needed better...
-            #ask_variable "domain" "What is the domain used for this server?"
-            #domain="${domain,,}"
-
-            #if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this machine is '$(hostname).$domain' this is correct?" ; then
-                #echo -e "Exiting..."
-                #exit
-            #fi
-        #else
-            #echo -e "E: Your 'domain' must be set:\n"
-            #usage
-        #fi
-    #fi
 
     # - arguments & features }}}
 }
@@ -189,7 +244,7 @@ installed_unset(){
 }
 installed_check(){
     if grep -qs "^Installed: ${1}$" /etc/elive-server ; then
-        echo -e "D: '$1' already set up, use --force to reinstall it" 2>&1
+        echo -e "Info: '$1' already set up, use --force to reinstall it" 2>&1
         return 0
     else
         return 1
@@ -255,9 +310,7 @@ error_signal_trapped(){
     # cleanups
     rm -rf "$sources"
 
-    #echo -e "\nE: Trapped error signal, continue? (simply logout)"
-    # TODO: most failed installs is because apt install fails, try to catch the error message to a log file and report it
-    echo -e "\n\nE: Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
+    NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
     prepare_environment stop
 
@@ -354,7 +407,7 @@ require_variables(){
 
 ask_variable(){
     if [[ -z "${!1}" ]] ; then
-        echo -e "$2"
+        echo -e "${el_c_b2}${2}${el_c_n}" 1>&2
         read $1
     fi
 }
@@ -367,15 +420,21 @@ packages_install(){
     apt-get -q update
     apt-get -qq autoremove
 
+    # TODO: add functions el_debug, warning & error before to source our real functions
+    el_debug "Packages wanted to be installed: $@"
+
     if ! apt-get install $apt_options $@ ; then
         if ((is_production)) ; then
-            echo -e "E: unable to install all packages in one shot, looping one to one..."
+            el_debug "Unable to install all packages in one shot, looping one to one..."
             for package in $@
             do
-                apt-get install $apt_options $package
+                if ! apt-get install $apt_options $package ; then
+                    el_error "Problem installing package '$package', aborting..."
+                    exit 1
+                fi
             done
         else
-            echo -e "E: Something failed ^ installing packages: $@" 1>&2
+            el_error "Something failed ^ installing packages: $@"
             exit 1
         fi
     fi
@@ -387,13 +446,17 @@ packages_remove(){
 
     if ! apt-get remove $apt_options $@ ; then
         if ((is_production)) ; then
-            echo -e "E: unable to remove all packages in one shot, looping one to one..."
+            el_debug "Unable to remove all packages in one shot, looping one to one..."
+
             for package in $@
             do
-                apt-get remove $apt_options $package || ret="$?"
+                if ! apt-get remove $apt_options $package ; then
+                    el_error "Problem removing package '$package', aborting..."
+                    exit 1
+                fi
             done
         else
-            echo -e "E: Something failed ^ removing packages: $@" 1>&2
+            el_error "Something failed ^ removing packages: $@"
             exit 1
         fi
     fi
@@ -516,7 +579,7 @@ update_variables(){
         fi
         read -r domain_ip <<< "$domain_ip"
         if ! echo "$domain_ip" | grep -qs "^[[:digit:]]" ; then
-            echo -e "E: unable to get ip"
+            el_error "Unable to get machine IP"
             exit 1
         fi
     fi
@@ -527,7 +590,7 @@ update_variables(){
             sleep 2
             elive_version="$( lynx -connect_timeout 20 -dump https://www.elivecd.org/news/ | grep -i "elive .* released" | head -1 | sed -e 's|^.*Elive ||g' -e 's| .*$||g' )"
             if [[ -z "$elive_version" ]] ; then
-                echo -e "E: unable to get ip, please install 'lynx' first"
+                el_error "Unable to get elive_version, please install 'lynx' first?"
                 exit 1
             fi
         fi
@@ -554,7 +617,7 @@ install_elive(){
     mkdir -p /etc/apt/sources.list.d /etc/apt/preferences.d /etc/apt/trusted.gpg.d
 
     if [[ -z "$debian_version" ]] || [[ -z "$elive_version" ]] || [[ -z "$elive_repo" ]] ; then
-        echo -e "E: missing variables required"
+        el_error "missing variables required"
     fi
 
     # we don't need these, so save some space and time
@@ -593,7 +656,7 @@ install_elive(){
             ;;
         *)
             # TODO: add a default message saying github collaboration
-            echo -e "E: debian version '$debian_version' not supported"
+            el_error "debian version '$debian_version' is not supported (yet?)"
             exit
             ;;
     esac
@@ -811,6 +874,7 @@ install_nginx(){
         echo -e "Insert the admin email for your web server:"
         read email_admin
     fi
+    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
 
     install_templates "nginx" "/"
 
@@ -957,12 +1021,7 @@ install_mariadb(){
         $NULL
 
     # set root password
-    if [[ -z "$pass_mariadb_root" ]] ; then
-        #if el_confirm "Do you want to set a root password for your DB?" ; then
-            echo -e "Type your desired database root password and press Enter..."
-            read pass_mariadb_root
-        #fi
-    fi
+    ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place"
 
     if [[ -n "$pass_mariadb_root" ]] ; then
         #sed -i "s|^password = $|password = ${pass_mariadb_root}|g" /etc/mysql/debian.cnf
@@ -1507,7 +1566,7 @@ EOF
     rm -rf /etc/skel/.enlight* 2>/dev/null || true
     rm -rf /etc/skel/.e 2>/dev/null || true
 
-    echo -e "\nCleaned up some space removing unneeded things"
+    el_info "Cleaned up some space removing unneeded things"
 }
 
 final_steps(){
