@@ -1096,16 +1096,7 @@ install_wordpress(){
     fi
 
     # }}}
-    # TODO: betatests
     # required variables {{{
-    if ! ((is_production)) ; then
-        pass_mariadb_root=dbpassroot
-        wp_db_name=dbname
-        wp_db_user=dbuser
-        wp_db_pass=dbpass
-        wp_webname=wp.thanatermesis.org
-        username=elivewp
-    fi
     ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place"
     ask_variable "wp_db_name" "Insert a Name for your Wordpress Database, keep it in a safe place"
     ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place"
@@ -1674,6 +1665,17 @@ main(){
     is_production=0
     # TODO: release:
     is_tool_beta=1
+
+    # TODO: betatests
+    if ! ((is_production)) ; then
+        pass_mariadb_root=dbpassroot
+        wp_db_name=dbname
+        wp_db_user=dbuser
+        wp_db_pass=dbpass
+        wp_webname=wp.thanatermesis.org
+        username=elivewp
+        domain=thanatermesis.org
+    fi
 
     if [[ "$UID" != "0" ]] ; then
         el_error "You need to be root to run this tool"
