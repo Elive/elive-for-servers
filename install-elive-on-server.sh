@@ -1322,9 +1322,8 @@ EOF
     # interactively run the configurator
     el_info "Letsencrypt SSL (httpS) certificate install request"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
-        if ! el_confirm "\nSSL Certificate already exist for this domain, do you want to use the actual one?" ; then
-            letsencrypt
-        fi
+        # re-install certificate
+        letsencrypt
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
 
