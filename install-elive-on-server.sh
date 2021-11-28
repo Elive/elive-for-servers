@@ -940,8 +940,10 @@ install_php(){
 
     for package in  bcmath bz2 cli common cropper curl fpm gd geoip gettext gmagick imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib snoopy soap sqlite3 tcpdf tidy xml xmlrpc yaml zip zstd
     do
-        if [[ -n "$package" ]] && echo "$packages" | grep -qs "^${package}" ; then
+        if [[ -n "$package" ]] && echo "$packages" | grep -qs "^php${php_version}-${package}" ; then
             packages_extra="php${php_version}-$package $packages_extra"
+        else
+            el_debug "Ignoring php '${package}' because is not available for the version '${php_version}'"
         fi
     done
     packages_extra="composer $packages_extra"
@@ -1667,7 +1669,7 @@ notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
 
     NOREPORTS=1 el_warning "Note: Feature may be not not fully functional"
-    if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working. Continue anyways?" ; then
+    if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
         exit
     fi
 }
