@@ -665,7 +665,7 @@ EOF
 
     # configure root user
     elive-skel user root
-    addconfig "export PATH=\"~/packages/bin:\$PATH\"" "/root/.zshrc"
+    addconfig "export PATH=\"\$HOME/packages/bin:\$PATH\"" "/root/.zshrc"
     addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo\n" "/root/.zshrc"
     chsh -s /bin/zsh
     changeconfig "DSHELL=" "DSHELL=/bin/zsh" /etc/adduser.conf
@@ -740,7 +740,7 @@ install_user(){
 
         # user configs
         elive-skel user "$username"
-        addconfig "export PATH=\"~/packages/bin:\$PATH\"" "$DHOME/${username}/.zshrc"
+        addconfig "export PATH=\"\$HOME/packages/bin:\$PATH\"" "$DHOME/${username}/.zshrc"
         addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo " "$DHOME/${username}/.zshrc"
         chsh -s "/bin/zsh" "$username"
 
@@ -1247,6 +1247,7 @@ EOF
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
 
     # - configure SSL }}}
+    # TODO: why exim-daemon-light is installed by default when we reach this step? maybe is included by default? and we should install the full one here?
 
 
     # reload services
