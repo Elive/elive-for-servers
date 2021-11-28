@@ -293,10 +293,14 @@ changeconfig(){
     if [[ -e "$3" ]] ; then
         # if not already set
         if ! grep -qs "^${2}$" "$3" ; then
-            if grep -qs "$1" "$3" ; then
-                sed -i "s|${1}.*$|$2|g" "$3"
+            if grep -qs "^$1" "$3" ; then
+                sed -i "s|^${1}.*$|$2|g" "$3"
             else
-                echo -e "$2" >> "$3"
+                if grep -qs "$1" "$3" ; then
+                    sed -i "s|${1}.*$|$2|g" "$3"
+                else
+                    echo -e "$2" >> "$3"
+                fi
             fi
         fi
     else
@@ -906,10 +910,12 @@ install_php(){
                 packages_extra="php-gettext php-xmlrpc php-inotify php-zstd $packages_extra"
                 ;;
             bullseye)
-                packages_extra="php-xmlrpc php-tcpdf php-soap $packages_extra"
+                packages_extra="php-tcpdf php-soap $packages_extra"
 
                 # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
-                if ! el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
+                if el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
+                    rm -f "/etc/apt/sources.list.d/php.list"
+                else
                     notimplemented
                     NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
                     sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
@@ -940,7 +946,7 @@ install_php(){
     if ! ((is_ubuntu)) ; then
         case "$php_version" in
             "7."*)
-                packages_extra="php${php_version}-geoip $packages_extra"
+                packages_extra="php-xmlrcp php${php_version}-geoip $packages_extra"
                 ;;
         esac
 
@@ -960,7 +966,7 @@ install_php(){
     # increase execution times to 4 min
     changeconfig "max_execution_time" "max_execution_time = \"240\"" /etc/php/$php_version/fpm/php.ini
     changeconfig "max_input_time" "max_input_time = \"240\"" /etc/php/$php_version/fpm/php.ini
-    changeconfig "memory_limit" "memory_limit = \"320\"" /etc/php/$php_version/fpm/php.ini
+    changeconfig "memory_limit" "memory_limit = \"256M\"" /etc/php/$php_version/fpm/php.ini
 
 
     changeconfig "cgi.fix_pathinfo=1" "cgi.fix_pathinfo=0" /etc/php/$php_version/fpm/php.ini
@@ -984,7 +990,7 @@ install_php(){
 
     if [[ -s /etc/php/$php_version/fpm/pool.d/www.conf ]] ; then
         # enable monitoring state
-        changeconfig ";ping" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
+        changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
@@ -1179,7 +1185,7 @@ download_wp_addon "plugins" "block-bad-queries" &
 download_wp_addon "plugins" "broken-link-checker" &
 download_wp_addon "plugins" "classic-editor" &
 download_wp_addon "plugins" "contact-form-7" &
-download_wp_addon "plugins" "cookie-notice" &
+#download_wp_addon "plugins" "cookie-notice" &
 download_wp_addon "plugins" "elementor" &
 download_wp_addon "plugins" "email-post-changes" &
 download_wp_addon "plugins" "essential-addons-for-elementor-lite" &
@@ -1190,7 +1196,7 @@ download_wp_addon "plugins" "query-monitor" &
 download_wp_addon "plugins" "redirection" &
 download_wp_addon "plugins" "resmushit-image-optimizer" &
 download_wp_addon "plugins" "search-exclude" &
-download_wp_addon "plugins" "smart-slider-3" &
+#download_wp_addon "plugins" "smart-slider-3" &
 download_wp_addon "plugins" "updraftplus" &
 download_wp_addon "plugins" "woocommerce" &
 download_wp_addon "plugins" "wordpress-seo" &
@@ -1199,6 +1205,7 @@ download_wp_addon "plugins" "wp-search-suggest" &
 download_wp_addon "plugins" "wp-super-cache" &
 #download_wp_addon "plugins" "w3-total-cache" &
 download_wp_addon "plugins" "wp-youtube-lyte" &
+wait
 
 cd ~
 cd "${wp_webname}/wp-content/themes/"
@@ -1229,9 +1236,9 @@ sed -i -e "s|^define.*'DB_PASSWORD'.*$|define( 'DB_PASSWORD', '${wp_db_pass}' );
 sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', 'utf8mb4' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', 'utf8mb4_general_ci' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^table_prefix =.*$|table_prefix = 'elive_wp_';|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
-echo -e "define( 'WP_MAX_MEMORY_LIMIT', '128M' );\ndefine('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+#echo -e "define( 'WP_MAX_MEMORY_LIMIT', '128M' );\ndefine('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 echo -e "/* Turn off automatic updates of WP itself */\n//define( 'WP_AUTO_UPDATE_CORE', false );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
-echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "/* Set amount of Revisions you wish to have saved */\ndefine( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 #echo -e "// Set httpS (ssl) mode\ndefine('FORCE_SSL_ADMIN', true);\ndefine('WP_HOME', 'https://www.elivecd.org');\ndefine('WP_SITEURL', 'https://www.elivecd.org');\ndefine('WP_CONTENT_URL', 'https://www.elivecd.org/wp-content' );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 
     # configure root crontab to reload nginx every hour so plugins can work
@@ -1286,6 +1293,7 @@ EOF
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    # disable default php conf if we are not going to use it
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
     systemctl restart php${php_version}-fpm.service
     # }}}
@@ -1293,13 +1301,14 @@ EOF
     # reload
 
     # interactively run the configurator
-    el_info "Follow the Letsencrypt wizard to enable SSL (httpS) for your website"
+    el_info "\n\nLetsencrypt SSL (httpS) certificate setup. Follow the instructions for your website"
+
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
             letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
         fi
     else
-        if ! letsencrypt ; then
+        if ! letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
             el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
             letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
         fi
@@ -1312,14 +1321,19 @@ EOF
 
 
     # reload services
-    systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
+    if ! systemctl restart nginx.service php${php_version}-fpm.service mariadb.service ; then
+        el_error "failed to restart web services"
+    fi
     sleep 5
 
-    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' )"
-    el_info "HTTP protocol version running is '$http_version'"
-
-    installed_set "wordpress"
-    is_installed_wordpress=1
+    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' || true )"
+    if [[ -n "$http_version" ]] ; then
+        el_info "HTTP protocol version running is '$http_version'"
+        installed_set "wordpress"
+        is_installed_wordpress=1
+    else
+        el_error "Your wordpress site seems to not be correctly working"
+    fi
 
 }
 
@@ -1646,7 +1660,7 @@ final_steps(){
 notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
 
-    NOREPORTS=1 el_error "feature not fully implemented"
+    NOREPORTS=1 el_warning "feature not fully implemented"
     if ! el_confirm "Do you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working. Continue anyways?" ; then
         exit
     fi
@@ -1696,6 +1710,7 @@ main(){
         wp_webname=wp.thanatermesis.org
         username=elivewp
         domain=thanatermesis.org
+        email_admin="thanatermesis@gmail.com"
     fi
 
     if [[ "$UID" != "0" ]] ; then
@@ -1847,7 +1862,7 @@ main(){
     # }}}
 
     # create a swap file {{{
-    if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" && ! swapon -s | grep -qs "^/" ; then
+    if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" 1>/dev/null 2>&1 && ! swapon -s | grep -qs "^/" ; then
         if el_confirm "Your server doesn't has much RAM, do you want to add a swapfile?" ; then
             is_wanted_swapfile=1
         fi
