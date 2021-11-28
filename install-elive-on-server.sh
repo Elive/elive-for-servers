@@ -36,10 +36,7 @@ get_args(){
                 #;;
             "--domain="*)
                 domain="${arg#*=}"
-                if [[ "$domain" = "yourdomain.com" ]] ; then
-                    echo -e "E: --domain= must include YOUR domain used in your server" 1>&2
-                    exit 1
-                fi
+                domain="${domain,,}"
                 ;;
             "--user="*)
                 buf="${arg#*=}"
@@ -162,21 +159,22 @@ get_args(){
     fi
 
     # checks
-    if [[ -z "$domain" ]] ; then
-        # running from curl?
-        if ((is_mode_curl)) ; then
-            # TODO: do we really need this to be set, here? i dont think so, remove and ask when needed better...
-            echo -e "What is the domain for your server?"
-            read domain
-            if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this machine is '$(hostname).$domain' this is correct?" ; then
-                echo -e "Exiting..."
-                exit
-            fi
-        else
-            echo -e "E: Your 'domain' must be set:\n"
-            usage
-        fi
-    fi
+    #if [[ -z "$domain" ]] ; then
+        ## running from curl?
+        #if ((is_mode_curl)) ; then
+            ## TODO: do we really need this to be set, here? i dont think so, remove and ask when needed better...
+            #ask_variable "domain" "What is the domain used for this server?"
+            #domain="${domain,,}"
+
+            #if ! el_confirm "domain is '$domain' and hostname is '$(hostname)', this machine is '$(hostname).$domain' this is correct?" ; then
+                #echo -e "Exiting..."
+                #exit
+            #fi
+        #else
+            #echo -e "E: Your 'domain' must be set:\n"
+            #usage
+        #fi
+    #fi
 
     # - arguments & features }}}
 }
@@ -354,6 +352,13 @@ require_variables(){
     fi
 }
 
+ask_variable(){
+    if [[ -z "${!1}" ]] ; then
+        echo -e "$2"
+        read $1
+    fi
+}
+
 
 packages_install(){
     local package
@@ -399,6 +404,10 @@ packages_remove(){
 sources_update_adapt(){
     sources="/root/elive-for-servers"
     templates="$sources/templates"
+
+    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+
+    require_variables "sources|templates|domain_ip|previous_ip|email_admin|domain|hostname"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
     cd "$( dirname "$sources" )"
@@ -711,6 +720,7 @@ EOF
 }
 
 install_user(){
+    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet:"
     require_variables "username|DHOME"
 
     if [[ -d $DHOME/${username} ]] ; then
@@ -1010,20 +1020,6 @@ install_mariadb(){
 }
 
 install_wordpress(){
-    # TODO: betatests
-    if ! ((is_production)) ; then
-        pass_mariadb_root=dbpassroot
-        wp_db_name=dbname
-        wp_db_user=dbuser
-        wp_db_pass=dbpass
-        wp_webname=www.wp.thanatermesis.org
-        username=elivewp
-    fi
-
-    if ! [[ -n "$wp_webname" ]] ; then
-        echo -e "Website name for your website? (example: blog.yourdomain.com or www.eliverulez.org)"
-        read wp_webname
-    fi
     # dependencies {{{
     if ! installed_check "nginx" ; then
         install_nginx
@@ -1041,25 +1037,28 @@ install_wordpress(){
     fi
 
     # }}}
-    # create database {{{
-    if ! [[ -n "$pass_mariadb_root" ]] ; then
-        echo -e "Password of your Mariadb root user?"
-        read pass_mariadb_root
+    # TODO: betatests
+    # required variables {{{
+    if ! ((is_production)) ; then
+        pass_mariadb_root=dbpassroot
+        wp_db_name=dbname
+        wp_db_user=dbuser
+        wp_db_pass=dbpass
+        wp_webname=wp.thanatermesis.org
+        username=elivewp
     fi
-    if ! [[ -n "$wp_db_name" ]] ; then
-        echo -e "Database NAME for your wordpress?"
-        read wp_db_name
-    fi
-    if ! [[ -n "$wp_db_user" ]] ; then
-        echo -e "Database USER for your wordpress?"
-        read wp_db_user
-    fi
-    if ! [[ -n "$wp_db_pass" ]] ; then
-        echo -e "Database PASSWORD for your wordpress?"
-        read wp_db_pass
-    fi
+    ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place"
+    ask_variable "wp_db_name" "Insert a Name for your Wordpress Database, keep it in a safe place"
+    ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place"
+    ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place"
+    ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc"
+    ask_variable "username" "Insert a desired username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
 
-    require_variables "wp_db_name|wp_db_user|wp_db_pass"
+    require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username"
+
+    # }}}
+    # create database {{{
+
 
     # TODO: check if DB already exist and ask for delete it if --force
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE USER IF NOT EXISTS ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}';"
@@ -1072,11 +1071,6 @@ install_wordpress(){
 
     # }}}
     # create user if not exist {{{
-    if ! [[ -n "$username" ]] ; then
-        echo -e "Username you want to use for your Wordpress"
-        read username
-    fi
-    require_variables "username"
     if ! [[ -d $DHOME/${username} ]] ; then
         install_user
     fi
@@ -1280,12 +1274,16 @@ install_exim(){
     rm -rf /var/log/exim4/paniclog
     # everything else is already copied in /etc
 
+    hostnamefull="${hostname}.${domain}"
+    require_variables "hostnamefull|domain|domain_names|email_noreply_pass"
+
     changeconfig "primary_hostname" "primary_hostname       = $hostnamefull" /etc/exim4/exim4.conf
     echo "$hostnamefull" > /etc/exim4/domains_master.conf
     echo "$hostnamefull" > /etc/mailname
 
     for i in ${domain_names}
     do
+        [[ -z "$i" ]] && continue
         /usr/local/sbin/exim_adddkim "${i}"
     done
 
@@ -1421,11 +1419,9 @@ install_iptables(){
 }
 
 install_monit(){
-    if [[ -z "$email_admin" ]] ; then
-        echo -e "Insert the email on which you want to receive alert notifications (admin of server)"
-        read email_admin
-    fi
-    require_variables "hostnamefull|email_admin"
+    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    hostnamefull="${hostname}.${domain}"
+    require_variables "hostnamefull|domain|email_admin"
 
     packages_install  monit
     #addconfig "set daemon 120" /etc/monit/monitrc
@@ -1541,8 +1537,10 @@ final_steps(){
     echo -e " * Please restart/reboot everything"
 
     if ((is_installed_exim)) ; then
+        require_variables "domain_names"
         for i in ${domain_names}
         do
+            [[ -z "$i" ]] && continue
             echo "Edit your DNS's and add this DKIM as a TXT entry:  x._domainkey.${i}"
             echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g')"
         done
@@ -1552,7 +1550,7 @@ final_steps(){
         el_info "Wordpress installed:"
         el_info "Your user is: '${username}' with home in '$DHOME/${username}'"
         el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}'"
-        el_info "Website is: 'www.${domain}'"
+        el_info "Website is: '${wp_webname}'"
         el_info "Recommended plugins are included, enable or delete them as your choice"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
     fi
@@ -1643,7 +1641,6 @@ main(){
 
     hostname="$(hostname)"
     hostname="${hostname%%.*}"
-    hostnamefull="${hostname}.${domain}"
     # do not change this value unless you know what you are doing, it is used to replace old configuration template files to your server:
     # TODO: ip of elive server actually is:  139.59.157.208
     previous_ip="188.226.235.52"
@@ -1656,7 +1653,7 @@ main(){
     fi
 
     #domain_names="www.${domain} ${domain} blog.${domain} forum.${domain}"
-    domain_names="www.${domain} ${domain}"
+    #domain_names="www.${domain} ${domain}"
 
     #ssh_authorized_key="ssh-rsa xxxxxxxxx example@hostname"
     case "$(uname -m)" in
