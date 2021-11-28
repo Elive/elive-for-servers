@@ -203,6 +203,7 @@ get_args(){
                 usage
                 ;;
             "--force"|"-f")
+                # TODO: do we need this option? instead we should always re-install things when its called
                 is_force=1
                 ;;
 
@@ -1308,8 +1309,11 @@ EOF
 
     # }}}
     # configure php-fpm for your wordpress {{{
+    # disable default php-fpm if not yet
     mv -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template" 2>/dev/null || true
+    # get a copy template
     cp -f "/etc/php/$php_version/fpm/pool.d/www.conf.template" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    changeconfig "[www]" "[${wp_webname}]" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm-${username}.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
@@ -1327,7 +1331,7 @@ EOF
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
 
-        if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week" ; then
+        if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week. (if you select no, your server will run on plain http with port 80 instead)" ; then
             # register first if needed:
             if [[ -d "/etc/letsencrypt/accounts" ]] ; then
                 el_debug "letsencrypt account already existing, using it..."
