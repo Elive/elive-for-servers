@@ -911,10 +911,10 @@ install_php(){
         fi
     fi
 
-    # default version by debian?
+    # default version provided ?
     php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
 
-    if el_confirm "\nDo you want to use the default PHP version ($php_version) provided by Debian?" ; then
+    if el_confirm "\nDo you want to use the default provided PHP version? ($php_version) ?" ; then
         rm -f "/etc/apt/sources.list.d/php.list"
         unset php_version
     else
@@ -926,20 +926,30 @@ install_php(){
                 sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
                 sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
                 apt-get -q update
+
+                # get new version
+                php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
+                if el_confirm "\nDo you want to use the NEW default provided PHP version? ($php_version) ?" ; then
+                    rm -f "/etc/apt/sources.list.d/php.list"
+                    unset php_version
+                fi
             fi
         fi
 
-        el_info "Versions of PHP available:"
-        apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
-        echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
-        read php_version
-        # checks
-        if echo "$php_version" | grep -qs "^[[:digit:]].*[[:digit:]]$" ; then
-            if ! apt-cache show php${php_version}-fpm 1>/dev/null 2>&1 ; then
+        if [[ -z "$php_version" ]] ; then
+            NOREPORTS=1 el_warning "Selecting experimental versions for PHP can lead to websites not working, do not report bugs to Elive"
+            el_info "Versions of PHP available:"
+            apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
+            echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
+            read php_version
+            # checks
+            if echo "$php_version" | grep -qs "^[[:digit:]].*[[:digit:]]$" ; then
+                if ! apt-cache show php${php_version}-fpm 1>/dev/null 2>&1 ; then
+                    unset php_version
+                fi
+            else
                 unset php_version
             fi
-        else
-            unset php_version
         fi
     fi
 
@@ -1000,7 +1010,7 @@ install_php(){
 
     if [[ -s /etc/php/$php_version/fpm/pool.d/www.conf ]] ; then
         # enable monitoring state
-        changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
+        #changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
@@ -1246,8 +1256,8 @@ sed -i -e "s|^define.*'DB_CHARSET'.*$|define( 'DB_CHARSET', 'utf8mb4' );|g" "$DH
 sed -i -e "s|^define.*'DB_COLLATE'.*$|define( 'DB_COLLATE', 'utf8mb4_general_ci' );|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 sed -i -e "s|^table_prefix =.*$|table_prefix = 'elive_wp_';|g" "$DHOME/${username}/${wp_webname}/wp-config.php"
 #echo -e "define( 'WP_MAX_MEMORY_LIMIT', '128M' );\ndefine('WP_MEMORY_LIMIT', '128M');" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
-echo -e "/* Turn off automatic updates of WP itself */\n//define( 'WP_AUTO_UPDATE_CORE', false );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
-echo -e "/* Set amount of Revisions you wish to have saved */\ndefine( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "\n/* Turn off automatic updates of WP itself */\n//define( 'WP_AUTO_UPDATE_CORE', false );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
+echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POST_REVISIONS', 40 );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 #echo -e "// Set httpS (ssl) mode\ndefine('FORCE_SSL_ADMIN', true);\ndefine('WP_HOME', 'https://www.elivecd.org');\ndefine('WP_SITEURL', 'https://www.elivecd.org');\ndefine('WP_CONTENT_URL', 'https://www.elivecd.org/wp-content' );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 
     # configure root crontab to reload nginx every hour so plugins can work
@@ -1298,19 +1308,19 @@ EOF
 
     # }}}
     # configure php-fpm for your wordpress {{{
-    cp -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    mv -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template" 2>/dev/null || true
+    cp -f "/etc/php/$php_version/fpm/pool.d/www.conf.template" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm-${username}.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     # disable default php conf if we are not going to use it
-    #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
     systemctl restart php${php_version}-fpm.service
     # }}}
     # configure SSL {{{
     # reload
 
     # interactively run the configurator
-    el_info "Letsencrypt SSL (httpS) certificate setup. Follow the instructions for your website"
+    el_info "Letsencrypt SSL (httpS) certificate install request"
     NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
     if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week" ; then
         # register first if needed:
@@ -1332,6 +1342,7 @@ EOF
         fi
     fi
 
+    # enable http2 improvements
     sed -i -e 's|listen 443 ssl; # managed by Certbot|listen 443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
     sed -i -e 's|listen [::]:443 ssl; # managed by Certbot|listen [::]:443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
 
@@ -1679,7 +1690,7 @@ notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
 
     NOREPORTS=1 el_warning "Note: Feature may be not not fully functional"
-    if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
+    if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. DO NOT REPORT BUGS BY USING THIS OPTION. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
         exit
     fi
 }
@@ -1725,7 +1736,7 @@ main(){
         wp_db_name=dbname
         wp_db_user=dbuser
         wp_db_pass=dbpass
-        wp_webname=wp.thanatermesis.org
+        wp_webname=www.wp.thanatermesis.org # XXX wp.thanatermesis.org is actually banned for 1 week because of the multiple betatests
         username=elivewp
         domain=thanatermesis.org
         email_admin="thanatermesis@gmail.com"
