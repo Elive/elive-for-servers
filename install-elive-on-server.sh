@@ -212,7 +212,7 @@ get_args(){
     if ((is_production)) ; then
 
         if ((is_extra_service)) ; then
-            if ! el_confirm "Important: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. Do you want to continue?" ; then
+            if ! el_confirm "\nImportant: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. Do you want to continue?" ; then
                 exit 1
             fi
         fi
@@ -262,7 +262,7 @@ installed_ask(){
     else
         if ((is_production)) ; then
             # ask user if wants to install
-            if el_confirm "$2" ; then
+            if el_confirm "\n$2" ; then
                 return 0
             else
                 return 1
@@ -488,7 +488,7 @@ sources_update_adapt(){
     #if ! ((is_mode_curl)) ; then
         #if [[ -s "$sources/install-elive-on-server.sh" ]] ; then
             #if [[ "$( diff "$0" "$sources/install-elive-on-server.sh" | wc -l )" -gt 4 ]] ; then
-                ##if el_confirm "Seems like this tool has new updates from its git version, do you want to update it first?" ; then
+                ##if el_confirm "\nSeems like this tool has new updates from its git version, do you want to update it first?" ; then
                     #cp -f "$sources/install-elive-on-server.sh" "$0"
 
                     #el_warning "tool updated: running it again..."
@@ -906,7 +906,7 @@ install_php(){
     local packages_extra
 
     if which php 1>/dev/null ; then
-        if el_confirm "PHP already installed, do you want to remove it first?" ; then
+        if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
             packages_remove --purge php\*
         fi
     fi
@@ -914,13 +914,13 @@ install_php(){
     # default version by debian?
     php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )'"
 
-    if el_confirm "Do you want to use the default PHP version ($php_version) provided by Debian?" ; then
+    if el_confirm "\nDo you want to use the default PHP version ($php_version) provided by Debian?" ; then
         rm -f "/etc/apt/sources.list.d/php.list"
         unset php_version
     else
         if [[ "$debian_version" = "bullseye" ]] ; then
 
-            if el_confirm "Do you want to use unnoficial repositories to install a more recent version of PHP?" ; then
+            if el_confirm "\nDo you want to use unnoficial repositories to install a more recent version of PHP?" ; then
                 notimplemented
                 NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
                 sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
@@ -1135,7 +1135,7 @@ install_wordpress(){
     # cleanups
     if [[ -d "$DHOME/${username}/${wp_webname}" ]] ; then
         NOREPORTS=1 el_warning "The directory '${wp_webname}' in the '${username}' user's home directory already exists"
-        if el_confirm "Do you want to permanently delete it?" ; then
+        if el_confirm "\nDo you want to permanently delete it?" ; then
             rm -rf "$DHOME/${username}/${wp_webname}"
         fi
     fi
@@ -1264,7 +1264,7 @@ echo -e "/* Set amount of Revisions you wish to have saved */\ndefine( 'WP_POST_
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
     if ! echo "$wp_webname" | grep -qsi "^www\." ; then
 
-        #if el_confirm "Do you want to redirect '${wp_webname}' to '${wp_webname}' ?" ; then
+        #if el_confirm "\nDo you want to redirect '${wp_webname}' to '${wp_webname}' ?" ; then
             cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
 
 # Redirect 'mywordpress.com' to 'www.mywordpress.com'
@@ -1310,7 +1310,7 @@ EOF
     fi
 
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
-        if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
+        if el_confirm "\nSSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
             letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
         fi
     else
@@ -1667,7 +1667,7 @@ notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
 
     NOREPORTS=1 el_warning "feature not fully implemented"
-    if ! el_confirm "Do you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working. Continue anyways?" ; then
+    if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working. Continue anyways?" ; then
         exit
     fi
 }
@@ -1789,7 +1789,7 @@ main(){
     # is an ubuntu?
     source /etc/lsb-release 2>/dev/null || true
     if [[ "$DISTRIB_ID" = "Ubuntu" ]] ; then
-        if ! el_confirm "Warning: Elive is much more compatible with Debian than Ubuntu, the support for ubuntu is entirely experimental and bug reports will be not accepted, you can optionally reinstall your server using a better base system like Debian. Are you sure to continue with Ubuntu?" ; then
+        if ! el_confirm "\nWarning: Elive is much more compatible with Debian than Ubuntu, the support for ubuntu is entirely experimental and bug reports will be not accepted, you can optionally reinstall your server using a better base system like Debian. Are you sure to continue with Ubuntu?" ; then
             exit 1
         fi
         is_ubuntu=1
@@ -1833,7 +1833,7 @@ main(){
 
     # root pass change {{{
     if ((is_change_pass_root)) ; then
-        #if el_confirm "Change root pass?" ; then
+        #if el_confirm "\nChange root pass?" ; then
             #echo -e "change root password:"
             #passwd
             printf "%s\n" "root:$pass_root" | chpasswd -m
@@ -1869,7 +1869,7 @@ main(){
 
     # create a swap file {{{
     if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" 1>/dev/null 2>&1 && ! swapon -s | grep -qs "^/" ; then
-        if el_confirm "Your server doesn't has much RAM, do you want to add a swapfile?" ; then
+        if el_confirm "\nYour server doesn't has much RAM, do you want to add a swapfile?" ; then
             is_wanted_swapfile=1
         fi
     fi
@@ -1986,7 +1986,7 @@ main(){
     # fix domains in /etc/hosts ?
     # update: this doesn't work on all the hostings (automatically rewritten)
     #if ! grep -qs "$domain_ip" /etc/hosts ; then
-        #if el_confirm "IP $domain_ip not included in your /etc/hosts file, do you want to add it with your hostname and domains?" ; then
+        #if el_confirm "\nIP $domain_ip not included in your /etc/hosts file, do you want to add it with your hostname and domains?" ; then
             ##sed -i "s|^127.0.0.1.*localhost.*$|127.0.0.1    localhost.localdomain localhost|g" /etc/hosts
             #changeconfig "${domain_ip}" "${domain_ip}  ${hostname} ${hostnamefull} ${domain_names}" /etc/hosts
             ##echo "$hostname" > /etc/hostname
@@ -2029,7 +2029,7 @@ main(){
     # last security check, you should fix all the errors encountered after that:
     #apt-get install -y lynis
     if ((is_wanted_lynis)) ; then
-        if el_confirm "Lynis is an audit tool that verify all the security of your server, it may include many false positives (or things that are set on this way on purpose), it has NO RELATION WITH ELIVE so use it entirely on your own just to see the settings of your server. Do you want to continue?" ; then
+        if el_confirm "\nLynis is an audit tool that verify all the security of your server, it may include many false positives (or things that are set on this way on purpose), it has NO RELATION WITH ELIVE so use it entirely on your own just to see the settings of your server. Do you want to continue?" ; then
 
             packages_install \
                 lynis
@@ -2047,7 +2047,7 @@ main(){
 
     # install monitor for network bandwith usage (after to have transfered & installed all the files)
     if ((is_wanted_vnstat)) ; then
-        if el_confirm "Vnstat is a simple network bandwith usage meter, you don't need this in most of the hostings if you have statistics about it, do you want to continue?" ; then
+        if el_confirm "\nVnstat is a simple network bandwith usage meter, you don't need this in most of the hostings if you have statistics about it, do you want to continue?" ; then
             packages_install \
                 vnstat
             installed_set "vnstat" "It will start collecting data, use the command 'vnstat' to check your bandwith usage"
