@@ -906,61 +906,55 @@ install_php(){
     local packages_extra
 
     if which php 1>/dev/null ; then
-        el_warning "PHP already installed, do you want to remove it first?"
-        packages_remove --purge php\*
+        if el_confirm "PHP already installed, do you want to remove it first?" ; then
+            packages_remove --purge php\*
+        fi
     fi
 
-    if ! ((is_ubuntu)) ; then
-        case "$debian_version" in
-            buster)
-                packages_extra="php-gettext php-xmlrpc php-inotify php-zstd $packages_extra"
-                ;;
-            bullseye)
-                packages_extra="php-tcpdf php-soap $packages_extra"
+    # default version by debian?
+    php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )'"
 
-                # PHP 8+ can be selected optionally instead of the default version 7.4 from Debian:
-                if el_confirm "PHP Version to select: You can optionally install a more recent version of PHP from alternative repository. But we do not recommend this, is better to stick at the debian default version for stability and security, also newer versions of php may be incompatible with your website / plugins / themes / code.\nUse the default version from Debian?" ; then
-                    rm -f "/etc/apt/sources.list.d/php.list"
-                else
-                    notimplemented
-                    NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
-                    sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-                    sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
-                fi
-                ;;
-            #impish)
-                #packages_extra="$packages_extra"
-                #;;
-        esac
+    if el_confirm "Do you want to use the default PHP version ($php_version) provided by Debian?" ; then
+        rm -f "/etc/apt/sources.list.d/php.list"
+        unset php_version
+    else
+        if [[ "$debian_version" = "bullseye" ]] ; then
+
+            if el_confirm "Do you want to use unnoficial repositories to install a more recent version of PHP?" ; then
+                notimplemented
+                NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
+                sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+                sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+                apt-get -q update
+            fi
+        fi
+
+        el_info "Versions of PHP available:"
+        apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
+        echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
+        read php_version
     fi
+
+    # select all the wanted php packages
+    packages="$( apt-cache search php${php_version} | awk '{print $1}' | grep "^php${php_version}-" | sort -u | grep -v "dbgsym$" )"
+
+    for package in  bcmath bz2 cli common cropper curl fpm gd geoip gettext gmagick imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib snoopy soap sqlite3 tcpdf tidy xml xmlrpc yaml zip zstd
+    do
+        if [[ -n "$package" ]] && echo "$packages" | grep -qs "^${package}" ; then
+            packages_extra="php${php_version}-$package $packages_extra"
+        fi
+    done
+    packages_extra="composer $packages_extra"
+
 
     # first install this one independently, because the buggy ubuntu wants to install apache if not
-    packages_install php-fpm
+    packages_install $packages_extra composer
 
-    packages_install \
-        php-common php-xml php-curl php-gd php-cli php-imap libphp-phpmailer libjs-cropper libphp-snoopy php-pclzip php-intl php-tidy php-pear \
-        php php-bz2 php-mbstring php-phpseclib php-zip php-bcmath php-mysql php-json \
-        composer \
-        $packages_extra \
-        $NULL
 
     # get php version
+    unset php_version
     update_variables
     require_variables "php_version"
-
-    unset packages_extra
-    if ! ((is_ubuntu)) ; then
-        case "$php_version" in
-            "7."*)
-                packages_extra="php-xmlrpc php${php_version}-geoip $packages_extra"
-                ;;
-        esac
-
-        packages_extra="php${php_version}-opcache php${php_version}-imagick $packages_extra"
-    fi
-
-    packages_install \
-        $packages_extra
 
     # configure php default options
     changeconfig "default_charset =" "default_charset = \"UTF-8\"" /etc/php/$php_version/fpm/php.ini
@@ -1308,6 +1302,12 @@ EOF
 
     # interactively run the configurator
     el_info "\n\nLetsencrypt SSL (httpS) certificate setup. Follow the instructions for your website"
+    # register first if needed:
+    if [[ -d "/etc/letsencrypt/accounts" ]] ; then
+        el_debug "letsencrypt account already existing, using it..."
+    else
+        letsencrypt register
+    fi
 
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
