@@ -1321,20 +1321,21 @@ EOF
 
     # interactively run the configurator
     el_info "Letsencrypt SSL (httpS) certificate install request"
-    NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
-    if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week" ; then
-        # register first if needed:
-        if [[ -d "/etc/letsencrypt/accounts" ]] ; then
-            el_debug "letsencrypt account already existing, using it..."
-        else
-            letsencrypt register
+    if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
+        if ! el_confirm "\nSSL Certificate already exist for this domain, do you want to use the actual one?" ; then
+            letsencrypt
         fi
+    else
+        NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
 
-        if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
-            if el_confirm "\nSSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
-                letsencrypt
+        if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week" ; then
+            # register first if needed:
+            if [[ -d "/etc/letsencrypt/accounts" ]] ; then
+                el_debug "letsencrypt account already existing, using it..."
+            else
+                letsencrypt register
             fi
-        else
+
             if ! letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
                 el_info "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
                 letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
