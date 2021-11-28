@@ -936,6 +936,7 @@ install_php(){
     fi
 
     # select all the wanted php packages
+    set -x
     packages="$( apt-cache search php${php_version} | awk '{print $1}' | grep "^php${php_version}-" | sort -u | grep -v "dbgsym$" )"
 
     for package in  bcmath bz2 cli common cropper curl fpm gd geoip gettext gmagick imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib snoopy soap sqlite3 tcpdf tidy xml xmlrpc yaml zip zstd
@@ -945,6 +946,7 @@ install_php(){
         fi
     done
     packages_extra="composer $packages_extra"
+    set +x
 
 
     # first install this one independently, because the buggy ubuntu wants to install apache if not
@@ -1666,7 +1668,7 @@ final_steps(){
 notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
 
-    NOREPORTS=1 el_warning "feature not fully implemented"
+    NOREPORTS=1 el_warning "Note: Feature may be not not fully functional"
     if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. You are welcome to improve this tool to make it working. Continue anyways?" ; then
         exit
     fi
