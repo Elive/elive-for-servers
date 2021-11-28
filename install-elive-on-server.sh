@@ -577,7 +577,7 @@ install_templates(){
 
 update_variables(){
     if [[ -z "$domain_ip" ]] ; then
-        if [[ -x "$( which showmyip )" ]] ; then
+        if which showmyip 1>/dev/null ; then
             domain_ip="$( showmyip )"
         else
             domain_ip="$( curl -A 'Mozilla' --max-time 8 -s http://icanhazip.com | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | tail -1 )"
@@ -905,7 +905,7 @@ install_php(){
     # packages to install
     local packages_extra
 
-    if [[ -x "$( which php )" ]] ; then
+    if which php 1>/dev/null ; then
         el_warning "PHP already installed, do you want to remove it first?"
         packages_remove --purge php\*
     fi
@@ -1733,10 +1733,10 @@ main(){
 
     get_args "$@"
 
-    if [[ -x "$( which ufw )" ]] ; then
+    if which ufw 1>/dev/null ; then
         has_ufw=1
     fi
-    if [[ -x "$( which iptables )" ]] ; then
+    if which iptables 1>/dev/null ; then
         has_iptables=1
     fi
 
