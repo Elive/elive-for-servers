@@ -1240,8 +1240,16 @@ EOF
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     #mv "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template"
     # }}}
+    # configure SSL {{{
+    rm -f "/etc/nginx/sites-enabled/${wp_webname}"
+    ln -sf "../sites-available/${wp_webname}_non-ssl" "/etc/nginx/sites-enabled/${wp_webname}"
+    # reload
+    systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
+
+    # - configure SSL }}}
 
 
+    # reload services
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
 
     installed_set "wordpress"
