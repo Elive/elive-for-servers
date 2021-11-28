@@ -1,5 +1,7 @@
 # default Wordpress configuration
 server {
+    listen 80;
+    listen [::]:80;
     # do not show indexed files by defaul
     autoindex off;
     # don't show the nginx version

@@ -1296,12 +1296,12 @@ EOF
     el_info "Follow the Letsencrypt wizard to enable SSL (httpS) for your website"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
-            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --staple-ocsp --no-eff-email --agree-tos
+            letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
         fi
     else
         if ! letsencrypt ; then
             el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --staple-ocsp --no-eff-email --agree-tos
+            letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
         fi
     fi
 
@@ -1315,7 +1315,7 @@ EOF
     systemctl restart nginx.service php${php_version}-fpm.service mariadb.service
     sleep 5
 
-    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' )'"
+    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' )"
     el_info "HTTP protocol version running is '$http_version'"
 
     installed_set "wordpress"
