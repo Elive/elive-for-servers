@@ -1172,42 +1172,42 @@ rmdir wordpress
 set +e
 cd ~
 cd "${wp_webname}/wp-content/plugins/"
-download_wp_addon "plugins" "404-error-monitor"
-download_wp_addon "plugins" "autoptimize"
-download_wp_addon "plugins" "better-wp-security"
-download_wp_addon "plugins" "block-bad-queries"
-download_wp_addon "plugins" "broken-link-checker"
-download_wp_addon "plugins" "classic-editor"
-download_wp_addon "plugins" "contact-form-7"
-download_wp_addon "plugins" "cookie-notice"
-download_wp_addon "plugins" "elementor"
-download_wp_addon "plugins" "email-post-changes"
-download_wp_addon "plugins" "essential-addons-for-elementor-lite"
-download_wp_addon "plugins" "google-analytics-for-wordpress"
-download_wp_addon "plugins" "honeypot"
-download_wp_addon "plugins" "master-slider"
-download_wp_addon "plugins" "query-monitor"
-download_wp_addon "plugins" "redirection"
-download_wp_addon "plugins" "resmushit-image-optimizer"
-download_wp_addon "plugins" "search-exclude"
-download_wp_addon "plugins" "smart-slider-3"
-download_wp_addon "plugins" "updraftplus"
-download_wp_addon "plugins" "woocommerce"
-download_wp_addon "plugins" "wordpress-seo"
-download_wp_addon "plugins" "wp-mail-smtp"
-download_wp_addon "plugins" "wp-search-suggest"
-download_wp_addon "plugins" "wp-super-cache"
-#download_wp_addon "plugins" "w3-total-cache"
-download_wp_addon "plugins" "wp-youtube-lyte"
+download_wp_addon "plugins" "404-error-monitor" &
+download_wp_addon "plugins" "autoptimize" &
+download_wp_addon "plugins" "better-wp-security" &
+download_wp_addon "plugins" "block-bad-queries" &
+download_wp_addon "plugins" "broken-link-checker" &
+download_wp_addon "plugins" "classic-editor" &
+download_wp_addon "plugins" "contact-form-7" &
+download_wp_addon "plugins" "cookie-notice" &
+download_wp_addon "plugins" "elementor" &
+download_wp_addon "plugins" "email-post-changes" &
+download_wp_addon "plugins" "essential-addons-for-elementor-lite" &
+download_wp_addon "plugins" "google-analytics-for-wordpress" &
+download_wp_addon "plugins" "honeypot" &
+download_wp_addon "plugins" "master-slider" &
+download_wp_addon "plugins" "query-monitor" &
+download_wp_addon "plugins" "redirection" &
+download_wp_addon "plugins" "resmushit-image-optimizer" &
+download_wp_addon "plugins" "search-exclude" &
+download_wp_addon "plugins" "smart-slider-3" &
+download_wp_addon "plugins" "updraftplus" &
+download_wp_addon "plugins" "woocommerce" &
+download_wp_addon "plugins" "wordpress-seo" &
+download_wp_addon "plugins" "wp-mail-smtp" &
+download_wp_addon "plugins" "wp-search-suggest" &
+download_wp_addon "plugins" "wp-super-cache" &
+#download_wp_addon "plugins" "w3-total-cache" &
+download_wp_addon "plugins" "wp-youtube-lyte" &
 
 cd ~
 cd "${wp_webname}/wp-content/themes/"
-download_wp_addon "themes" "bold-photography"
-download_wp_addon "themes" "generatepress"
-download_wp_addon "themes" "hello-elementor"
-download_wp_addon "themes" "neve"
-download_wp_addon "themes" "oceanwp"
-download_wp_addon "themes" "signify-photography"
+download_wp_addon "themes" "bold-photography" &
+download_wp_addon "themes" "generatepress" &
+download_wp_addon "themes" "hello-elementor" &
+download_wp_addon "themes" "neve" &
+download_wp_addon "themes" "oceanwp" &
+download_wp_addon "themes" "signify-photography" &
 
 # configure wordpress
 set -e
@@ -1215,6 +1215,8 @@ cd ~
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
 echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker syn=conf" > nginx.conf
+# wait remaining processes
+wait
 
 '
 EOF
@@ -1294,17 +1296,19 @@ EOF
     el_info "Follow the Letsencrypt wizard to enable SSL (httpS) for your website"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         if el_confirm "SSL Certificate already exist, do you want to reconfigure it? (delete/update/etc)" ; then
-            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --uir --staple-ocsp --auto-hsts --no-eff-email --agree-tos
+            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --staple-ocsp --no-eff-email --agree-tos
         fi
     else
         if ! letsencrypt ; then
             el_error "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --uir --staple-ocsp --auto-hsts --no-eff-email --agree-tos
+            letsencrypt --nginx -d "${wp_webname}" --quiet --redirect --hsts --staple-ocsp --no-eff-email --agree-tos
         fi
     fi
 
+    sed -i -e 's|listen 443 ssl; # managed by Certbot|listen 443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
+    sed -i -e 's|listen [::]:443 ssl; # managed by Certbot|listen [::]:443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
+
     # - configure SSL }}}
-    # TODO: why exim-daemon-light is installed by default when we reach this step? maybe is included by default? and we should install the full one here?
 
 
     # reload services
