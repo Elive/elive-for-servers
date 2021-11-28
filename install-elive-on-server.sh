@@ -244,7 +244,8 @@ installed_unset(){
 }
 installed_check(){
     if grep -qs "^Installed: ${1}$" /etc/elive-server ; then
-        echo -e "Info: '$1' already set up, use --force to reinstall it" 2>&1
+        #echo -e "Info: '$1' already set up, use --force to reinstall it" 2>&1
+        EL_DEBUG=2 el_debug "'$1' already set up, use --force to reinstall it"
         return 0
     else
         return 1
@@ -904,6 +905,11 @@ install_php(){
     # packages to install
     local packages_extra
 
+    if [[ -x "$( which php )" ]] ; then
+        el_warning "PHP already installed, do you want to remove it first?"
+        packages_remove --purge php\*
+    fi
+
     if ! ((is_ubuntu)) ; then
         case "$debian_version" in
             buster)
@@ -946,7 +952,7 @@ install_php(){
     if ! ((is_ubuntu)) ; then
         case "$php_version" in
             "7."*)
-                packages_extra="php-xmlrcp php${php_version}-geoip $packages_extra"
+                packages_extra="php-xmlrpc php${php_version}-geoip $packages_extra"
                 ;;
         esac
 
