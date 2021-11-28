@@ -1,29 +1,59 @@
+# redirect http to https, this entry is also needed for your SSL certificate
+#server {
+    #listen 80;
+    #listen [::]:80;
+
+    #server_name mywordpress.com;
+
+    #error_log /var/log/nginx/error.log ;
+
+    ## Necessary for Let's Encrypt Domain Name ownership validation
+    #location ^~ /.well-known/acme-challenge/ {
+        #try_files $uri /dev/null =404;
+        #default_type "text/plain";
+    #}
+
+    ## Needed for Certbot / Letsencrypt
+    #return 301 https://mywordpress.com$request_uri; # auto for certbot, do not remove this comment
+
+    #root /home/elivewp/mywordpress.com;
+#}
+
+# default wordpress configuration
 server {
     listen 80;
     listen [::]:80;
+    #listen 443;
+    #listen [::]:443;
 
+    # do not show indexed files by defaul
+    autoindex off;
+    # don't show the nginx version
+    server_tokens   off;
+
+
+    server_name  mywordpress.com;
     root /home/elivewp/mywordpress.com;
+
     index index.php index.html index.htm;
 
-    server_name www.mywordpress.com mywordpress.com;
+    # local user's configurations, also needed for some plugins that writes their own confs
+    include /home/elivewp/mywordpress.com/nginx.conf;
 
-    error_page 404 /404.html;
-
+    # custom error pages
+    #error_page 404 /404.html;
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {
-        #root /usr/share/nginx/html;
         root /etc/nginx/offline-pages/;
     }
     location / {
-        # try_files $uri $uri/ =404;
         try_files $uri $uri/ /index.php?q=$uri&$args;
     }
-
 
     location ~ \.php$ {
         try_files $uri =404;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_pass unix:/run/php/php7.4-fpm.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
@@ -60,8 +90,21 @@ server {
             deny all;
         }
     }
+
+    # PHP-FPM health service monitoring at /ping
+    location /ping {
+        access_log off;
+        allow 127.0.0.1; # localhost
+        allow ::1; # IPv6 localhost
+        #deny all;
+        fastcgi_split_path_info ^(.+.php)(.*)$;
+        fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    # INSERT PHPMYADMIN CONF HERE
 }
-
-
 
 # vim: set syn=conf filetype=cfg expandtab : #

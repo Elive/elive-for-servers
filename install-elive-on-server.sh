@@ -1204,23 +1204,27 @@ echo -e "/* Set amount of Revisions you wish to have saved */\n//define( 'WP_POS
     # configure WP in nginx {{{
     require_variables "php_version"
     changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;" "/etc/nginx/sites-available/${wp_webname}_non-ssl"
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
-    if echo "$wp_webname" | grep -qsi "^www\." ; then
-        cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
+    if ! echo "$wp_webname" | grep -qsi "^www\." ; then
+
+        #if el_confirm "Do you want to redirect '${wp_webname}' to '${wp_webname}' ?" ; then
+            cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
 
 # Redirect 'mywordpress.com' to 'www.mywordpress.com'
 server {
     listen 443;
     listen [::]:443;
 
-    server_name ${wp_webname};
+    server_name ${wp_webname#www.};
 
-    return 301 https://www.${wp_webname}\$request_uri;
+    return 301 https://${wp_webname}\$request_uri;
 }
 
 EOF
+        #fi
     fi
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" "/etc/nginx/sites-available/${wp_webname}"
 

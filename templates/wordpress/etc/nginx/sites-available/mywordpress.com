@@ -1,7 +1,7 @@
 # redirect http to https, this entry is also needed for your SSL certificate
 server {
-    listen 80 ;
-    listen [::]:80 ;
+    listen 80;
+    listen [::]:80;
 
     server_name mywordpress.com;
 
@@ -21,6 +21,8 @@ server {
 
 # default wordpress configuration
 server {
+    #listen 80;
+    #listen [::]:80;
     listen 443;
     listen [::]:443;
 
