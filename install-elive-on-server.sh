@@ -291,7 +291,7 @@ addconfig(){
 changeconfig(){
     # change $1 conf to $2 value in $3 file
     # $1 = orig-string, $2 = change, $3 = file
-    if echo "$1 $2" | grep -qsE "(\[|\]|/|\\\\|\|)" ; then
+    if echo "$1 $2" | grep -qsE "(\[|\]|\\\\|\|)" ; then
         el_error "invalid chars in '$1' or '$2', func ${FUNCNAME} from ${FUNCNAME[1]}"
         exit 1
     fi
