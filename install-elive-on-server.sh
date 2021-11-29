@@ -291,6 +291,10 @@ addconfig(){
 changeconfig(){
     # change $1 conf to $2 value in $3 file
     # $1 = orig-string, $2 = change, $3 = file
+    if echo "$1 $2" | grep -qsE "(\[|\]|/|\\\\|\|)" ; then
+        el_error "invalid chars in '$1' or '$2', func ${FUNCNAME} from ${FUNCNAME[1]}"
+        exit 1
+    fi
 
     if [[ -e "$3" ]] ; then
         # if not already set
@@ -1313,7 +1317,7 @@ EOF
     mv -f "/etc/php/$php_version/fpm/pool.d/www.conf" "/etc/php/$php_version/fpm/pool.d/www.conf.template" 2>/dev/null || true
     # get a copy template
     cp -f "/etc/php/$php_version/fpm/pool.d/www.conf.template" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
-    changeconfig "[www]" "[${wp_webname}]" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    sed -i -e "s|^\[www\]$|\[${wp_webname}\]|g" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm-${username}.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
