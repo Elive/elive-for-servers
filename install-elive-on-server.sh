@@ -1356,7 +1356,6 @@ EOF
 
     # - configure SSL }}}
 
-
     # reload services
     if ! systemctl restart nginx.service php${php_version}-fpm.service mariadb.service ; then
         el_error "failed to restart web services"
