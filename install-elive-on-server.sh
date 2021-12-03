@@ -165,13 +165,6 @@ get_args(){
                 is_wanted_swapfile=1
                 #is_wanted_iptables=1
                 ;;
-            #"--install=phpmyadmin")
-                #is_wanted_phpmyadmin=1
-                #is_wanted_nginx=1
-                #is_wanted_php=1
-                #is_extra_service=1
-                #notimplemented
-                #;;
             "--install=monit")
                 is_wanted_monit=1
                 is_extra_service=1
@@ -439,7 +432,8 @@ packages_install(){
             for package in $@
             do
                 if ! apt-get install $apt_options $package ; then
-                    el_error "Problem installing package '$package', aborting..."
+                    # report to the user to contribute to github and to wait for possible fixes
+                    el_error "Problem installing package '$package', debian_version '$debian_version' DISTRIB '$DISTRIB_ID - $DISTRIB_CODENAME', aborting..."
                     exit 1
                 fi
             done
@@ -961,7 +955,7 @@ install_php(){
     # select all the wanted php packages
     packages="$( apt-cache search php${php_version} | awk '{print $1}' | grep "^php${php_version}-" | sort -u | grep -v "dbgsym$" )"
 
-    for package in  bcmath bz2 cli common cropper curl fpm gd geoip gettext imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib snoopy soap sqlite3 tcpdf tidy xml xmlrpc yaml zip zstd
+    for package in  bcmath bz2 cli common cropper curl fpm gd getid3 geoip gettext imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib mcrypt snoopy soap sqlite3 recode tcpdf tidy xml xmlrpc yaml zip zstd
     do
         if [[ -n "$package" ]] && echo "$packages" | grep -qs "^php${php_version}-${package}" ; then
             packages_extra="php${php_version}-$package $packages_extra"
@@ -1105,6 +1099,12 @@ install_mariadb(){
         NOREPORTS=1 el_warning "password for your root DB not provided, you may want to run again and give a root password for your datbase server"
     fi
 
+    # setup, if needed
+    mysql_install_db
+    mysql_upgrade
+    # secure your database
+    mysql_secure_installation
+
     installed_set "mariadb" "(mysql)"
 }
 
@@ -1122,7 +1122,7 @@ install_wordpress(){
     # image tool dependencies (shrink images)
     if ! [[ -e /var/lib/dpkg/info/webp.list ]] ; then
         packages_install \
-            libjpeg-turbo-progs webp optipng pngquant gifsicle
+            libjpeg-turbo-progs webp optipng pngquant gifsicle libjs-cropper libjs-underscore
     fi
 
     # }}}
@@ -1276,7 +1276,14 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 
     # }}}
 
-    ufw allow 'Nginx Full'
+    if ((has_ufw)) ; then
+        ufw allow 'Nginx Full'
+    else
+        if ((has_iptables)) ; then
+            iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+        fi
+    fi
 
     install_templates "wordpress" "/"
 
@@ -1371,6 +1378,55 @@ EOF
         el_error "Your wordpress site seems to not be correctly working"
     fi
 
+    install_phpmyadmin
+
+    el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin', if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htaccess' file"
+    ask_variable "httaccess_user" "Insert an admin Username"
+    ask_variable "httaccess_password" "Insert an admin Password"
+
+    htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htaccess" "${httaccess_user}" "${httaccess_password}"
+
+}
+
+install_phpmyadmin(){
+    # configure & install {{{
+    cat > /debconf.live << EOF
+phpmyadmin      phpmyadmin/dbconfig-install     boolean false
+EOF
+    debconf-set-selections < /debconf.live
+    rm -f /debconf.live
+
+    TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
+        packages_install phpmyadmin
+
+    # }}}
+    # install an updated version of phpmyadmin which works better and less bugged {{{
+    rm -rf /usr/share/phpmyadmin-updated || true
+    mkdir -p /usr/share/phpmyadmin-updated
+    cd /usr/share/phpmyadmin-updated
+
+    download="$( lynx -dump https://www.phpmyadmin.net/downloads/ | grep -i "files.phpmyadmin.net/phpMyAdmin/.*all-languages.zip$" | sed -e 's|^.*http|http|g' | sort -V | tail -1 )"
+    if [[ -z "$download" ]] ; then
+        sleep 2
+        download="$( lynx -dump https://www.phpmyadmin.net/downloads/ | grep -i "files.phpmyadmin.net/phpMyAdmin/.*all-languages.zip$" | sed -e 's|^.*http|http|g' | sort -V | tail -1 )"
+    fi
+    if [[ -n "$download" ]] ; then
+        wget "$download"
+        unzip "$( ls -1 *zip | tail -1 )"
+        rm -f *zip || true
+        rm -rf ../phpmyadmin || true
+        mkdir -p ../phpmyadmin
+        mv "$( find . -maxdepth 1 -type d | grep -i phpmyadmin )"/* ../phpmyadmin/
+        cd /tmp
+        rm -rf /usr/share/phpmyadmin-updated || true
+    else
+        el_error "Unable to get the download url of phpMyAdmin from internet: $( lynx -dump https://www.phpmyadmin.net/downloads/ | grep zip )"
+        exit 1
+    fi
+
+    installed_set "phpmyadmin"
+    is_installed_phpmyadmin=1
+    # }}}
 }
 
 install_fail2ban(){
@@ -1638,6 +1694,13 @@ final_steps(){
         rm -rf "$sources"
     fi
 
+    # save settings {{{
+    if ((has_iptables)) && ! ((has_ufw)) ; then
+        netfilter-persistent save
+    fi
+
+    # }}}
+
     echo -e "\n"
 
     if [[ -s /etc/cloud/cloud.cfg ]] ; then
@@ -1669,8 +1732,8 @@ final_steps(){
 
     if ((is_installed_wordpress)) ; then
         el_info "Wordpress installed:"
-        el_info "Your user is: '${username}' with home in '$DHOME/${username}'"
-        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}'"
+        el_info "Your system's user for it is: '${username}' with home in '$DHOME/${username}'"
+        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htaccess' file"
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
@@ -1725,8 +1788,6 @@ Notes:
     * 'domain' must be your domain name, not subdomains or not www.something
     * 'email' will be used for some configurations, is where you will be notified about server notifications
 "
-    # disabled ones for now:
-    #* phpmyadmin: includes a mariadb database management tool
 
     exit 1
 }
