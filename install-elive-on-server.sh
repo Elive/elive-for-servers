@@ -1385,6 +1385,7 @@ EOF
     ask_variable "httaccess_password" "Insert an admin Password"
 
     htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htaccess" "${httaccess_user}" "${httaccess_password}"
+    chown "${username}:${username}" "$DHOME/${username}/${wp_webname}/.htaccess"
 
 }
 
@@ -1411,8 +1412,8 @@ EOF
         download="$( lynx -dump https://www.phpmyadmin.net/downloads/ | grep -i "files.phpmyadmin.net/phpMyAdmin/.*all-languages.zip$" | sed -e 's|^.*http|http|g' | sort -V | tail -1 )"
     fi
     if [[ -n "$download" ]] ; then
-        wget "$download"
-        unzip "$( ls -1 *zip | tail -1 )"
+        wget --quiet "$download"
+        unzip -q "$( ls -1 *zip | tail -1 )"
         rm -f *zip || true
         rm -rf ../phpmyadmin || true
         mkdir -p ../phpmyadmin
