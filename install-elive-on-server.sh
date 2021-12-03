@@ -1808,6 +1808,8 @@ main(){
         username=elivewp
         domain=thanatermesis.org
         email_admin="thanatermesis@gmail.com"
+        httaccess_user="webuser"
+        httaccess_password="webpass"
     fi
 
     if [[ "$UID" != "0" ]] ; then
