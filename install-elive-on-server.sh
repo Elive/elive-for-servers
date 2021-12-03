@@ -179,7 +179,6 @@ get_args(){
                 ;;
             "--install=vnstat")
                 is_wanted_vnstat=1
-                notimplemented
                 ;;
             "--install=swapfile")
                 is_wanted_swapfile=1
@@ -198,6 +197,10 @@ get_args(){
             "--force"|"-f")
                 # TODO: do we need this option? instead we should always re-install things when its called
                 is_force=1
+                ;;
+            "--betatesting")
+                # automated / no-asking options, only for betatesting
+                unset is_production
                 ;;
 
         esac
@@ -1795,9 +1798,12 @@ Notes:
 #}}}
 main(){
     # TODO: set to 1 for release, to 0 for betatesting more automated installs
-    is_production=0
+    is_production=1
     # TODO: release:
     is_tool_beta=1
+
+    # get user options
+    get_args "$@"
 
     # TODO: betatests
     if ! ((is_production)) ; then
@@ -1824,8 +1830,6 @@ main(){
     if [[ -z "$DHOME" ]] || [[ ! -d "$DHOME" ]] ; then
         DHOME="/home"
     fi
-
-    get_args "$@"
 
     if which ufw 1>/dev/null ; then
         has_ufw=1
