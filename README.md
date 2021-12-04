@@ -3,7 +3,7 @@ Enjoy your server with some Elive super-powers, and you can also optionally inst
 
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
 
-**Install it** (from root):
+**Install it** (having  root privileges):
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
@@ -16,7 +16,7 @@ _Note: Ubuntu installs are added for compatibility, but we **strongly** suggest 
 _Install wordpress:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
-_To create an user:_
+_To create a new user:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
 
 _Help & list with more options:_
