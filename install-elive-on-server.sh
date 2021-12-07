@@ -958,7 +958,7 @@ install_php(){
     # select all the wanted php packages
     packages="$( apt-cache search php${php_version} | awk '{print $1}' | grep "^php${php_version}-" | sort -u | grep -v "dbgsym$" )"
 
-    for package in  bcmath bz2 cli common cropper curl fpm gd getid3 geoip gettext imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib mcrypt snoopy soap sqlite3 recode tcpdf tidy xml xmlrpc yaml zip zstd
+    for package in  bcmath bz2 cli common cropper curl fpm gd getid3 geoip gettext php-gettext imagick imap inotify intl json mbstring mysql oauth opcache pclzip pear phpmailer phpseclib mcrypt snoopy soap sqlite3 recode tcpdf tidy xml xmlrpc yaml zip zstd
     do
         if [[ -n "$package" ]] && echo "$packages" | grep -qs "^php${php_version}-${package}" ; then
             packages_extra="php${php_version}-$package $packages_extra"
