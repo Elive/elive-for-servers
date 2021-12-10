@@ -172,7 +172,6 @@ get_args(){
             "--install=fail2ban")
                 is_wanted_fail2ban=1
                 is_extra_service=1
-                notimplemented
                 ;;
             "--install=rootkitcheck")
                 is_wanted_rootkitcheck=1
@@ -1439,6 +1438,7 @@ install_fail2ban(){
         fail2ban whois python3-pyinotify \
         nftables arptables ebtables
 
+    install_templates "fail2ban" "/"
 
     changeconfig "dbpurgeage =" "dbpurgeage = 8d" /etc/fail2ban/fail2ban.conf
 
@@ -1460,7 +1460,6 @@ install_fail2ban(){
     if installed_check "exim" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/exim.conf
     fi
-
 
     if installed_check "nginx" 2>/dev/null || installed_check "wordpress" 2>/dev/null ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/nginx.conf
