@@ -189,7 +189,7 @@ get_args(){
                 ;;
             "--want-sudo-nopass")
                 # use it at your own risk, not recommended (undocumented on purpose) , especially on servers
-                is_wanted_sudo=1
+                is_wanted_sudo_nopass=1
                 ;;
             "--help"|"-h")
                 usage
@@ -478,7 +478,7 @@ sources_update_adapt(){
     ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
 
     update_variables
-    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname"
+    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|debian_version"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
     cd "$( dirname "$sources" )"
@@ -563,12 +563,12 @@ install_templates(){
 
     sources_update_adapt
 
-    if ! [[ -d "$templates/$name" ]] ; then
+    if ! [[ -d "$templates/${debian_version}/$name" ]] ; then
         el_error "Templates missing: '$name'. Service install unable to be completed"
         exit 1
     fi
 
-    cd "${templates}/$name"
+    cd "${templates}/${debian_version}/$name"
     find . -type f -o -type l -o -type p -o -type s | sed -e 's|^\./||g' | cpio -padu -- "${dest%/}"
     cd ~
 
@@ -811,7 +811,7 @@ install_user(){
         #adduser "$username" Debian-exim
         #adduser "$username" docker
 
-        if ((is_wanted_sudo)) ; then
+        if ((is_wanted_sudo_nopass)) ; then
             packages_install sudo
             adduser "$username" sudo
             addconfig "$username ALL=NOPASSWD: ALL" /etc/sudoers
@@ -1437,6 +1437,17 @@ install_fail2ban(){
     packages_install \
         fail2ban whois python3-pyinotify \
         nftables arptables ebtables
+
+
+    changeconfig "bantime.increment " "bantime.increment = true" /etc/fail2ban/jail.conf
+    changeconfig "bantime.factor " "bantime.factor = 2" /etc/fail2ban/jail.conf
+    changeconfig "ignoreself " "ignoreself = true" /etc/fail2ban/jail.conf
+    changeconfig "ignoreip " "ignoreip = 127.0.0.1/8 ::1" /etc/fail2ban/jail.conf
+    changeconfig "" " = " /etc/fail2ban/jail.conf
+    # TODO: better to simply use templates, but distro-based probably
+    changeconfig "" " = " /etc/fail2ban/jail.conf
+    changeconfig "" " = " /etc/fail2ban/jail.conf
+    changeconfig "" " = " /etc/fail2ban/jail.conf
 
     installed_set "fail2ban"
 }

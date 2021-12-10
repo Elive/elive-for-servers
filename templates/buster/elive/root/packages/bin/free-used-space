@@ -1,0 +1,31 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    # pre {{{
+    local var
+
+    # }}}
+
+    # remove unused kernels
+    if [[ "$( ls -1 /boot/vmlinuz* | wc -l )" -gt 1 ]] ; then
+        /root/packages/bin/mailx-send "hostmaster@elivecd.org" "More than one kernels installed, please remove older ones in order to free unneeded disk space"
+    fi
+
+
+    case "$1" in
+        force-remove)
+            el_info "removing mysql backups"
+            rm -rf /root/backups/mysqls/
+            #rm -rf /home/elivewp/backups/
+            ;;
+    esac
+
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :
