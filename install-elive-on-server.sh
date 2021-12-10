@@ -291,16 +291,13 @@ changeconfig(){
     fi
 
     if [[ -e "$3" ]] ; then
-        # if not already set
-        if ! grep -qs "^${2}$" "$3" ; then
-            if grep -qs "^$1" "$3" ; then
-                sed -i "s|^${1}.*$|$2|g" "$3"
+        if grep -qs "^$1" "$3" ; then
+            sed -i "s|^${1}.*$|$2|g" "$3"
+        else
+            if grep -qs "$1" "$3" ; then
+                sed -i "s|${1}.*$|$2|g" "$3"
             else
-                if grep -qs "$1" "$3" ; then
-                    sed -i "s|${1}.*$|$2|g" "$3"
-                else
-                    echo -e "$2" >> "$3"
-                fi
+                echo -e "$2" >> "$3"
             fi
         fi
     else
