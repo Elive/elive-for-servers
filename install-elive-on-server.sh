@@ -1450,6 +1450,9 @@ install_fail2ban(){
     #   banaction = nftables-multiport
     #   banaction_allports = nftables-allports
 
+    changeconfig "destemail " "destemail = ${email_admin}" /etc/fail2ban/jail.conf
+    changeconfig "sender " "sender = root@${hostnamefull}" /etc/fail2ban/jail.conf
+    #changeconfig "" " = " /etc/fail2ban/jail.conf
     #changeconfig "" " = " /etc/fail2ban/jail.conf
     #changeconfig "" " = " /etc/fail2ban/jail.conf
     #changeconfig "" " = " /etc/fail2ban/jail.conf
@@ -1466,6 +1469,8 @@ install_fail2ban(){
     if installed_check "mariadb" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/mysqld.conf
     fi
+
+    systemctl restart  fail2ban.service
 
     is_installed_fail2ban=1
 
