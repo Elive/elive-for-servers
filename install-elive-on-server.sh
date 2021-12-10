@@ -533,6 +533,7 @@ EOF
         find "$templates" -type f -exec sed -i \
             -e "s|webmaster@elivecd.org|${email_admin}|g" \
             -e "s|hostmaster@elivecd.org|${email_admin}|g" \
+            -e "s|@elivecd.org|@${hostnamefull}|g" \
             "{}" \;
     fi
 
