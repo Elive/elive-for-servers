@@ -1433,6 +1433,9 @@ EOF
 }
 
 install_fail2ban(){
+    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+
     require_variables "email_admin|domain_ip|hostname|domain"
     hostnamefull="${hostname}.${domain}"
 
