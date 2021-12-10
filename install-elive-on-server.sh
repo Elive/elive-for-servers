@@ -413,7 +413,7 @@ require_variables(){
 
 ask_variable(){
     if [[ -z "${!1}" ]] ; then
-        echo -e "${el_c_b2}${2}${el_c_n}" 1>&2
+        echo -e "${el_c_c2}${2}${el_c_n}" 1>&2
         read $1
     fi
 }
@@ -1440,17 +1440,36 @@ install_fail2ban(){
         nftables arptables ebtables
 
 
-    changeconfig "bantime.increment " "bantime.increment = true" /etc/fail2ban/jail.conf
+    changeconfig "dbpurgeage =" "dbpurgeage = 8d" /etc/fail2ban/fail2ban.conf
+
     changeconfig "bantime.factor " "bantime.factor = 2" /etc/fail2ban/jail.conf
     changeconfig "ignoreself " "ignoreself = true" /etc/fail2ban/jail.conf
-    changeconfig "ignoreip " "ignoreip = 127.0.0.1/8 ::1" /etc/fail2ban/jail.conf
-    changeconfig "" " = " /etc/fail2ban/jail.conf
-    # TODO: better to simply use templates, but distro-based probably
-    changeconfig "" " = " /etc/fail2ban/jail.conf
-    changeconfig "" " = " /etc/fail2ban/jail.conf
-    changeconfig "" " = " /etc/fail2ban/jail.conf
+    changeconfig "ignoreip " "ignoreip = 127.0.0.1/8 ::1 ${domain_ip}" /etc/fail2ban/jail.conf
+    changeconfig "bantime " "bantime = 1d" /etc/fail2ban/jail.conf
+    # TODO: in buster was needed to use these ones in order to make it correctly working
+    #   banaction = nftables-multiport
+    #   banaction_allports = nftables-allports
 
-    installed_set "fail2ban"
+    #changeconfig "" " = " /etc/fail2ban/jail.conf
+    #changeconfig "" " = " /etc/fail2ban/jail.conf
+    #changeconfig "" " = " /etc/fail2ban/jail.conf
+
+    if installed_check "exim" ; then
+        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/exim.conf
+    fi
+
+
+    if installed_check "nginx" 2>/dev/null || installed_check "wordpress" 2>/dev/null ; then
+        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/nginx.conf
+    fi
+
+    if installed_check "mariadb" ; then
+        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/mysqld.conf
+    fi
+
+    is_installed_fail2ban=1
+
+    #installed_set "fail2ban"
 }
 
 install_exim(){
@@ -1766,6 +1785,10 @@ final_steps(){
         el_info " * many, see github page "
     fi
 
+    if ((is_installed_fail2ban)) ; then
+        el_info "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban"
+    fi
+
 
     el_info "Reboot your server and enjoy everything ready"
 }
@@ -1859,11 +1882,12 @@ main(){
     previous_ip="188.226.235.52"
 
     # TODO: in production mode, add the -y parameter:
-    if ((is_production)) ; then
-        apt_options="-q --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0 "
-    else
+    # update: it should always be -y, otherwise if user says maybe accidentally no, setup will be broken but marked as valid
+    #if ((is_production)) ; then
+        #apt_options="-q --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0 "
+    #else
         apt_options="-q -y --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0"
-    fi
+    #fi
 
     #domain_names="www.${domain} ${domain} blog.${domain} forum.${domain}"
     #domain_names="www.${domain} ${domain}"
@@ -2072,6 +2096,8 @@ main(){
             install_wordpress
         fi
     fi
+
+    # LAST SERVICES TO INSTALL
 
     # install fail2ban {{{
     if ((is_wanted_fail2ban)) ; then
