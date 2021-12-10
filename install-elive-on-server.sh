@@ -271,7 +271,6 @@ installed_ask(){
 }
 
 
-
 addconfig(){
     # add a config entry, no matter what
     if [[ -e "$2" ]] ; then
@@ -1434,6 +1433,11 @@ EOF
 }
 
 install_fail2ban(){
+    require_variables "email_admin|domain_ip|hostname|domain"
+    hostnamefull="${hostname}.${domain}"
+
+    sources_update_adapt
+
     packages_install \
         fail2ban whois python3-pyinotify \
         nftables arptables ebtables
