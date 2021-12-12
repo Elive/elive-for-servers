@@ -240,7 +240,13 @@ installed_unset(){
 }
 installed_check(){
     if grep -qs "^Installed: ${1}$" /etc/elive-server ; then
-        #echo -e "Info: '$1' already set up, use --force to reinstall it" 2>&1
+        # if is a known command, check if stills installed
+        if echo "$1" | grep -qsE "^(php|nginx|exim|mariadb|monit|iptables|vnstat)" ; then
+            if ! which "$1" 1>/dev/null ; then
+                return 1
+            fi
+        fi
+        # marked as installed:
         EL_DEBUG=2 el_debug "'$1' already set up, use --force to reinstall it"
         return 0
     else
@@ -1390,11 +1396,8 @@ EOF
 
 install_phpmyadmin(){
     # configure & install {{{
-    cat > /debconf.live << EOF
-phpmyadmin      phpmyadmin/dbconfig-install     boolean false
-EOF
-    debconf-set-selections < /debconf.live
-    rm -f /debconf.live
+    echo -e "phpmyadmin\tphpmyadmin/dbconfig-install\tboolean\tfalse" | debconf-set-selections
+
 
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
         packages_install phpmyadmin
@@ -1476,16 +1479,68 @@ install_fail2ban(){
     systemctl restart  fail2ban.service
 
     is_installed_fail2ban=1
-
-    #installed_set "fail2ban"
+    installed_set "fail2ban"
 }
 
 install_exim(){
+    local packages_extra
     systemctl stop  postfix.service  2>/dev/null || true
     packages_remove  postfix || true
-    #apt-get install postfix postfix-pcre postfix-mysql procmail mailx
-    # email alternative: exim4, howto by ikevin:  http://www.illux.org/howtos/resources/configurer-exim4-amavis-spamassassin-clamav-mysql/
-    apt-get install -y exim4-daemon-heavy php-cli heirloom-mailx mutt gpgsm
+
+    ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
+    if [[ -z "$wp_webname" ]] ; then
+        wp_webname="$domain"
+    fi
+
+    update_variables
+    require_variables "domain|email_admin|wp_webname"
+
+    # note: dc_other_hostnames will be like forum.elivelinux.org, so that this elivecd.org server will accept emails from it
+    # TODO FIXME:  this doesn't seems to work
+    echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
+    # this seems to be auto set:
+    if [[ -n "$wp_webname" ]] ; then
+        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname}" | debconf-set-selections
+    fi
+    echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
+    # do not allow external connections:
+    echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1" | debconf-set-selections
+
+
+    # packages to install
+    #case "$debian_version" in
+        #buster)
+            #packages_extra="heirloom-mailx $packages_extra"
+            #;;
+        #bullseye|*)
+            #packages_extra="$packages_extra"
+            #;;
+    #esac
+
+    packages_install \
+        exim4-daemon-heavy mutt gpgsm s-nail letsencrypt $packages_extra
+
+    update-exim4.conf
+
+    # install certificate
+    # TODO: before to install exim, we need to have the DNS's configured with everything we need, for example smtp.domain.com to point to this machine, otherwise some steps will fail like certbot
+    if ! [[ -d "/etc/letsencrypt/live/smtp.${wp_webname}" ]] ; then
+        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with smtp.${wp_webname} to point to this IP before to continue:"
+        if ! ping -c 1 smtp.${wp_webname} 1>/dev/null 2>&1 ; then
+            echo -e "You are going to install a Letsencrypt certificate for 'smtp.${wp_webname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
+            read nothing
+        fi
+
+        # TODO: auto-renew
+        if installed_check "nginx" ; then
+            letsencrypt certonly -d smtp.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
+        else
+            letsencrypt certonly -d smtp.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
+        fi
+    fi
+
+    return
+
 
     touch /etc/exim4/domains_master.conf
     touch /etc/exim4/domains_relay.conf
@@ -1658,27 +1713,13 @@ install_rootkitcheck(){
     DEBIAN_FRONTEND="noninteractive" packages_install  \
         chkrootkit rkhunter unhide
 
-    cat > /debconf.live << EOF
-# Should chkrootkit be run automatically every day?
-chkrootkit      chkrootkit/run_daily    boolean true
-# Arguments to use with chkrootkit in the daily run:
-chkrootkit      chkrootkit/run_daily_opts       string  -q
-chkrootkit      chkrootkit/diff_mode    boolean true
-EOF
-    debconf-set-selections < /debconf.live
-    rm -f /debconf.live
+    echo -e "chkrootkit\tchkrootkit/run_daily\tboolean\ttrue" | debconf-set-selections
+    echo -e "chkrootkit\tchkrootkit/run_daily_opts\tstring\t-q" | debconf-set-selections
+    echo -e "chkrootkit\tchkrootkit/diff_mode\tboolean\ttrue" | debconf-set-selections
 
-    cat > /debconf.live << EOF
-# Activate daily run of rkhunter?
-rkhunter        rkhunter/cron_daily_run boolean true
-# Activate weekly update of rkhunter's databases?
-rkhunter        rkhunter/cron_db_update boolean true
-# Automatically update rkhunter's file properties database?
-rkhunter        rkhunter/apt_autogen    boolean true
-EOF
-    debconf-set-selections < /debconf.live
-    rm -f /debconf.live
-
+    echo -e "rkhunter\trkhunter/cron_daily_run\tboolean\ttrue" | debconf-set-selections
+    echo -e "rkhunter\trkhunter/cron_db_update\tboolean\ttrue" | debconf-set-selections
+    echo -e "rkhunter\trkhunter/apt_autogen\tboolean\ttrue" | debconf-set-selections
 
     dpkg-reconfigure -f noninteractive chkrootkit
     # note: unhide improves rkhunter
@@ -1915,12 +1956,12 @@ main(){
         "10."*|"buster"*)
             debian_version="buster"
             elive_version="buster"
-            elive_repo="deb [arch=amd64] http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+            elive_repo="deb ${repoarch} http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         "11."*|"bullseye"*)
             debian_version="bullseye"
             elive_version="bullseye"
-            elive_repo="deb [arch=amd64] https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
+            elive_repo="deb ${repoarch} https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         *)
             echo -e "E: sorry, this version of Debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"

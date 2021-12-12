@@ -16,11 +16,16 @@ _Note: Ubuntu installs are added for compatibility, but we **strongly** suggest 
 _Install wordpress:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
+_Install wordpress with an email server_
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`--install=exim
+
 _To create a new user:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
 
 _Help & list with more options:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --help`
+
+___Note: it's important to set all the options wanted in a single install, so that the configurator will know all the values to configure for the resulting system and have everything working___
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
