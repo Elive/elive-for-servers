@@ -1594,7 +1594,7 @@ EOF
     systemctl restart exim4.service
 
     #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
-    exim -bp | exiqgrep -i | xargs exim -Mrm   # delete all the queued emails
+    exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
 
     return
 
