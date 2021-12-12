@@ -1488,6 +1488,9 @@ install_exim(){
     packages_remove  postfix || true
 
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
+    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+
     if [[ -z "$wp_webname" ]] ; then
         wp_webname="$domain"
     fi
