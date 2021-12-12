@@ -1509,6 +1509,7 @@ install_exim(){
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1" | debconf-set-selections
+    echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
 
     # packages to install
