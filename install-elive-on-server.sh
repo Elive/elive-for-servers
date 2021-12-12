@@ -1592,48 +1592,12 @@ EOF
 
 
 
-    systemctl restart exim4.service
+    systemctl stop exim4.service
+    rm -rf /var/log/exim4/paniclog
+    systemctl start exim4.service
 
     #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
     exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
-
-    return
-
-
-
-
-
-
-
-    touch /etc/exim4/domains_master.conf
-    touch /etc/exim4/domains_relay.conf
-    touch /etc/exim4/users.conf
-    rm -rf /etc/exim4/conf.d/ /etc/exim4/exim4.conf.template /etc/exim4/passwd.client /etc/exim4/update-exim4.conf.conf
-    rm -rf /var/log/exim4/paniclog
-    # everything else is already copied in /etc
-
-    hostnamefull="${hostname}.${domain}"
-    require_variables "hostnamefull|domain|domain_names|email_noreply_pass"
-
-    changeconfig "primary_hostname" "primary_hostname       = $hostnamefull" /etc/exim4/exim4.conf
-    echo "$hostnamefull" > /etc/exim4/domains_master.conf
-    #echo "$hostnamefull" > /etc/mailname
-
-    for i in ${domain_names}
-    do
-        [[ -z "$i" ]] && continue
-        /usr/local/sbin/exim_adddkim "${i}"
-    done
-
-    /usr/local/sbin/exim_adduser "no-reply@${domain}" "$email_noreply_pass"
-    /usr/local/sbin/exim_adduser "no-reply@${hostnamefull}" "$email_noreply_pass"
-    /usr/local/sbin/exim_adduser "root@${hostname}" "$email_noreply_pass"
-    /usr/local/sbin/exim_adduser "root@${hostnamefull}" "$email_noreply_pass"
-
-    chown -R root:Debian-exim /etc/exim4
-    chmod -R g+r /etc/exim4/
-
-    systemctl restart exim4.service 2>/dev/null || true
 
 
     #<ikevin> for mail, while dns are applyed (spf + dkim), check on port25.com if all is good
@@ -1644,10 +1608,10 @@ EOF
     #apt-get install -y bsd-mailx
     # update: heirloom-mailx is much better, so we want to use it, with it our emails DOESNT go to spam and we can also debug SMTP connections like:
     # echo "foo bar test" | heirloom-mailx -v -r "no-reply@forum.elivelinux.org" -s subject thanatermesis@gmail.com
-    # echo "foo bar test" | heirloom-mailx -v -r "no-reply@forum.elivelinux.org" -s subject -S smtp="forum.elivelinux.org:587" -S smtp-use-starttls -S smtp-auth=login -S smtp-auth-user="no-reply@forum.elivelinux.org" -S smtp-auth-password="ScejyeJophs0"   -S ssl-verify=ignore  thanatermesis@gmail.com
+    # echo "foo bar test" | heirloom-mailx -v -r "no-reply@forum.elivelinux.org" -s subject -S smtp="forum.elivelinux.org:587" -S smtp-use-starttls -S smtp-auth=login -S smtp-auth-user="no-reply@forum.elivelinux.org" -S smtp-auth-password="xxxx"   -S ssl-verify=ignore  thanatermesis@gmail.com
     # or also using swaks:
     # swaks --to thanatermesis@gmail.com --from no-reply@forum.elivelinux.org --server forum.elivelinux.org
-    # swaks --to thanatermesis@gmail.com --from no-reply@forum.elivelinux.org --server forum.elivelinux.org -tls -p 587 -a LOGIN --auth-user no-reply@forum.elivelinux.org --auth-password ScejyeJophs0
+    # swaks --to thanatermesis@gmail.com --from no-reply@forum.elivelinux.org --server forum.elivelinux.org -tls -p 587 -a LOGIN --auth-user no-reply@forum.elivelinux.org --auth-password xxxx
     #apt-get remove -y heirloom-mailx
 
     installed_set "exim"
@@ -1901,7 +1865,7 @@ final_steps(){
     fi
 
 
-    el_info "Reboot your server and enjoy everything ready"
+    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. Then Reboot your server and enjoy it!"
 }
 
 
