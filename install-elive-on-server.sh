@@ -1080,7 +1080,17 @@ install_mariadb(){
             bullseye|*)
                 mariadbd-safe --skip-grant-tables &
                 sleep 3
-                mysql -u root -D mysql -e "flush privileges; SET PASSWORD FOR root@localhost = PASSWORD('${pass_mariadb_root}'); flush privileges;"
+                mysql -u root -D mysql -e "flush privileges;"
+                mysql -u root -D mysql -e "SET PASSWORD FOR root@localhost = PASSWORD('${pass_mariadb_root}');"
+                # enable unix authentication
+                mysql -u root -D mysql -e "INSTALL SONAME 'auth_socket'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;"
+                # remove anonymous user:
+                mysql -u root -D mysql -e "DELETE FROM mysql.user WHERE User='';"
+                # disallow root login remotely:
+                mysql -u root -D mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+                # delete test database
+                mysql -u root -D mysql -e "DELETE FROM mysql.db WHERE Db IN('test', 'test\_%');"
+                mysql -u root -D mysql -e "flush privileges;"
                 ;;
         esac
 
@@ -1108,7 +1118,7 @@ install_mariadb(){
     mysql_install_db
     mysql_upgrade
     # secure your database
-    mysql_secure_installation
+    #mysql_secure_installation
 
     installed_set "mariadb" "(mysql)"
 }
@@ -1532,7 +1542,9 @@ install_exim(){
     packages_install \
         exim4-daemon-heavy mutt gpgsm openssl s-nail letsencrypt $packages_extra
 
+    rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
+    dpkg-reconfigure -fnoninteractive exim4-config
 
     # install certificate
     # TODO: before to install exim, we need to have the DNS's configured with everything we need, for example smtp.domain.com to point to this machine, otherwise some steps will fail like certbot
