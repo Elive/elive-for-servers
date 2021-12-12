@@ -1,0 +1,29 @@
+#!/usr/bin/php -q
+<?php
+
+$userfile = '/etc/exim4/users.conf';
+$salt     = md5 ( 'elivelinuxmailsystem' );
+$login    = $argv[1];
+$pwd      = crypt ( $argv[2], $salt );
+
+if ( ( $f = fopen ( $userfile, 'a+' ) ) !== false )
+{
+	if ( ! fwrite ( $f, "$login:$pwd\n" ) )
+	{
+		echo "Error while adding $login to $userfile\n";
+
+		exit ( 1 );
+	}
+	else
+	{
+		fclose ( $f );
+
+		exit ( 0 );
+	}
+}
+else
+	echo "Unable to open file $userfile\n";
+
+exit ( 1 );
+
+?>

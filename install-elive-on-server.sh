@@ -1487,9 +1487,9 @@ install_exim(){
     systemctl stop  postfix.service  2>/dev/null || true
     packages_remove  postfix || true
 
+    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
-    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
 
     if [[ -z "$wp_webname" ]] ; then
         wp_webname="$domain"
@@ -1502,9 +1502,7 @@ install_exim(){
     # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
-    if [[ -n "$wp_webname" ]] ; then
-        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname}" | debconf-set-selections
-    fi
+    echo -e "exim4-config\texim4/mailname\tstring\t${wp_webname}" | debconf-set-selections
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1" | debconf-set-selections
@@ -1520,8 +1518,15 @@ install_exim(){
             #;;
     #esac
 
+    if installed_check "php" ; then
+        update_variables
+        packages_extra="php${php_version}-cli $packages_extra"
+    else
+        packages_extra="php-cli $packages_extra"
+    fi
+
     packages_install \
-        exim4-daemon-heavy mutt gpgsm s-nail letsencrypt $packages_extra
+        exim4-daemon-heavy mutt gpgsm openssl s-nail letsencrypt $packages_extra
 
     update-exim4.conf
 
