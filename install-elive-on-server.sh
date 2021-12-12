@@ -1574,7 +1574,7 @@ install_exim(){
     echo -e "\nsmtp.${wp_webname}:${email_username}:${email_password}" >> /etc/exim4/passwd.client
 
     # require TLS
-    cat > /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
+    cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
 
 # require TLS (encrypted connections) to connect
 MAIN_TLS_ENABLE = true
