@@ -1512,6 +1512,7 @@ install_exim(){
 
     # cleanup old install and configuration
     if [[ -d /etc/exim4 ]] ; then
+        rm -rf /etc/exim4.old 1>/dev/null 2>&1 || true
         mv -f /etc/exim4 /etc/exim4.old
     fi
     packages_remove --purge exim4-\*
