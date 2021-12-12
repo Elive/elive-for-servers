@@ -909,12 +909,6 @@ install_php(){
     # packages to install
     local packages_extra
 
-    if which php 1>/dev/null ; then
-        if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
-            packages_remove --purge php\*
-        fi
-    fi
-
     # default version provided ?
     php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
 
@@ -922,6 +916,12 @@ install_php(){
         rm -f "/etc/apt/sources.list.d/php.list"
         unset php_version
     else
+        if which php 1>/dev/null ; then
+            #if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
+                packages_remove --purge php\*
+            #fi
+        fi
+
         if [[ "$debian_version" = "bullseye" ]] ; then
 
             if el_confirm "\nDo you want to use unnoficial repositories to install a more recent version of PHP?" ; then
@@ -2151,14 +2151,6 @@ main(){
     fi
     # }}}
 
-    # install email server {{{
-    if ((is_wanted_exim)) ; then
-        if installed_ask "exim" "You are going to install EXIM mail server, it will be configured for you with users, dkim keys, etc. Continue?" ; then
-            install_exim
-        fi
-    fi
-    # }}}
-
     # install iptables {{{
     if ((is_wanted_iptables)) ; then
         # TODO: let's move to ufw instead which is more easy to configure?
@@ -2168,7 +2160,7 @@ main(){
     fi
     # }}}
 
-    # chkrootkits {{{
+    # install chkrootkits {{{
     if ((is_wanted_rootkitcheck)) ; then
         if installed_ask "rootkitcheck" "You are going to install ROOTKIT checkers, it will run daily verifiers of the server. Continue?" ; then
             install_rootkitcheck
@@ -2184,11 +2176,21 @@ main(){
     fi
     # }}}
 
+    # install wordpress {{{
     if ((is_wanted_wordpress)) ; then
         if installed_ask "wordpress" "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
             install_wordpress
         fi
     fi
+    # }}}
+
+    # install email server {{{
+    if ((is_wanted_exim)) ; then
+        if installed_ask "exim" "You are going to install EXIM mail server, it will be configured for you with users, dkim keys, etc. Continue?" ; then
+            install_exim
+        fi
+    fi
+    # }}}
 
     # LAST SERVICES TO INSTALL
 
