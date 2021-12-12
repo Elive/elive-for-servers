@@ -1490,6 +1490,9 @@ install_exim(){
     ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "email_username" "Insert an email username, like admin@yourdomain.com"
+    ask_variable "email_password" "Insert an email password for your '${email_username}' username"
+
 
     if [[ -z "$wp_webname" ]] ; then
         wp_webname="$domain"
@@ -1547,6 +1550,10 @@ install_exim(){
         fi
     fi
 
+    # be able to send from this domain, add a dkim signature
+    /usr/local/sbin/exim_adddkim "${wp_webname}"
+    echo -e "smtp.${wp_webname}:${email_username}:${email_password}" >> /etc/exim4/passwd.client
+
     return
 
 
@@ -1562,7 +1569,7 @@ install_exim(){
 
     changeconfig "primary_hostname" "primary_hostname       = $hostnamefull" /etc/exim4/exim4.conf
     echo "$hostnamefull" > /etc/exim4/domains_master.conf
-    echo "$hostnamefull" > /etc/mailname
+    #echo "$hostnamefull" > /etc/mailname
 
     for i in ${domain_names}
     do
