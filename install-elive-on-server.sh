@@ -2281,12 +2281,13 @@ main(){
     # last security check, you should fix all the errors encountered after that:
     #apt-get install -y lynis
     if ((is_wanted_lynis)) ; then
-        if el_confirm "\nLynis is an audit tool that verify all the security of your server, it may include many false positives (or things that are set on this way on purpose), it has NO RELATION WITH ELIVE so use it entirely on your own just to see the settings of your server. Do you want to continue?" ; then
+        if installed_ask "lynis" "You are going to install Lynis. Which is an audit tool that verify all the security of your server, it may include many false positives (or things that are set on this way on purpose), it has NO RELATION WITH ELIVE so use it entirely on your own just to see the settings of your server. Do you want to continue?" ; then
 
             packages_install \
                 lynis
 
             lynis
+            installed_set "lynis"
         fi
     fi
 
@@ -2299,10 +2300,11 @@ main(){
 
     # install monitor for network bandwith usage (after to have transfered & installed all the files)
     if ((is_wanted_vnstat)) ; then
-        if el_confirm "\nVnstat is a simple network bandwith usage meter, you don't need this in most of the hostings if you have statistics about it, do you want to continue?" ; then
+        if installed_ask "vnstat" "You are going to install VNSTAT. It will start collecting data, use the command 'vnstat' to check your bandwith usage. Continue?" ; then
             packages_install \
                 vnstat
-            installed_set "vnstat" "It will start collecting data, use the command 'vnstat' to check your bandwith usage"
+
+            installed_set "vnstat"
         fi
     fi
 
