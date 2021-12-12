@@ -1937,12 +1937,14 @@ main(){
         wp_db_name=dbname
         wp_db_user=dbuser
         wp_db_pass=dbpass
-        wp_webname=www.wp.thanatermesis.org # XXX wp.thanatermesis.org is actually banned for 1 week because of the multiple betatests
+        wp_webname=wp.thanatermesis.org # XXX wp.thanatermesis.org is actually banned for 1 week because of the multiple betatests
         username=elivewp
         domain=thanatermesis.org
         email_admin="thanatermesis@gmail.com"
         httaccess_user="webuser"
         httaccess_password="webpass"
+        email_username="user@wp.thanatermesis.org"
+        email_password="supapass"
     fi
 
     if [[ "$UID" != "0" ]] ; then
