@@ -932,9 +932,9 @@ install_php(){
 
                 # get new version
                 php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
-                if el_confirm "\nDo you want to use the NEW default provided PHP version? ($php_version) ?" ; then
-                    rm -f "/etc/apt/sources.list.d/php.list"
+                if ! el_confirm "\nDo you want to use the NEW default provided PHP version? ($php_version) ?" ; then
                     unset php_version
+                    rm -f "/etc/apt/sources.list.d/php.list"
                 fi
             fi
         fi
@@ -1850,18 +1850,17 @@ final_steps(){
         NOREPORTS=1 el_info "You have a Cloud configuration file in '/etc/cloud/', which you may configure it to manage your users or other server settings, like automtic reconfiguration of your hosts file, re-creation of dummy users, etc..."
     fi
 
-    echo -e "Maybe you want now to:"
-    echo -e " # use backup websites tool to recover the last state of a website (faster than use mysql to import databases)"
-    echo -e " # verify all the settings in /etc that all looks correct"
-    echo -e " # disable root ssh access"
-    echo -e " # run a check to see if your httpS / ssl is the most valid one: https://www.ssllabs.com/ssltest/analyze.html?d=elivecd.org"
-    echo -e "   # you have copies of /etc/letsencrypt, the account is thanatermesis@gmail.com, and use the same confs as in forum.elivelinux.org"
-    echo -e "   # run: 'systemctl disable certbot.timer' in order to run manually the renewal from your custom cronjob"
-
-
-    echo -e "\nFinally: "
-    echo -e " * Make sure that you have disabled cronjobs (reboot server, backups, etc) and daemons uneeded"
-    echo -e " * Please restart/reboot everything"
+    # TODO: review and remove
+    #echo -e "Maybe you want now to:"
+    #echo -e " # use backup websites tool to recover the last state of a website (faster than use mysql to import databases)"
+    #echo -e " # verify all the settings in /etc that all looks correct"
+    #echo -e " # disable root ssh access"
+    #echo -e " # run a check to see if your httpS / ssl is the most valid one: https://www.ssllabs.com/ssltest/analyze.html?d=elivecd.org"
+    #echo -e "   # you have copies of /etc/letsencrypt, the account is thanatermesis@gmail.com, and use the same confs as in forum.elivelinux.org"
+    #echo -e "   # run: 'systemctl disable certbot.timer' in order to run manually the renewal from your custom cronjob"
+    #echo -e "\nFinally: "
+    #echo -e " * Make sure that you have disabled cronjobs (reboot server, backups, etc) and daemons uneeded"
+    #echo -e " * Please restart/reboot everything"
 
     if ((is_installed_exim)) ; then
         require_variables "domain_names"
@@ -2098,7 +2097,7 @@ main(){
         install_elive
     else
         #if ! [[ -s /etc/elive-version ]] ; then
-        if installed_ask "elive" "This server has not yet Elive superpowers. Install? (required)" ; then
+        if installed_ask "elive" "This server has not yet Elive superpowers. Install them? (required)" ; then
             install_elive
         fi
     fi
