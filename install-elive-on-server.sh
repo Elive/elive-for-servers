@@ -1593,6 +1593,9 @@ EOF
 
     systemctl restart exim4.service
 
+    #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
+    exim -bp | exiqgrep -i | xargs exim -Mrm   # delete all the queued emails
+
     return
 
 
@@ -1863,12 +1866,11 @@ final_steps(){
     #echo -e " * Please restart/reboot everything"
 
     if ((is_installed_exim)) ; then
-        require_variables "domain_names"
-        for i in ${domain_names} ${wp_webname}
+        for i in ${wp_webname}
         do
             [[ -z "$i" ]] && continue
             [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
-            echo -e "\nEdit your DNS's and add this DKIM as a TXT entry:  mail._domainkey.${i}"
+            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i}' with these contents:"
             echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
         done
     fi
@@ -2073,9 +2075,6 @@ main(){
     #
     # Create / import back users
     #
-
-    # comment {{{
-    # - comment }}}
 
     prepare_environment start
 
