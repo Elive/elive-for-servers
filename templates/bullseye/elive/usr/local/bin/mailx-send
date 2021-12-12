@@ -17,6 +17,7 @@ if [[ -x "$(which heirloom-mailx)" ]] ; then
     echo "$@" | heirloom-mailx \
         -r "no-reply@elivecd.org" \
         -s "$subject" "$to"
+    # TODO: heirloom-mailx is now "s-nail", so just use s-nail instead
     #echo "$@" | heirloom-mailx \
         #-s "$subject" \
         #-S smtp-use-starttls -S smtp-auth=login -S ssl-verify=ignore \
