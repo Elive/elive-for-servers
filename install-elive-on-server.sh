@@ -147,7 +147,6 @@ get_args(){
             "--install=exim")
                 is_wanted_exim=1
                 is_extra_service=1
-                notimplemented
                 ;;
             "--install=wordpress")
                 is_wanted_wordpress=1
@@ -1512,14 +1511,17 @@ install_exim(){
     require_variables "domain|email_admin|wp_webname"
 
     # cleanup old install and configuration
-    packages_remove --purge exim4-daemon-light
-    rm -rf /etc/exim4 1>/dev/null 2>&1 || true
+    if [[ -d /etc/exim4 ]] ; then
+        mv -f /etc/exim4 /etc/exim4.old
+    fi
+    packages_remove --purge exim4-\*
 
+
+    echo "$wp_webname" > /etc/mailname
     # note: dc_other_hostnames will be like forum.elivelinux.org, so that this elivecd.org server will accept emails from it
     # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
-    echo -e "exim4-config\texim4/mailname\tstring\t${wp_webname}" | debconf-set-selections
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1" | debconf-set-selections
@@ -1904,6 +1906,10 @@ final_steps(){
 # usage {{{
 notimplemented(){
     source /usr/lib/elive-tools/functions || exit 1
+
+    if ! ((is_production)) ; then
+        return
+    fi
 
     NOREPORTS=1 el_warning "Note: Feature may be not not fully functional"
     if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. DO NOT REPORT BUGS BY USING THIS OPTION. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
