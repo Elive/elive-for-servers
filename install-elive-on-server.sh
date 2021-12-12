@@ -476,7 +476,7 @@ sources_update_adapt(){
     sources="/root/elive-for-servers"
     templates="$sources/templates"
 
-    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
 
     update_variables
     require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|debian_version"
@@ -1433,7 +1433,7 @@ install_phpmyadmin(){
 }
 
 install_fail2ban(){
-    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
 
     require_variables "email_admin|domain_ip|hostname|domain"
@@ -1487,10 +1487,10 @@ install_exim(){
     systemctl stop  postfix.service  2>/dev/null || true
     packages_remove  postfix || true
 
-    ask_variable "domain" "Insert the domain name for this server (like: johnsmith.com)"
+    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
-    ask_variable "email_username" "Insert an email username, like admin@yourdomain.com"
+    ask_variable "email_username" "Insert a full email username, like admin@yourdomain.com"
     ask_variable "email_password" "Insert an email password for your '${email_username}' username"
 
 
@@ -1553,9 +1553,34 @@ install_exim(){
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${wp_webname}"
-    echo -e "smtp.${wp_webname}:${email_username}:${email_password}" >> /etc/exim4/passwd.client
+    echo -e "\nsmtp.${wp_webname}:${email_username}:${email_password}" >> /etc/exim4/passwd.client
+
+    # require TLS
+    cat > /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
+
+# require TLS (encrypted connections) to connect
+MAIN_TLS_ENABLE = true
+MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/smtp.${wp_webname}/fullchain.pem
+MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
+
+# set the DKIM configuration
+DKIM_DOMAIN = ${wp_webname}
+DKIM_SELECTOR = mail
+DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
+EOF
+
+
+
+
+
+    systemctl restart exim4.service
 
     return
+
+
+
+
+
 
 
     touch /etc/exim4/domains_master.conf
@@ -1822,11 +1847,12 @@ final_steps(){
 
     if ((is_installed_exim)) ; then
         require_variables "domain_names"
-        for i in ${domain_names}
+        for i in ${domain_names} ${wp_webname}
         do
             [[ -z "$i" ]] && continue
-            echo "Edit your DNS's and add this DKIM as a TXT entry:  x._domainkey.${i}"
-            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g')"
+            [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
+            echo -e "\nEdit your DNS's and add this DKIM as a TXT entry:  mail._domainkey.${i}"
+            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
         done
     fi
 
