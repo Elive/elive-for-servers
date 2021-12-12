@@ -1511,6 +1511,10 @@ install_exim(){
     update_variables
     require_variables "domain|email_admin|wp_webname"
 
+    # cleanup old install and configuration
+    packages_remove --purge exim4-daemon-light
+    rm -rf /etc/exim4 1>/dev/null 2>&1 || true
+
     # note: dc_other_hostnames will be like forum.elivelinux.org, so that this elivecd.org server will accept emails from it
     # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
