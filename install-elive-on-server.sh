@@ -300,7 +300,7 @@ changeconfig(){
             sed -i "s|^${1}.*$|$2|g" "$3"
         else
             if grep -qs "$1" "$3" ; then
-                sed -i "s|${1}.*$|$2|g" "$3"
+                sed -i "s|^.*${1}.*$|$2|g" "$3"
             else
                 echo -e "$2" >> "$3"
             fi
@@ -1525,7 +1525,7 @@ install_exim(){
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
-    echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1" | debconf-set-selections
+    echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465" | debconf-set-selections
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
 
@@ -1547,7 +1547,7 @@ install_exim(){
     fi
 
     packages_install \
-        exim4-daemon-heavy mutt gpgsm openssl s-nail letsencrypt $packages_extra
+        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt $packages_extra
 
     rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
@@ -1566,9 +1566,26 @@ install_exim(){
         if installed_check "nginx" ; then
             letsencrypt certonly -d smtp.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
         else
+            if ((has_ufw)) ; then
+                ufw allow 80/tcp
+            else
+                if ((has_iptables)) ; then
+                    iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+                fi
+            fi
+
             letsencrypt certonly -d smtp.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
         fi
     fi
+
+    # create group to read SSL certificate for tls
+    # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
+    groupadd mailers
+    usermod -aG mailers Debian-exim
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$wp_webname} /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
+    chmod g+x /etc/letsencrypt/{live,archive}
+    #chmod g+r /etc/letsencrypt/archive/smtp.${wp_webname}/privkey1.pem
+    chmod g+r /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${wp_webname}"
@@ -1830,14 +1847,12 @@ final_steps(){
     #echo -e " * Make sure that you have disabled cronjobs (reboot server, backups, etc) and daemons uneeded"
     #echo -e " * Please restart/reboot everything"
 
-    if ((is_installed_exim)) ; then
-        for i in ${wp_webname}
-        do
-            [[ -z "$i" ]] && continue
-            [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
-            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i}' with these contents:"
-            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
-        done
+    # TODO: add mysql password etc
+    # TODO: add a beautiful list to show to the user
+    # TODO: tell user we would like to know his experience, link to forum dedicated to elive for servers
+    if ((is_installed_elive)) ; then
+        el_info "Elive Features installed:"
+        el_info " * many, see github page "
     fi
 
     if ((is_installed_wordpress)) ; then
@@ -1853,11 +1868,16 @@ final_steps(){
         el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
     fi
 
-    # TODO: add a beautiful list to show to the user
-    # TODO: tell user we would like to know his experience, link to forum dedicated to elive for servers
-    if ((is_installed_elive)) ; then
-        el_info "Elive Features installed:"
-        el_info " * many, see github page "
+    if ((is_installed_exim)) ; then
+        # TODO: tell about all the configurations needed, like the SPF entry, reverse dns, dnssec?
+        # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
+        for i in ${wp_webname}
+        do
+            [[ -z "$i" ]] && continue
+            [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
+            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i}' with these contents:"
+            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
+        done
     fi
 
     if ((is_installed_fail2ban)) ; then
