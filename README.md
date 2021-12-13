@@ -64,6 +64,10 @@ _This is the login of your server after installing it, description:_
  * --install=fail2ban       # detect and ban bot attacks, automatically preconfigured for some services
  * --install=mariadb        # mysql database
  * --install=monit          # daemon that watch your services and restarts them in case they stopped to work
+ * --install=rootkitcheck   # daemon to check daily your system to find posible rootkits malware
+ * --install=swapfile       # creates a 1 GB swap file to help your server not having processes killed by memory exhausted
+ * --force                  # it will force the reinstall of the services / options, even if was installed previously
+ * --freespace-system       # it will clean up your system with unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux
 
 
 

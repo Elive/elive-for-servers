@@ -2057,8 +2057,8 @@ main(){
 
 
     # backup etc before to install things
-    if ! [[ -d "/etc.bak-clean" ]] ; then
-        cp -a /etc /etc.bak-clean
+    if ! [[ -d "/etc.bak-before-elive" ]] ; then
+        cp -a /etc /etc.bak-before-elive
     fi
 
 
@@ -2284,8 +2284,8 @@ main(){
 
 
 
-    #rm -rf /etc.bak-clean-allconfigured
-    #cp -a /etc /etc.bak-clean-allconfigured
+    #rm -rf /etc.bak-elive-allconfigured
+    #cp -a /etc /etc.bak-elive-allconfigured
     #dpkg -l > /root/dpkg_-l.txt
 
 
