@@ -1526,7 +1526,7 @@ install_exim(){
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     if el_confirm "Do you want to be able to connect to this Email server externally using SMTP ? (if you select no, only localhost connections will be allowed)" ; then
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465 ; ${domain_ip}.587" | debconf-set-selections
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465 ; ${domain_ip}.587 ; ${domain_ip}.465 " | debconf-set-selections
     else
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465" | debconf-set-selections
     fi
@@ -1955,7 +1955,7 @@ main(){
         email_admin="thanatermesis@gmail.com"
         httaccess_user="webuser"
         httaccess_password="webpass"
-        email_username="user@wp.thanatermesis.org"
+        email_username="user@smtp.wp.thanatermesis.org"
         email_password="supapass"
     fi
 
