@@ -57,7 +57,13 @@ _This is the login of your server after installing it, description:_
  
  ## Services
  You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... for example using the options:
- * --install=wordpress
+ * --install=wordpress      # full wordpress install with fine tunned options
+ * --install=exim           # full email server with settings ready to use
+ * --install=php            # php, includes many php versions
+ * --install=nginx          # nginx webserver, includes SSL (httpS)
+ * --install=fail2ban       # detect and ban bot attacks, automatically preconfigured for some services
+ * --install=mariadb        # mysql database
+ * --install=monit          # daemon that watch your services and restarts them in case they stopped to work
 
 
 
