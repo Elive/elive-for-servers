@@ -1955,7 +1955,7 @@ main(){
         email_admin="thanatermesis@gmail.com"
         httaccess_user="webuser"
         httaccess_password="webpass"
-        email_username="user@smtp.wp.thanatermesis.org"
+        email_username="user@wp.thanatermesis.org"
         email_password="supapass"
     fi
 
