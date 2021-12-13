@@ -1525,7 +1525,11 @@ install_exim(){
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
-    echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465" | debconf-set-selections
+    if el_confirm "Do you want to be able to connect to this Email server externally using SMTP ? (if you select no, only localhost connections will be allowed)" ; then
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465 ; ${domain_ip}.587" | debconf-set-selections
+    else
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465" | debconf-set-selections
+    fi
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
 
