@@ -163,6 +163,7 @@ get_args(){
                 is_wanted_vnstat=1
                 is_wanted_swapfile=1
                 #is_wanted_iptables=1
+                notimplemented
                 ;;
             "--install=monit")
                 is_wanted_monit=1
@@ -1755,6 +1756,8 @@ install_monit(){
     addconfig "set alert ${email_admin}" /etc/monit/monitrc
 
     installed_set "monit"
+    # TODO: user must enable the wanted services, or we should provide templates
+    # TODO: check all the templates we have in scp-files dir for other things
 }
 
 install_rootkitcheck(){

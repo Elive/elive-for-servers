@@ -17,7 +17,7 @@ _Install wordpress:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
 _Install wordpress with an email server_
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`--install=exim
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
 
 _To create a new user:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
