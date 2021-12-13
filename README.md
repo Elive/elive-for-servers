@@ -57,17 +57,17 @@ _This is the login of your server after installing it, description:_
  
  ## Services
  You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... for example using the options:
- * --install=wordpress      # full wordpress install with fine tunned options
- * --install=exim           # full email server with settings ready to use
- * --install=php            # php, includes many php versions
- * --install=nginx          # nginx webserver, includes SSL (httpS)
- * --install=fail2ban       # detect and ban bot attacks, automatically preconfigured for some services
- * --install=mariadb        # mysql database
- * --install=monit          # daemon that watch your services and restarts them in case they stopped to work
- * --install=rootkitcheck   # daemon to check daily your system to find posible rootkits malware
- * --install=swapfile       # creates a 1 GB swap file to help your server not having processes killed by memory exhausted
- * --force                  # it will force the reinstall of the services / options, even if was installed previously
- * --freespace-system       # it will clean up your system with unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux
+ * --install=wordpress      - _full wordpress install with fine tunned options_
+ * --install=exim           - _full email server with settings ready to use_
+ * --install=php            - _php, includes many php versions_
+ * --install=nginx          - _nginx webserver, includes SSL (httpS)_
+ * --install=fail2ban       - _detect and ban bot attacks, automatically preconfigured for some services_
+ * --install=mariadb        - _mysql database_
+ * --install=monit          - _daemon that watch your services and restarts them in case they stopped to work_
+ * --install=rootkitcheck   - _daemon to check daily your system to find posible rootkits malware_
+ * --install=swapfile       - _creates a 1 GB swap file to help your server not having processes killed by memory exhausted_
+ * --force                  - _it will force the reinstall of the services / options, even if was installed previously_
+ * --freespace-system       - _it will clean up your system with unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux_
 
 
 
