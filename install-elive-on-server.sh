@@ -1584,7 +1584,7 @@ install_exim(){
 
     # create group to read SSL certificate for tls
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
-    groupadd mailers
+    groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
     chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$wp_webname} /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
