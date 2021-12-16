@@ -1527,9 +1527,9 @@ install_exim(){
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     if el_confirm "Do you want to be able to connect to this Email server externally using SMTP ? (if you select no, only localhost connections will be allowed)" ; then
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465 ; ${domain_ip}.587 ; ${domain_ip}.465 " | debconf-set-selections
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 " | debconf-set-selections
     else
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.465" | debconf-set-selections
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 " | debconf-set-selections
     fi
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
@@ -1552,7 +1552,7 @@ install_exim(){
     fi
 
     packages_install \
-        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt $packages_extra
+        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt whois $packages_extra
 
     rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
@@ -1594,7 +1594,7 @@ install_exim(){
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${wp_webname}"
-    echo -e "\nsmtp.${wp_webname}:${email_username}:${email_password}" >> /etc/exim4/passwd.client
+    echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # require TLS
     cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
@@ -1609,10 +1609,21 @@ DKIM_DOMAIN = ${wp_webname}
 DKIM_SELECTOR = mail
 DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
 EOF
+    # configure the login system:
+    cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << 'EOF'
 
+# Elive: login to SMTP using tls
+login_server:
+  driver = plaintext
+  public_name = LOGIN
+  server_prompts = "Username:: : Password::"
+  server_condition = "${if crypteq{$auth2}{${extract{1}{:}{${lookup{$auth1}lsearch{CONFDIR/passwd}{$value}{*:*}}}}}{1}{0}}"
+  server_set_id = $auth1
+  .ifndef AUTH_SERVER_ALLOW_NOTLS_PASSWORDS
+  server_advertise_condition = ${if eq{$tls_in_cipher}{}{}{*}}
+  .endif
 
-
-
+EOF
 
     systemctl stop exim4.service
     rm -rf /var/log/exim4/paniclog
@@ -1621,20 +1632,15 @@ EOF
     #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
     exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
 
+    # configure mailx-send to work
+    changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
+    changeconfig "password=" "password=\"$email_password\"" /usr/local/bin/mailx-send
+    changeconfig "smtp_connect=" "smtp_connect=\"smtp.${wp_webname}\"" /usr/local/bin/mailx-send
+    changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
+    changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
-    #<ikevin> for mail, while dns are applyed (spf + dkim), check on port25.com if all is good
-    #<ikevin> for dkim, if you already have a key, put it on /etc/exim4/elivelinux.<org|net>/dkim_<private|public>.key
-    #<ikevin> if you don't have a key, just make a "cat /etc/exim4/elivelinux.<org|net>/dkim_public.key to get what you need to add on the domain
+    # TODO: configure email-sender too
 
-    # remove unneeded packages
-    #apt-get install -y bsd-mailx
-    # update: heirloom-mailx is much better, so we want to use it, with it our emails DOESNT go to spam and we can also debug SMTP connections like:
-    # echo "foo bar test" | heirloom-mailx -v -r "no-reply@forum.elivelinux.org" -s subject thanatermesis@gmail.com
-    # echo "foo bar test" | heirloom-mailx -v -r "no-reply@forum.elivelinux.org" -s subject -S smtp="forum.elivelinux.org:587" -S smtp-use-starttls -S smtp-auth=login -S smtp-auth-user="no-reply@forum.elivelinux.org" -S smtp-auth-password="xxxx"   -S ssl-verify=ignore  thanatermesis@gmail.com
-    # or also using swaks:
-    # swaks --to thanatermesis@gmail.com --from no-reply@forum.elivelinux.org --server forum.elivelinux.org
-    # swaks --to thanatermesis@gmail.com --from no-reply@forum.elivelinux.org --server forum.elivelinux.org -tls -p 587 -a LOGIN --auth-user no-reply@forum.elivelinux.org --auth-password xxxx
-    #apt-get remove -y heirloom-mailx
 
     installed_set "exim"
     is_installed_exim=1
@@ -1893,6 +1899,8 @@ final_steps(){
 
 
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. Then Reboot your server and enjoy it!"
+
+    # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
 
 

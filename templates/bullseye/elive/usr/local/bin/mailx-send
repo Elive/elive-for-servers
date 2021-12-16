@@ -12,20 +12,51 @@ shift
 subject="$1"
 shift
 
-#echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@elivecd.org
-if [[ -x "$(which heirloom-mailx)" ]] ; then
-    echo "$@" | heirloom-mailx \
-        -r "no-reply@elivecd.org" \
-        -s "$subject" "$to"
-    # TODO: heirloom-mailx is now "s-nail", so just use s-nail instead
-    #echo "$@" | heirloom-mailx \
-        #-s "$subject" \
-        #-S smtp-use-starttls -S smtp-auth=login -S ssl-verify=ignore \
-        #-r "no-reply@elivecd.org" \
-        #-S smtp="elivecd.org:587" \
-        #-S smtp-auth-user="no-reply@elivecd.org" -S smtp-auth-password="yourpass" \
-        #"$to"
+# settings
+address_from=""
+username="" # note: must be converted to uri (uri-gtk-encode)
+password=""
+smtp_connect=""
+smtp_port="587"
+args_snail_extra=""
+#case "$(cat /etc/debian_version)" in
+    #"10."*|"buster"*)
+        #debian_version="buster"
+        #is_snail_new=0
+        #;;
+    #"11."*|"bullseye"*)
+        #debian_version="bullseye"
+        #is_snail_new=1
+        #;;
+    #*)
+        #is_snail_new=1
+        #;;
+#esac
+
+if which s-nail 1>/dev/null 2>&1 ; then
+    if [[ -n "$username" ]] && [[ -n "$password" ]] && [[ -n "$smtp_connect" ]] ; then
+        is_snail=1
+    fi
+fi
+if [[ -z "$address_from" ]] ; then
+    address_from="${USER}@$( hostname --long )"
+fi
+
+if ((is_snail)) ; then
+    echo "$@" | s-nail \
+        -r "$address_from" \
+        -s "$subject" \
+        -S mta="smtp://${username}:${password}@${smtp_connect}:${smtp_port}" \
+        $args_snail_extra \
+        -S v15-compat \
+        "$to"
 else
-    #echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to" -- -F "Mail_Sender" -f no-reply@elivecd.org
-    echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to"
+    # not using s-nail
+    if [[ -x "$(which heirloom-mailx)" ]] ; then
+        echo "$@" | heirloom-mailx \
+            -r "${address_from}" \
+            -s "$subject" "$to"
+    else
+        echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to"
+    fi
 fi
