@@ -1358,18 +1358,14 @@ EOF
     # interactively run the configurator
     el_info "Letsencrypt SSL (httpS) certificate install request"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
-        # re-install certificate
-        if el_confirm "Seems like you have an already installed certificate for '${wp_webname}', do you want to reconfigure it?" ; then
-            letsencrypt
-        fi
+        # re-install certificate, needed
+        letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
 
         if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week. (if you select no, your server will run on plain http with port 80 instead)" ; then
             # register first if needed:
-            if [[ -d "/etc/letsencrypt/accounts" ]] ; then
-                el_debug "letsencrypt account already existing, using it..."
-            else
+            if [[ ! -d "/etc/letsencrypt/accounts" ]] ; then
                 letsencrypt register
             fi
 
@@ -1541,7 +1537,7 @@ install_exim(){
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
-    if el_confirm "Do you want to be able to connect to this Email server externally using SMTP ? (if you select no, only localhost connections will be allowed)" ; then
+    if el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
         is_external_connections_email_enabled=1
     else
@@ -1711,6 +1707,7 @@ EOF
         fi
     fi
 
+    # TODO: include a stat system to know how many people installed the server
 
 
     # restart
