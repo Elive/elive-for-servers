@@ -1641,7 +1641,8 @@ login_server:
 EOF
 
     systemctl stop exim4.service
-    rm -rf /var/log/exim4/paniclog
+    rm -f /var/log/exim4/paniclog
+    rm -rf /var/log/exim4/* /var/log/mail*
     systemctl start exim4.service
 
     #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
@@ -1682,16 +1683,19 @@ EOF
     echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
-    echo "no-reply: ${username}" > /etc/aliases
-    #echo "notification: ${username}" > /etc/aliases
+    echo "no-reply: ${username}" >> /etc/aliases
+    echo "${email_username%@*}: ${username}" >> /etc/aliases
+    #echo "notification: ${username}" >> /etc/aliases
 
 
     # open ports: POP3, port 995
     if ((has_ufw)) ; then
         ufw allow 995/tcp
+        ufw allow 587/tcp
     else
         if ((has_iptables)) ; then
             iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 587 -j ACCEPT
         fi
     fi
 
@@ -1934,6 +1938,7 @@ final_steps(){
     if ((is_installed_elive)) ; then
         el_info "Elive Features installed:"
         el_info " * many, see github page "
+        echo
     fi
 
     if ((is_installed_wordpress)) ; then
@@ -1944,10 +1949,12 @@ final_steps(){
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
+        echo
     fi
 
     if ((is_mode_curl)) ; then
         el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
+        echo
     fi
 
     if ((is_installed_exim)) ; then
@@ -1975,16 +1982,17 @@ final_steps(){
 
         # SMTP conf
         el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
-        el_info "When you send emails from no-reply@${wp_webname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
+        el_info "Note: When you send emails from no-reply@${wp_webname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
         el_info "IMAP connect: connect to your email as: URL 'imap.${wp_webname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
+        echo
     fi
 
     if ((is_installed_fail2ban)) ; then
         el_info "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban"
+        echo
     fi
 
 
-    echo ""
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL AND SAVED THE CONFIGURATIONS TO USE IN SOME BACKUP PLACE"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
