@@ -1590,7 +1590,7 @@ install_exim(){
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
     groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
-    usermod -aG mailer dovecot
+    usermod -aG mailers dovecot
     chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$wp_webname} /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
     chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$wp_webname} /etc/letsencrypt/live/imap.${wp_webname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
