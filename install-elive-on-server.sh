@@ -1679,7 +1679,13 @@ EOF
             iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
         fi
     fi
-    # TODO: set up fail2ban to watch dovecot too
+
+    if ((is_installed_fail2ban)) ; then
+        if [[ -s /etc/fail2ban/jail.d/dovecot.conf ]] ; then
+            changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/dovecot.conf
+        fi
+    fi
+
 
 
     # restart
