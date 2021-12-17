@@ -621,6 +621,7 @@ update_variables(){
 }
 
 install_elive(){
+    el_info "Installing Elive..."
     local packages_extra
     mkdir -p /etc/apt/sources.list.d /etc/apt/preferences.d /etc/apt/trusted.gpg.d
 
@@ -791,6 +792,7 @@ EOF
 }
 
 install_user(){
+    el_info "Installing User..."
     ask_variable "username" "Insert username to use, it will be created if doesn't exist yet:"
     require_variables "username|DHOME"
 
@@ -855,6 +857,7 @@ install_user(){
 
 install_nginx(){
     # TODO: make a system to verify incompatible services, like apache/lightttps/etc and same for email, to warn the user about these needs to be removed
+    el_info "Installing NGINX..."
     systemctl stop apache2.service tomcat9.service lighttpd.service  2>/dev/null || true
     packages_remove apache2 apache2-data apache2-bin tomcat9 lighttpd || true
 
@@ -905,6 +908,7 @@ install_nginx(){
 }
 
 install_php(){
+    el_info "Installing PHP..."
     # packages to install
     local packages_extra
 
@@ -1043,6 +1047,7 @@ install_php(){
 }
 
 install_mariadb(){
+    el_info "Installing MariaDB..."
     # install service
     packages_install \
         mariadb-server mariadb-client \
@@ -1056,6 +1061,7 @@ install_mariadb(){
         #mysql -u root -p"$( grep password /etc/mysql/debian.cnf | sed -e 's|^.* = ||g' | head -1 )" -D mysql -e "update user set password=password('${pass_mariadb_root}') where user='root'"
         #mysql -u root -p"$( grep password /etc/mysql/debian.cnf | sed -e 's|^.* = ||g' | head -1 )" -D mysql -e "flush privileges"
 
+        echo -e "Setting up mariadb..." 1>&2
         systemctl mariadb stop 1>/dev/null 2>&1 || true
         sleep 2
 
@@ -1123,6 +1129,7 @@ install_mariadb(){
 }
 
 install_wordpress(){
+    el_info "Installing Wordpress..."
     # dependencies {{{
     if ! installed_check "nginx" ; then
         install_nginx
@@ -1404,6 +1411,7 @@ EOF
 }
 
 install_phpmyadmin(){
+    el_info "Installing PHPMyAdmin..."
     # configure & install {{{
     echo -e "phpmyadmin\tphpmyadmin/dbconfig-install\tboolean\tfalse" | debconf-set-selections
 
@@ -1442,6 +1450,7 @@ install_phpmyadmin(){
 }
 
 install_fail2ban(){
+    el_info "Installing Fail2Ban..."
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
 
@@ -1492,6 +1501,7 @@ install_fail2ban(){
 }
 
 install_exim(){
+    el_info "Installing Exim mail server..."
     local packages_extra
     systemctl stop  postfix.service  2>/dev/null || true
     packages_remove  postfix || true
@@ -1647,6 +1657,7 @@ EOF
     # TODO: configure email-sender too ?
 
     # Dovecot:
+    el_info "Installing Dovecot IMAP email server..."
     packages_install \
         dovecot-imapd dovecot-pop3d
 
@@ -1701,6 +1712,7 @@ EOF
 }
 
 install_iptables(){
+    el_info "Installing Iptables..."
     if ((has_ufw)) ; then
         NOREPORTS=1 el_error "You have UFW firewall installed, you must uninstall it first in order to install our iptables service"
         exit 1
@@ -1803,6 +1815,7 @@ install_iptables(){
 }
 
 install_monit(){
+    el_info "Installing Monit..."
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     hostnamefull="${hostname}.${domain}"
     require_variables "hostnamefull|domain|email_admin"
@@ -1821,6 +1834,7 @@ install_monit(){
 }
 
 install_rootkitcheck(){
+    el_info "Installing rootkit checkers..."
     DEBIAN_FRONTEND="noninteractive" packages_install  \
         chkrootkit rkhunter unhide
 
