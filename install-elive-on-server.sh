@@ -1843,7 +1843,7 @@ install_monit(){
     #addconfig "include /etc/monit/monitrc.d/*" /etc/monit/monitrc
     addconfig "set mailserver localhost port 25" /etc/monit/monitrc
     addconfig "set mail-format { from: monit-daemon@$hostnamefull }" /etc/monit/monitrc
-    addconfig "set alert ${email_admin}" /etc/monit/monitrc
+    addconfig "set alert ${email_admin} not {instance}" /etc/monit/monitrc
 
     installed_set "monit"
     # TODO: user must enable the wanted services, or we should provide templates
