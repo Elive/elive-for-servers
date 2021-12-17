@@ -705,7 +705,7 @@ EOF
 
     # install extra features
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
-        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
+        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
 
     # clean temporal things
@@ -1553,7 +1553,7 @@ install_exim(){
     fi
 
     packages_install \
-        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt whois $packages_extra
+        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt whois liburi-perl $packages_extra
 
     rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
