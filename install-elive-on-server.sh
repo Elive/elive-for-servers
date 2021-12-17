@@ -1082,7 +1082,7 @@ install_mariadb(){
                 mysql -u root -D mysql -e "flush privileges;"
                 mysql -u root -D mysql -e "SET PASSWORD FOR root@localhost = PASSWORD('${pass_mariadb_root}');"
                 # enable unix authentication
-                mysql -u root -D mysql -e "INSTALL SONAME 'auth_socket'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;"
+                mysql -u root -D mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;"
                 # remove anonymous user:
                 mysql -u root -D mysql -e "DELETE FROM mysql.user WHERE User='';"
                 # disallow root login remotely:
@@ -1971,7 +1971,7 @@ final_steps(){
 
 
     echo ""
-    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. Then Reboot your server and enjoy it!"
+    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL AND SAVED THE CONFIGURATIONS TO USE IN SOME BACKUP PLACE"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
