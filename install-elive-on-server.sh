@@ -1654,7 +1654,7 @@ EOF
 
     changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/imap.${wp_webname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
     changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/imap.${wp_webname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
-    changeconfig "auth_mechanisms =" "auth_mechanisms = dovecot_plain dovecot_login" /etc/dovecot/conf.d/10-auth.conf
+    changeconfig "auth_mechanisms =" "auth_mechanisms = plain login" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^\!include auth-system.conf.ext|#\!include auth-system.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^#\!include auth-passwdfile.conf.ext|\!include auth-passwdfile.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
 
@@ -1946,6 +1946,7 @@ final_steps(){
     fi
 
 
+    echo ""
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. Then Reboot your server and enjoy it!"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
