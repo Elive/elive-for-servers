@@ -1500,8 +1500,9 @@ install_exim(){
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
-    ask_variable "email_username" "Insert a full email username, like admin@yourdomain.com"
-    ask_variable "email_password" "Insert an email password for your '${email_username}' username"
+    ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
+    ask_variable "email_password" "Insert an email password for your Email SMTP sending"
+    ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
 
 
     if [[ -z "$wp_webname" ]] ; then
@@ -1665,11 +1666,15 @@ EOF
     changeconfig "#log_path = syslog" "log_path = syslog" /etc/dovecot/conf.d/10-logging.conf
 
     # add credentials
-    require_variables "username|email_password"
+    require_variables "username|username_mail_password"
     touch /etc/dovecot/users
-    #echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
-    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${email_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+
+    # redirect emails to your website's user email
+    echo "no-reply: ${username}" > /etc/aliases
+    #echo "notification: ${username}" > /etc/aliases
+
 
     # open ports: POP3, port 995
     if ((has_ufw)) ; then
@@ -1956,7 +1961,9 @@ final_steps(){
         el_info "DNS in your 'reverse DNS', set it to '${wp_webname}'"
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password '${email_password}'"
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
+        el_info "When you send emails from no-reply@${wp_webname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
+        el_info "IMAP connect: connect to your email as: URL 'imap.${wp_webname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
     fi
 
     if ((is_installed_fail2ban)) ; then
@@ -2035,6 +2042,7 @@ main(){
         httaccess_password="webpass"
         email_username="user@wp.thanatermesis.org"
         email_password="supapass"
+        username_mail_password="supapass"
     fi
 
     if [[ "$UID" != "0" ]] ; then
