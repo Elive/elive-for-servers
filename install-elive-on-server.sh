@@ -1671,6 +1671,17 @@ EOF
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
     echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${email_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
+    # open ports: POP3, port 995
+    if ((has_ufw)) ; then
+        ufw allow 995/tcp
+    else
+        if ((has_iptables)) ; then
+            iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
+        fi
+    fi
+    # TODO: set up fail2ban to watch dovecot too
+
+
     # restart
     systemctl restart dovecot.service
 
@@ -1916,7 +1927,7 @@ final_steps(){
     fi
 
     if ((is_installed_exim)) ; then
-        # TODO: tell about all the configurations needed, like the SPF entry, reverse dns, dnssec?
+        # TODO: tell about all the configurations needed, like  dnssec?
         # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
 
         el_info "DNS: you must configure your server's dns to follow these entries:"
@@ -1936,6 +1947,7 @@ final_steps(){
         el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
         #el_info "DNS type MX record named '${wp_webname}' with data 'mail.${wp_webname}'"
         el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        el_info "DNS in your 'reverse DNS', set it to '${wp_webname}'"
 
         # SMTP conf
         el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password '${email_password}'"
