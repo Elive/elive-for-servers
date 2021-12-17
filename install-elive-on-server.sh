@@ -1359,7 +1359,9 @@ EOF
     el_info "Letsencrypt SSL (httpS) certificate install request"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         # re-install certificate
-        letsencrypt
+        if el_confirm "Seems like you have an already installed certificate for '${wp_webname}', do you want to reconfigure it?" ; then
+            letsencrypt
+        fi
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
 
@@ -1484,6 +1486,7 @@ install_fail2ban(){
 
     if installed_check "exim" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/exim.conf
+        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/dovecot.conf
     fi
 
     if installed_check "nginx" 2>/dev/null || installed_check "wordpress" 2>/dev/null ; then
@@ -1493,6 +1496,7 @@ install_fail2ban(){
     if installed_check "mariadb" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/mysqld.conf
     fi
+
 
     systemctl restart  fail2ban.service
 
@@ -1702,12 +1706,6 @@ EOF
                 iptables -A INPUT -p tcp -m tcp --dport 587 -j ACCEPT
                 iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
             fi
-        fi
-    fi
-
-    if ((is_installed_fail2ban)) ; then
-        if [[ -s /etc/fail2ban/jail.d/dovecot.conf ]] ; then
-            changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/dovecot.conf
         fi
     fi
 
