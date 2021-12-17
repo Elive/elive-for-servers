@@ -1513,7 +1513,7 @@ install_exim(){
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
-    ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
+    #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
     ask_variable "email_password" "Insert an email password for your Email SMTP sending"
     ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
 
@@ -1523,7 +1523,8 @@ install_exim(){
     fi
 
     update_variables
-    require_variables "domain|email_admin|wp_webname"
+    require_variables "domain|email_admin|wp_webname|username|username_mail_password|email_password"
+    email_username="${username}@${wp_webname}"
 
     # cleanup old install and configuration
     if [[ -d /etc/exim4 ]] ; then
@@ -1683,14 +1684,15 @@ EOF
     changeconfig "#log_path = syslog" "log_path = syslog" /etc/dovecot/conf.d/10-logging.conf
 
     # add credentials
-    require_variables "username|username_mail_password"
     touch /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
     echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
+    if [[ "${email_username%@*}" != "$username" ]] ; then
+        echo "${email_username%@*}: ${username}" >> /etc/aliases
+    fi
     echo "no-reply: ${username}" >> /etc/aliases
-    echo "${email_username%@*}: ${username}" >> /etc/aliases
     #echo "notification: ${username}" >> /etc/aliases
 
 
@@ -2065,7 +2067,7 @@ main(){
         email_admin="thanatermesis@gmail.com"
         httaccess_user="webuser"
         httaccess_password="webpass"
-        email_username="user@wp.thanatermesis.org"
+        #email_username="user@wp.thanatermesis.org"
         email_password="supapass"
         username_mail_password="supapass"
     fi
