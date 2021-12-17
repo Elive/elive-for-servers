@@ -160,10 +160,9 @@ get_args(){
                 is_wanted_fail2ban=1
                 is_wanted_monit=1
                 is_wanted_rootkitcheck=1
-                is_wanted_vnstat=1
+                #is_wanted_vnstat=1
                 is_wanted_swapfile=1
                 #is_wanted_iptables=1
-                notimplemented
                 ;;
             "--install=monit")
                 is_wanted_monit=1
