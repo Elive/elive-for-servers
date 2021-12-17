@@ -1514,8 +1514,13 @@ install_exim(){
     ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
 
 
-    if [[ -z "$wp_webname" ]] ; then
+    if [[ -z "$wp_webname" ]] || [[ "${wp_webname#www.}" = "$domain" ]] ; then
         wp_webname="$domain"
+    fi
+    if [[ "$wp_webname" != "$domain" ]] ; then
+        if el_confirm "Do you want to use this server as you main Email server for '$domain'? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
+            wp_webname="$domain"
+        fi
     fi
 
     update_variables
@@ -1531,17 +1536,22 @@ install_exim(){
 
 
     echo "$wp_webname" > /etc/mailname
-    # note: dc_other_hostnames will be like forum.elivelinux.org, so that this elivecd.org server will accept emails from it
     # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
     if el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
         is_external_connections_email_enabled=1
+        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
     else
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.25 " | debconf-set-selections
+    fi
+    # if you send emails to these domains, accept them:
+    if [[ "$wp_webname" = "$domain" ]] ; then
+        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname}" | debconf-set-selections
+    else
+        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname} ; ${domain}" | debconf-set-selections
     fi
     echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
@@ -1977,8 +1987,11 @@ final_steps(){
         el_info "DNS type A record named 'smtp.${wp_webname}' with data '${domain_ip}'"
         el_info "DNS type A record named 'mail.${wp_webname}' with data '${domain_ip}'"
         el_info "DNS type A record named 'imap.${wp_webname}' with data '${domain_ip}'"
+        # TODO: suggest to add AAAA records too for ipv6
         el_info "DNS type TXT record named '${wp_webname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
-        el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
+        el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${wp_webname};"
+        #el_info "DNS type TXT record named '*._report._dmarc.${wp_webname}' with data 'v=DMARC1;" # TODO: needed?
+        #el_info "DNS type TXT record named '*._dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
         #el_info "DNS type MX record named '${wp_webname}' with data 'mail.${wp_webname}'"
         el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         el_info "DNS in your 'reverse DNS', set it to '${wp_webname}'"
@@ -1987,6 +2000,9 @@ final_steps(){
         el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
         el_info "Note: When you send emails from no-reply@${wp_webname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
         el_info "IMAP connect: connect to your email as: URL 'imap.${wp_webname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
+        #if [[ "$wp_webname" != "$domain" ]] ; then
+            # TODO: tell that we need to add more same dns's for the main domain
+        #fi
         echo
     fi
 
