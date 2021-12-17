@@ -1615,7 +1615,7 @@ DKIM_SELECTOR = mail
 DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
 EOF
     # configure the login system:
-    cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << 'EOF'
+    cat >> /etc/exim4/conf.d/auth/30_exim4-config_examples << 'EOF'
 
 # Elive: login to SMTP using tls
 login_server:
