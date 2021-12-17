@@ -1530,6 +1530,7 @@ install_exim(){
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 " | debconf-set-selections
     else
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 " | debconf-set-selections
+        echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
     fi
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
@@ -1560,8 +1561,8 @@ install_exim(){
 
     # install certificate
     # TODO: before to install exim, we need to have the DNS's configured with everything we need, for example smtp.domain.com to point to this machine, otherwise some steps will fail like certbot
-    if ! [[ -d "/etc/letsencrypt/live/smtp.${wp_webname}" ]] ; then
-        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with smtp.${wp_webname} to point to this IP before to continue:"
+    if [[ ! -d "/etc/letsencrypt/live/smtp.${wp_webname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${wp_webname}" ]] ; then
+        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${wp_webname}' and also 'imap.${wp_webname}' to point to this IP before to continue:"
         if ! ping -c 1 smtp.${wp_webname} 1>/dev/null 2>&1 ; then
             echo -e "You are going to install a Letsencrypt certificate for 'smtp.${wp_webname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
             read nothing
@@ -1570,6 +1571,7 @@ install_exim(){
         # TODO: auto-renew
         if installed_check "nginx" ; then
             letsencrypt certonly -d smtp.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d imap.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
         else
             if ((has_ufw)) ; then
                 ufw allow 80/tcp
@@ -1580,6 +1582,7 @@ install_exim(){
             fi
 
             letsencrypt certonly -d smtp.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d imap.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
         fi
     fi
 
@@ -1587,10 +1590,13 @@ install_exim(){
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
     groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
+    usermod -aG mailser dovecot
     chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$wp_webname} /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$wp_webname} /etc/letsencrypt/live/imap.${wp_webname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
     #chmod g+r /etc/letsencrypt/archive/smtp.${wp_webname}/privkey1.pem
     chmod g+r /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
+    chmod g+r /etc/letsencrypt/live/imap.${wp_webname}/privkey.pem
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${wp_webname}"
@@ -1639,7 +1645,33 @@ EOF
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
-    # TODO: configure email-sender too
+    # TODO: configure email-sender too ?
+
+    # Dovecot:
+    packages_install \
+        dovecot-imapd dovecot-pop3d
+
+    changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/imap.${wp_webname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/imap.${wp_webname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "auth_mechanisms =" "auth_mechanisms = dovecot_plain dovecot_login" /etc/dovecot/conf.d/10-auth.conf
+    sed -i -e "s|^\!include auth-system.conf.ext|#\!include auth-system.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
+    sed -i -e "s|^#\!include auth-passwdfile.conf.ext|\!include auth-passwdfile.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
+
+    awk -v replace="  unix_listener auth-userdb {\n    mode = 0660\n    user = mail\n    #group =\n  }"  '/unix_listener auth-userdb[[:space:]]+\{/{f=1} !f{print} ;  /}/{if (f == 1) print replace; f=0}' /etc/dovecot/conf.d/10-master.conf > /etc/dovecot/conf.d/10-master.conf.new
+    mv -f /etc/dovecot/conf.d/10-master.conf.new /etc/dovecot/conf.d/10-master.conf
+
+    changeconfig "mail_location =" "mail_location = maildir:~/Maildir" /etc/dovecot/conf.d/10-mail.conf
+    changeconfig "#log_path = syslog" "log_path = syslog" /etc/dovecot/conf.d/10-logging.conf
+
+    # add credentials
+    require_variables "username|email_password"
+    touch /etc/dovecot/users
+    #echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/dovecot/users
+    # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
+    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${email_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+
+    # restart
+    systemctl restart dovecot.service
 
 
     installed_set "exim"
@@ -1873,6 +1905,7 @@ final_steps(){
         el_info "Your system's user for it is: '${username}' with home in '$DHOME/${username}'"
         el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htaccess' file"
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
+        el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
     fi
@@ -1884,6 +1917,8 @@ final_steps(){
     if ((is_installed_exim)) ; then
         # TODO: tell about all the configurations needed, like the SPF entry, reverse dns, dnssec?
         # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
+
+        el_info "DNS: you must configure your server's dns to follow these entries:"
         for i in ${wp_webname}
         do
             [[ -z "$i" ]] && continue
@@ -1891,6 +1926,18 @@ final_steps(){
             el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i}' with these contents:"
             echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
         done
+
+        # SPF & other DNS
+        el_info "DNS type A record named 'smtp.${wp_webname}' with data '${domain_ip}'"
+        el_info "DNS type A record named 'mail.${wp_webname}' with data '${domain_ip}'"
+        el_info "DNS type A record named 'imap.${wp_webname}' with data '${domain_ip}'"
+        el_info "DNS type TXT record named '${wp_webname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
+        el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
+        #el_info "DNS type MX record named '${wp_webname}' with data 'mail.${wp_webname}'"
+        el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+
+        # SMTP conf
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password '${email_password}'"
     fi
 
     if ((is_installed_fail2ban)) ; then
