@@ -889,6 +889,17 @@ install_nginx(){
 
     install_templates "nginx" "/"
 
+    # tune settings:
+    # always enable gzip:
+    # TODO: verify these settings working, or better use a template file
+    changeconfig "# gzip_vary on;" "gzip_vary on;" /etc/nginx/nginx.conf
+    #changeconfig "# gzip_proxied any;" "gzip_proxied any;" /etc/nginx/nginx.conf
+    changeconfig "# gzip_proxied" "gzip_proxied expired no-cache no-store private auth;" /etc/nginx/nginx.conf
+    changeconfig "# gzip_comp_level;" "gzip_comp_level 5;\n    gzip_min_length 1024;\n    gzip_disable 'MSIE [1-6]\.';" /etc/nginx/nginx.conf
+    changeconfig "# gzip_buffers 16 8k;" "gzip_buffers 16 8k;" /etc/nginx/nginx.conf
+    changeconfig "# gzip_http_version 1.1;" "gzip_http_version 1.1;" /etc/nginx/nginx.conf
+    changeconfig "# gzip_types " "gzip_types text/plain text/css application/json application/x-javascript application/javascript text/javascript text/x-js text/xml application/xml application/xml+rss application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml;" /etc/nginx/nginx.conf
+
     # enable sites
     # TODO: implement with the templates system
     #ln -fs /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default 2>/dev/null || true
@@ -1032,8 +1043,16 @@ install_php(){
     #changeconfig "listen =" "listen = 12$php_version.0.1:9000" /etc/php/$php_version/fpm/pool.d/www.${domain}.conf
 
     # improve sysctl
-    addconfig "#If you use Unix sockets with PHP-FPM, you might encounter random 502 Bad Gateway errors with busy websites. To avoid this, we raise the max. number of allowed connections to a socket:" /etc/sysctl.conf
-    addconfig "net.core.somaxconn = 4096" /etc/sysctl.conf
+    addconfig "#If you use Unix sockets with PHP-FPM, you might encounter random 502 Bad Gateway errors with busy websites. To avoid this, we raise the max. number of allowed connections to a socket. Also useful for the NC connections:" /etc/sysctl.conf
+    addconfig "net.core.somaxconn = 16384" /etc/sysctl.conf
+    addconfig "net.ipv4.tcp_max_tw_buckets = 1440000" /etc/sysctl.conf
+    addconfig "# Timeout for a port to be freed before to be used as a new one:" /etc/sysctl.conf
+    addconfig "net.ipv4.tcp_fin_timeout 30" /etc/sysctl.conf
+    addconfig "net.ipv4.tcp_window_scaling = 1" /etc/sysctl.conf
+    addconfig "net.ipv4.tcp_max_syn_backlog = 2048" /etc/sysctl.conf
+
+    addconfig "soft nofile 4096" /etc/security/limits.conf
+    addconfig "hard nofile 4096" /etc/security/limits.conf
 
     if ((is_ubuntu)) ; then
         systemctl stop apache2.service 2>/dev/null || true
@@ -1247,7 +1266,7 @@ download_wp_addon "plugins" "woocommerce" &
 download_wp_addon "plugins" "wordpress-seo" &
 download_wp_addon "plugins" "wp-mail-smtp" &
 download_wp_addon "plugins" "wp-search-suggest" &
-download_wp_addon "plugins" "wp-super-cache" &
+#download_wp_addon "plugins" "wp-super-cache" &
 #download_wp_addon "plugins" "w3-total-cache" &
 download_wp_addon "plugins" "wp-youtube-lyte" &
 wait
@@ -1501,6 +1520,8 @@ install_fail2ban(){
 }
 
 install_exim(){
+    # Howto's used as base:
+    # * https://transang.me/setup-a-production-ready-exim-dovecot-server/
     el_info "Installing Exim mail server..."
     local packages_extra
     systemctl stop  postfix.service  2>/dev/null || true
@@ -1518,7 +1539,7 @@ install_exim(){
         wp_webname="$domain"
     fi
     if [[ "$wp_webname" != "$domain" ]] ; then
-        if el_confirm "Do you want to use this server as you main Email server for '$domain'? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
+        if el_confirm "Do you want to use this server as you main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
             wp_webname="$domain"
         fi
     fi
@@ -1984,16 +2005,19 @@ final_steps(){
         done
 
         # SPF & other DNS
+        el_info "DNS type A record named '${wp_webname}' with data '${domain_ip}'"
         el_info "DNS type A record named 'smtp.${wp_webname}' with data '${domain_ip}'"
-        el_info "DNS type A record named 'mail.${wp_webname}' with data '${domain_ip}'"
+        #el_info "DNS type A record named 'mail.${wp_webname}' with data '${domain_ip}'"
         el_info "DNS type A record named 'imap.${wp_webname}' with data '${domain_ip}'"
-        # TODO: suggest to add AAAA records too for ipv6
         el_info "DNS type TXT record named '${wp_webname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
         el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${wp_webname};"
+        el_info "IPv6 address, you have one? Add DNS type AAAA record named '${wp_webname}' with data of your IPv6 address, also append ip6:YOUR-IP6-ADDR to the TXT record of your SPF"
         #el_info "DNS type TXT record named '*._report._dmarc.${wp_webname}' with data 'v=DMARC1;" # TODO: needed?
         #el_info "DNS type TXT record named '*._dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
         #el_info "DNS type MX record named '${wp_webname}' with data 'mail.${wp_webname}'"
-        el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        #el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        #el_info "DNS type MX record named '@' with data 'smtp.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         el_info "DNS in your 'reverse DNS', set it to '${wp_webname}'"
 
         # SMTP conf
@@ -2074,7 +2098,7 @@ main(){
         wp_db_name=dbname
         wp_db_user=dbuser
         wp_db_pass=dbpass
-        wp_webname=wp.thanatermesis.org # XXX wp.thanatermesis.org is actually banned for 1 week because of the multiple betatests
+        wp_webname=wp.thanatermesis.org
         username=elivewp
         domain=thanatermesis.org
         email_admin="thanatermesis@gmail.com"

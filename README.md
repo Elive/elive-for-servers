@@ -29,6 +29,7 @@ ___Note: it's important to set all the options wanted in a single install, so th
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
+* Set up a very powerful server using the lowest resources! (optimized wordpress & email server, with watchers & protections)
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
   * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
