@@ -889,30 +889,7 @@ install_nginx(){
 
     install_templates "nginx" "/"
 
-    # tune settings:
-    # always enable gzip:
-    # TODO: verify these settings working, or better use a template file
-    changeconfig "# gzip_vary on;" "gzip_vary on;" /etc/nginx/nginx.conf
-    #changeconfig "# gzip_proxied any;" "gzip_proxied any;" /etc/nginx/nginx.conf
-    changeconfig "# gzip_proxied" "gzip_proxied expired no-cache no-store private auth;" /etc/nginx/nginx.conf
-    changeconfig "# gzip_comp_level;" "gzip_comp_level 5;\n    gzip_min_length 1024;\n    gzip_disable 'MSIE [1-6]\.';" /etc/nginx/nginx.conf
-    changeconfig "# gzip_buffers 16 8k;" "gzip_buffers 16 8k;" /etc/nginx/nginx.conf
-    changeconfig "# gzip_http_version 1.1;" "gzip_http_version 1.1;" /etc/nginx/nginx.conf
-    changeconfig "# gzip_types " "gzip_types text/plain text/css application/json application/x-javascript application/javascript text/javascript text/x-js text/xml application/xml application/xml+rss application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml;" /etc/nginx/nginx.conf
-
-    # enable sites
-    # TODO: implement with the templates system
-    #ln -fs /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default 2>/dev/null || true
-    #ln -fs /etc/nginx/sites-available/www.${domain} /etc/nginx/sites-enabled/www.${domain} 2>/dev/null || true
-    ##ln -fs /etc/nginx/sites-available/test.sandbox.${domain} /etc/nginx/sites-enabled/test.sandbox.${domain}
-    #ln -fs /etc/nginx/sites-available/repository.${domain} /etc/nginx/sites-enabled/repository.${domain} 2>/dev/null || true
-    ##ln -fs /etc/nginx/sites-available/collaborate.${domain} /etc/nginx/sites-enabled/collaborate.${domain}
-
     ##rm -f /etc/nginx/sites-enabled/default
-
-    #
-    # TODO: important note about groups: www-data: Some web browsers run as www-data. Web content should *not* be owned by this user, or a compromised web server would be able to rewrite a web site. Data written out by web servers, including log files, will be owned by www-data.
-
 
     systemctl restart nginx.service
     installed_set "nginx"
@@ -1285,7 +1262,7 @@ set -e
 cd ~
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
-echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker syn=conf" > nginx.conf
+echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx.conf
 # wait remaining processes
 wait
 

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+if [ "$1" == "" ]
+then
+	echo "Usage: $0 <domain>"
+
+	exit 1
+fi
+
+if [[ "$UID" != 0 ]] ; then
+    echo -e "root please"
+    exit 1
+fi
+
+CONF_DIR=/etc/exim4
+OPENSSL=/usr/bin/openssl
+KEYLENGTH=2048
+
+# Si le dossier de cles n'existe pas on le creer
+if [ ! -d "$CONF_DIR/$1/" ]
+then
+	/bin/mkdir "$CONF_DIR/$1/"
+
+	if [ "$?" != "0" ]
+	then
+		echo "Unable to create directory $CONF_DIR/$1"
+
+		exit 1
+	fi
+fi
+
+# Si y a pas de cle prive on en creer une
+if [ ! -f "$CONF_DIR/$1/dkim_private.key" ]
+then
+	$OPENSSL genrsa -out "$CONF_DIR/$1/dkim_private.key" $KEYLENGTH 2> /dev/null
+
+	if [ ! $? -eq 0 ]
+	then
+		echo "Unable to gen private key \"$CONF_DIR/$1/dkim_private.key\""
+
+		exit 2
+	fi
+fi
+
+# Si la cle prive existe ...
+if [ -f "$CONF_DIR/$1/dkim_private.key" ]
+then
+	# ... mais que la cle publique existe pas
+	if [ ! -f "$CONF_DIR/$1/dkim_public.key" ]
+	then
+		$OPENSSL rsa -in "$CONF_DIR/$1/dkim_private.key" -out "$CONF_DIR/$1/dkim_public.key" -pubout -outform PEM 2> /dev/null
+
+		if [ "$?" != "0" ]
+		then
+			echo "Unable to gen pub key $CONF_DIR/$1/dkim_public.key"
+
+			exit 3
+		else
+			echo "Public key for $1 is availlable on $CONF_DIR/$1/dkim_public.key"
+		fi
+	else
+		echo "Public key for $1 is availlable on $CONF_DIR/$1/dkim_public.key"
+	fi
+else
+	echo "Stange, first test on private key of $1 return true, so second test on pub key return false on $0"
+
+	exit 4
+fi
+
+
+#adduser Debian-exim mail 1>/dev/null
+#chown mail:mail $CONF_DIR/$1/dkim*
+chown root:Debian-exim $CONF_DIR/$1/dkim*
+chmod 644 $CONF_DIR/$1/dkim*
+
+service exim4 restart

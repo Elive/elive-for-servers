@@ -1,0 +1,62 @@
+#!/bin/bash
+[[ -z $HOME ]] && export HOME="/home/$(id -un)"
+[[ -z $USER ]] && export USER="$(id -un)"
+
+if [[ -z "$3" ]] ; then
+   echo "Usage: $(basename $0) 'to' 'subject' 'message/body'"
+   exit 1
+fi
+
+to="$1"
+shift
+subject="$1"
+shift
+
+# settings
+address_from=""
+username="" # note: must be converted to uri (uri-gtk-encode)
+password=""
+smtp_connect=""
+smtp_port="587"
+args_snail_extra=""
+#case "$(cat /etc/debian_version)" in
+    #"10."*|"buster"*)
+        #debian_version="buster"
+        #is_snail_new=0
+        #;;
+    #"11."*|"bullseye"*)
+        #debian_version="bullseye"
+        #is_snail_new=1
+        #;;
+    #*)
+        #is_snail_new=1
+        #;;
+#esac
+
+if which s-nail 1>/dev/null 2>&1 ; then
+    if [[ -n "$username" ]] && [[ -n "$password" ]] && [[ -n "$smtp_connect" ]] ; then
+        is_snail=1
+    fi
+fi
+if [[ -z "$address_from" ]] ; then
+    address_from="${USER}@$( hostname --long )"
+fi
+
+if ((is_snail)) ; then
+    echo "$@" | s-nail \
+        -r "$address_from" \
+        -s "$subject" \
+        -S mta="smtp://${username}:${password}@${smtp_connect}:${smtp_port}" \
+        $args_snail_extra \
+        -S v15-compat \
+        "$to"
+else
+    # not using s-nail
+    if [[ -x "$(which heirloom-mailx)" ]] ; then
+        echo "$@" | heirloom-mailx \
+            -r "${address_from}" \
+            -s "$subject" "$to"
+    else
+        echo "$@" | mailx -e -s "$subject" -a "Content-Type: text/plain; charset=UTF-8" -a "Content-Transfer-Encoding: 8bit" "$to"
+    fi
+fi

@@ -33,12 +33,14 @@ server {
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
     }
 
     location = /favicon.ico {
         access_log off;
         log_not_found off;
-        expires max;
+        expires 365d;
     }
     location = /robots.txt {
         access_log off;
@@ -50,8 +52,8 @@ server {
         \.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
         {
             access_log off;
-            log_not_found off;
-            expires max;
+            #log_not_found off;
+            expires 30d;
         }
     # Security Settings For Better Privacy Deny Hidden Files
     location ^~ /.well-known/        { allow all ; }
@@ -78,6 +80,8 @@ server {
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
     }
 
     # enable phpmyadmin access too but always from an admin password access
@@ -93,9 +97,13 @@ server {
             fastcgi_index index.php;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
             include /etc/nginx/fastcgi_params;
+            fastcgi_buffers 16 16k;
+            fastcgi_buffer_size 32k;
         }
         location ~* ^/phpmyadmin/(.+\.(jpeg|jpg|png|css|gif|ico|js|html|xml|txt))$ {
             root /usr/share/;
+            access_log off;
+            expires 30d;
         }
     }
     #
