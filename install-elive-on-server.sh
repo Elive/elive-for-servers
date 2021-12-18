@@ -776,7 +776,7 @@ EOF
 elive-codename: eliveserver
 elive-version: $elive_version
 debian-version: $debian_version
-date-builded:
+date-builded: $(date +%F)
 kernel: $(uname -r)
 machine-id: $(el_get_machine_id)
 first-user: elivewp
