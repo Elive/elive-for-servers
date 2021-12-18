@@ -827,11 +827,17 @@ install_user(){
         addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo " "$DHOME/${username}/.zshrc"
         chsh -s "/bin/zsh" "$username"
 
-        rm -rf $DHOME/$username/.ssh 2>/dev/null || true
         rm -rf $DHOME/$username/.*.old 2>/dev/null || true
+        if [[ -d "$DHOME/$username/.ssh" ]] ; then
+            mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old" 2>/dev/null || true
+        fi
 
-        cp -a /root/.ssh $DHOME/$username/
-        chown -R $username:$username $DHOME/$username/.ssh
+        if [[ -d "/root/.ssh" ]] ; then
+            if el_confirm "Do you want to copy the SSH settings of your root (admin) user to your '$username' user? (this is suggested to re-use the ssh keys)" ; then
+                cp -a "/root/.ssh" "$DHOME/$username/"
+                chown -R "$username:$username" "$DHOME/$username/.ssh"
+            fi
+        fi
 
         # add the other users
         #if ! [[ -d $DHOME/elivemirror ]] ; then
