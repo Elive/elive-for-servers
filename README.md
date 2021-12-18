@@ -1,4 +1,4 @@
-# Elive superpowers on your Server ! w00t
+# Elive superpowers on your Server! w00t
 Enjoy your server with some Elive super-powers, and you can also optionally install well-tuned services in one shot!
 
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
@@ -7,16 +7,24 @@ _Important: this tool will install packages in your server to improve it with El
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
-**Distros supported**: Debian buster, Debian bullseye.
-**Ubuntu versions**: 21.10 impish, 21.04 irsute, 20.04 focal, 18.04 bionic
-_Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead, do not report bugs if you use ubuntu_ 
+**Distros supported**:  
+- Debian Buster
+- Debian Bullseye
+
+**Ubuntu versions**:  
+- 21.10 "Impish"
+- 21.04 "Irsute"
+- 20.04 "Focal"
+- 18.04 "Bionic"
+
+#### :warning: Note: Ubuntu installs are added for compatibility, but we *strongly* suggest to use Debian instead. Send patches instead of bug reports if you are using Ubuntu.
 
 ### Installing extra services:
 
-_Install wordpress:_
+_Install Wordpress:_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
-_Install wordpress with an email server_
+_Install Wordpress with an email server_
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
 
 _To create a new user:_
@@ -33,7 +41,7 @@ ___Note: it's important to set all the options wanted in a single install, so th
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
   * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
-* Well tunned and optimized customizations for the services
+* Well tuned and optimized customizations for the services
 * Powerful configurations for server tools like VIM with plugins and the best color syntax
 * Git status prompt, aliases, etc...
 * The most featured and friendly Shell in the world!
@@ -73,4 +81,4 @@ _This is the login of your server after installing it, description:_
 
 
 ## Collaboration:
-You are welcome to send push commits for fixes and improvements, especially dynamic compatibility, but to change the behaviour of the tool will require a previous debate / brainstorm since some things can break if done differently, since there's many different operating systems (and so different way to set up things, file locations, compatibilities, versions, etc...) it's sometimes better to just stick to a debian base of which we know works well and is made for it.
+You are welcome to send push commits for fixes and improvements, especially dynamic compatibility, but changing the behaviour of the tool will require a previous debate / brainstorm since some things can break if done differently. There's many different operating systems (and so different way to set up things, file locations, compatibilities, versions, etc...) so it's sometimes better to just stick to a debian base of which we know works well and is made for it.
