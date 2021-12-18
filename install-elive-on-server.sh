@@ -985,10 +985,9 @@ install_php(){
 
 
     # increase execution times to 4 min
-    changeconfig "max_execution_time" "max_execution_time = \"240\"" /etc/php/$php_version/fpm/php.ini
+    changeconfig "max_execution_time" "max_execution_time = \"240\" # increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
     changeconfig "max_input_time" "max_input_time = \"240\"" /etc/php/$php_version/fpm/php.ini
     changeconfig "memory_limit" "memory_limit = \"256M\"" /etc/php/$php_version/fpm/php.ini
-
 
     changeconfig "cgi.fix_pathinfo=1" "cgi.fix_pathinfo=0" /etc/php/$php_version/fpm/php.ini
     changeconfig "events.mechanism =" "events.mechanism = epoll" /etc/php/$php_version/fpm/php-fpm.conf
@@ -1268,7 +1267,8 @@ set -e
 cd ~
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
-echo -e "\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx.conf
+echo -e "# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx.conf
+echo -e "# User configurations goes here\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx-local.conf
 # wait remaining processes
 wait
 
