@@ -978,16 +978,16 @@ install_php(){
     require_variables "php_version"
 
     # configure php default options
-    changeconfig "default_charset =" "default_charset = \"UTF-8\"" /etc/php/$php_version/fpm/php.ini
-    changeconfig "short_open_tag" "short_open_tag = \"Off\"" /etc/php/$php_version/fpm/php.ini
-    changeconfig "post_max_size" "post_max_size = \"32M\"" /etc/php/$php_version/fpm/php.ini
-    changeconfig "upload_max_filesize" "upload_max_filesize = \"32M\"" /etc/php/$php_version/fpm/php.ini
+    changeconfig "default_charset =" "default_charset = UTF-8" /etc/php/$php_version/fpm/php.ini
+    changeconfig "short_open_tag" "short_open_tag = Off" /etc/php/$php_version/fpm/php.ini
+    changeconfig "post_max_size" "post_max_size = 32M" /etc/php/$php_version/fpm/php.ini
+    changeconfig "upload_max_filesize" "upload_max_filesize = 32M" /etc/php/$php_version/fpm/php.ini
 
 
     # increase execution times to 4 min
-    changeconfig "max_execution_time" "max_execution_time = \"240\" # increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
-    changeconfig "max_input_time" "max_input_time = \"240\"" /etc/php/$php_version/fpm/php.ini
-    changeconfig "memory_limit" "memory_limit = \"256M\"" /etc/php/$php_version/fpm/php.ini
+    changeconfig "max_execution_time" "max_execution_time = 240  ; increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
+    changeconfig "max_input_time" "max_input_time = 240" /etc/php/$php_version/fpm/php.ini
+    changeconfig "memory_limit" "memory_limit = 256M" /etc/php/$php_version/fpm/php.ini
 
     changeconfig "cgi.fix_pathinfo=1" "cgi.fix_pathinfo=0" /etc/php/$php_version/fpm/php.ini
     changeconfig "events.mechanism =" "events.mechanism = epoll" /etc/php/$php_version/fpm/php-fpm.conf
