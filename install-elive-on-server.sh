@@ -1643,7 +1643,7 @@ install_exim(){
     fi
 
     packages_install \
-        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt whois liburi-perl $packages_extra
+        exim4-daemon-heavy mutt gpgsm openssl s-nail swaks libnet-ssleay-perl letsencrypt whois liburi-perl spf-tools-perl $packages_extra
 
     rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
@@ -1715,6 +1715,12 @@ MAIN_TIMEOUT_FROZEN_AFTER = 2d
 
 # include special filters if you have, like replacing a header from: or reply-to: to another one
 #system_filter = /etc/exim4/filter-headers.conf
+
+# DNS blacklist:
+#CHECK_RCPT_IP_DNSBLS = sbl.spamhaus.org:bl.spamcop.net:cbl.abuseat.org
+CHECK_RCPT_IP_DNSBLS = zen.spamhaus.org
+#CHECK_RCPT_DOMAIN_DNSBLS = dnsbl.spfbl.net/\$sender_address_domain
+#CHECK_RCPT_DOMAIN_DNSBLS = dnsbl.sorbs.net/\$sender_address_domain : dnsbl.spfbl.net/\$sender_address_domain
 
 EOF
     # configure the login system:
