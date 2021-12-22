@@ -1268,7 +1268,7 @@ cd ~
 cd "${wp_webname}"
 cat wp-config-sample.php | dos2unix > wp-config.php
 echo -e "# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx.conf
-echo -e "# User configurations goes here\n\n# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > nginx-local.conf
+touch nginx-local.conf
 # wait remaining processes
 wait
 
@@ -1292,7 +1292,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
     if grep -qs "nginx reload"  /root/.crontab ; then
         sed -i -e 's|^.*nginx reload.*$|5 * * * * /etc/init.d/nginx reload 1>/dev/null|g' /root/.crontab
     else
-        echo "5 * * * * /etc/init.d/nginx reload 1>/dev/null" >> /root/.crontab
+        echo -e "# reload nginx every hour to update the confs, for example from WP\n5 * * * * /etc/init.d/nginx reload 1>/dev/null" >> /root/.crontab
     fi
     crontab /root/.crontab
 
@@ -1312,7 +1312,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 
     # configure WP in nginx {{{
     require_variables "php_version"
-    changeconfig "fastcgi_pass" "fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "fastcgi_pass" "        fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;" "/etc/nginx/sites-available/${wp_webname}"
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
@@ -1384,6 +1384,74 @@ EOF
 
     # - configure SSL }}}
 
+    # security
+    el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
+    ask_variable "httaccess_user" "Insert an admin Username"
+    ask_variable "httaccess_password" "Insert an admin Password"
+
+    htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htpasswd" "${httaccess_user}" "${httaccess_password}"
+    chown "${username}:${username}" "$DHOME/${username}/${wp_webname}/.htpasswd"
+
+    # create and configure local configuration file
+    require_variables "php_version|username|wp_webname"
+    # TODO: betatest the resulting file if \ chars are correctly inserted etc..
+    cat > "$DHOME/${username}/${wp_webname}/nginx-local.conf" << EOF
+# User configurations goes here
+
+# Enable this section if you want to keep your login secured with an extra password
+#location ^~ /wp-login.php {
+#    auth_basic "Restricted";
+#    auth_basic_user_file $DHOME/${username}/${wp_webname}/.htpasswd;
+#    include fastcgi_params;
+#    fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;
+#    fastcgi_index  index.php;
+#    fastcgi_param  SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+#    fastcgi_param PATH_INFO \$fastcgi_script_name;
+#}
+
+# forbid access to private files
+location = /.htpasswd { access_log off; log_not_found off; deny all; }
+
+# disable useless logs
+location = /favicon.ico {
+   access_log off;
+}
+location = /robots.txt {
+   allow all;
+   access_log off;
+}
+
+# forbid showing hidden files, except the ones in .well-known dir which is needed for verifications and letsencrypt
+location ^~ /.well-known/        { allow all ; }
+location ~ /\\.          { access_log off; log_not_found off; return 444; }
+location ~* \\.(conf)$          { access_log off; log_not_found off; return 444; }
+
+
+# blacklist common hacks (from 404 logs) and free up the server
+location ~* (/data/admin/ver.txt|/templets/default/style/dedecms.css|/data/admin/allowurl.txt|/data/cache/index.htm|/member/space/person/common/css/css.css|/data/admin/quickmenu.txt|/templets/default/images/logo.gif|/data/mysql_error_trace.inc|//data/mysql_error_trace.inc|/member/templets/images/login_logo.gif|/member/images/dzh_logo.gif|/member/images/base.css|/include/data/vdcode.jpg|/api/Uploadify/|/plugins/uploadify/|alexa.jpeg)  { access_log off; log_not_found off; return 444; }
+
+## anti-bots forbids:
+#location ~ (?i)^/wp\\-content/plugins/.*\\.txt$ { access_log off; log_not_found off; return 444; }
+# filenames (php mostly)
+#location ~ (?i).*/(autodiscover|eval-stdin|system_api|adminer|connector|adm|IOptimize|blackhat|th3_alpha|vuln|oecache|upload_index|xxx|microsoft.exchange|security|app-ads|newfile|demodata|admins|nginx|apache|wlmanifest|force-download|password)\\.(?:php[1-7]?|pht|phtml?|phps|xml|txt)$ { access_log off; log_not_found off; return 444; }
+# directories too:
+#location ~ (?i).*/(fckeditor|apismtp|console|jsonws|connectors|streaming|uc_server|ioptimization|code87|administrator|mTheme-Unus|data/404|e/data|client_area|stalker_portal|nextcloud|owncloud|old-wp|zoomsounds|awesome-support|pdst\\.fm)/ { access_log off; log_not_found off; return 444; }
+
+
+# allow cache indexing to not give 404 errors
+location /wp-content/uploads/md_cache/ {
+    autoindex on;
+}
+
+# sitemap conf for WP Seo plugin:
+#rewrite ^/sitemap\\.xml$ /sitemap_index.xml last;
+#rewrite ^/([^/]+?)-sitemap([0-9]+)?\\.xml$ /index.php?sitemap=\$1&sitemap_n=\$2 last;
+## needed for show the xml on firefox visualizing correctly and without error
+#rewrite ^/main-sitemap\\.xsl$ /index.php?xsl=main last;
+
+# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf :
+EOF
+
     # reload services
     if ! systemctl restart nginx.service php${php_version}-fpm.service mariadb.service ; then
         el_error "failed to restart web services"
@@ -1399,14 +1467,8 @@ EOF
         el_error "Your wordpress site seems to not be correctly working"
     fi
 
+    # set up the extra phpmyadmin
     install_phpmyadmin
-
-    el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin', if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htaccess' file"
-    ask_variable "httaccess_user" "Insert an admin Username"
-    ask_variable "httaccess_password" "Insert an admin Password"
-
-    htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htaccess" "${httaccess_user}" "${httaccess_password}"
-    chown "${username}:${username}" "$DHOME/${username}/${wp_webname}/.htaccess"
 
 }
 
@@ -1445,6 +1507,8 @@ install_phpmyadmin(){
     fi
 
     installed_set "phpmyadmin"
+    # TODO: document it in the end of the install too
+    # TODO: document al lthe other remaining ones
     is_installed_phpmyadmin=1
     # }}}
 }
@@ -1631,7 +1695,7 @@ install_exim(){
     cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
 
 # require TLS (encrypted connections) to connect
-MAIN_TLS_ENABLE = true
+MAIN_TLS_ENABLE = yes
 MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/smtp.${wp_webname}/fullchain.pem
 MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
 
@@ -1639,6 +1703,19 @@ MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
 DKIM_DOMAIN = ${wp_webname}
 DKIM_SELECTOR = mail
 DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
+
+# Security: forbid logins from root
+never_users                        = root
+
+# Improve defaults
+# default was 2d
+MAIN_IGNORE_BOUNCE_ERRORS_AFTER = 8h
+# default was 7d
+MAIN_TIMEOUT_FROZEN_AFTER = 2d
+
+# include special filters if you have, like replacing a header from: or reply-to: to another one
+#system_filter = /etc/exim4/filter-headers.conf
+
 EOF
     # configure the login system:
     cat >> /etc/exim4/conf.d/auth/30_exim4-config_examples << 'EOF'
@@ -1961,7 +2038,7 @@ final_steps(){
     if ((is_installed_wordpress)) ; then
         el_info "Wordpress installed:"
         el_info "Your system's user for it is: '${username}' with home in '$DHOME/${username}'"
-        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htaccess' file"
+        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htpasswd' file"
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"

@@ -87,7 +87,7 @@ server {
     # enable phpmyadmin access too but always from an admin password access
     location /phpmyadmin {
         auth_basic "Restricted";
-        auth_basic_user_file /home/elivewp/mywordpress.com/.htaccess;
+        auth_basic_user_file /home/elivewp/mywordpress.com/.htpasswd;
         root /usr/share/;
         index index.php index.html index.htm;
         location ~ ^/phpmyadmin/(.+\.php)$ {
