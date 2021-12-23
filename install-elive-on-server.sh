@@ -746,8 +746,16 @@ EOF
 
     # configure root user
     elive-skel user root
-    addconfig "export PATH=\"\$HOME/packages/bin:\$PATH\"" "/root/.zshrc"
-    addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo\n" "/root/.zshrc"
+    cat >> "/root/.zshrc" << EOF
+export PATH="\$HOME/packages/bin:\$PATH"
+# show the nice elive logo as welcome
+elive-logo-show --no-newline ; lsb_release -d -s ; echo
+# suggest to donate to Elive once per every 8 random logins:
+if [[ "\${RANDOM:0:1}" = 5 ]] || [[ "\${RANDOM:0:1}" = 6 ]] ; then
+    echo -e "\${el_c_g}\${el_c_blink}Help Elive to continue making amazing things with a grateful donation! - https://www.elivecd.org/donate/\${el_c_n}"
+fi
+echo
+EOF
     chsh -s /bin/zsh
     changeconfig "DSHELL=" "DSHELL=/bin/zsh" /etc/adduser.conf
     # configure ssh if was not yet
@@ -823,17 +831,27 @@ install_user(){
 
         # user configs
         elive-skel user "$username"
-        addconfig "export PATH=\"\$HOME/packages/bin:\$PATH\"" "$DHOME/${username}/.zshrc"
-        addconfig "elive-logo-show --no-newline ; lsb_release -d -s ; echo ; echo " "$DHOME/${username}/.zshrc"
+
+        cat >> "$DHOME/${username}/.zshrc" << EOF
+export PATH="\$HOME/packages/bin:\$PATH"
+# show the nice elive logo as welcome
+elive-logo-show --no-newline ; lsb_release -d -s ; echo
+# suggest to donate to Elive once per every 8 random logins:
+if [[ "\${RANDOM:0:1}" = 5 ]] || [[ "\${RANDOM:0:1}" = 6 ]] ; then
+    echo -e "\${el_c_g}\${el_c_blink}Help Elive to continue making amazing things with a grateful donation! - https://www.elivecd.org/donate/\${el_c_n}"
+fi
+echo
+EOF
         chsh -s "/bin/zsh" "$username"
 
         rm -rf $DHOME/$username/.*.old 2>/dev/null || true
         if [[ -d "$DHOME/$username/.ssh" ]] ; then
-            mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old" 2>/dev/null || true
+            rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
+            mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
         fi
 
         if [[ -d "/root/.ssh" ]] ; then
-            if el_confirm "Do you want to copy the SSH settings of your root (admin) user to your '$username' user? (this is suggested to re-use the ssh keys)" ; then
+            if el_confirm "Do you want to copy the SSH settings of your root (admin) user to your '$username' user? (this is suggested to re-use its ssh keys)" ; then
                 cp -a "/root/.ssh" "$DHOME/$username/"
                 chown -R "$username:$username" "$DHOME/$username/.ssh"
             fi
@@ -930,7 +948,7 @@ install_php(){
 
                 # get new version
                 php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
-                if ! el_confirm "\nDo you want to use the NEW default provided PHP version? ($php_version) ?" ; then
+                if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (if you say no, you will select one from all the versions available)" ; then
                     unset php_version
                     rm -f "/etc/apt/sources.list.d/php.list"
                 fi
@@ -1427,10 +1445,8 @@ location ~ /\\.          { access_log off; log_not_found off; return 444; }
 location ~* \\.(conf)$          { access_log off; log_not_found off; return 444; }
 
 
-# blacklist common hacks (from 404 logs) and free up the server
-location ~* (/data/admin/ver.txt|/templets/default/style/dedecms.css|/data/admin/allowurl.txt|/data/cache/index.htm|/member/space/person/common/css/css.css|/data/admin/quickmenu.txt|/templets/default/images/logo.gif|/data/mysql_error_trace.inc|//data/mysql_error_trace.inc|/member/templets/images/login_logo.gif|/member/images/dzh_logo.gif|/member/images/base.css|/include/data/vdcode.jpg|/api/Uploadify/|/plugins/uploadify/|alexa.jpeg)  { access_log off; log_not_found off; return 444; }
-
-## anti-bots forbids:
+# blacklist common hacks, enable these unless gives you problems
+#location ~* (/data/admin/ver.txt|/templets/default/style/dedecms.css|/data/admin/allowurl.txt|/data/cache/index.htm|/member/space/person/common/css/css.css|/data/admin/quickmenu.txt|/templets/default/images/logo.gif|/data/mysql_error_trace.inc|//data/mysql_error_trace.inc|/member/templets/images/login_logo.gif|/member/images/dzh_logo.gif|/member/images/base.css|/include/data/vdcode.jpg|/api/Uploadify/|/plugins/uploadify/|alexa.jpeg)  { access_log off; log_not_found off; return 444; }
 #location ~ (?i)^/wp\\-content/plugins/.*\\.txt$ { access_log off; log_not_found off; return 444; }
 # filenames (php mostly)
 #location ~ (?i).*/(autodiscover|eval-stdin|system_api|adminer|connector|adm|IOptimize|blackhat|th3_alpha|vuln|oecache|upload_index|xxx|microsoft.exchange|security|app-ads|newfile|demodata|admins|nginx|apache|wlmanifest|force-download|password)\\.(?:php[1-7]?|pht|phtml?|phps|xml|txt)$ { access_log off; log_not_found off; return 444; }
@@ -1586,7 +1602,7 @@ install_exim(){
         wp_webname="$domain"
     fi
     if [[ "$wp_webname" != "$domain" ]] ; then
-        if el_confirm "Do you want to use this server as you main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
+        if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
             wp_webname="$domain"
         fi
     fi
@@ -1597,8 +1613,8 @@ install_exim(){
 
     # cleanup old install and configuration
     if [[ -d /etc/exim4 ]] ; then
-        rm -rf /etc/exim4.old 1>/dev/null 2>&1 || true
-        mv -f /etc/exim4 /etc/exim4.old
+        rm -rf "/etc/exim4.old-$(date +%F)" 1>/dev/null 2>&1 || true
+        mv -f /etc/exim4 "/etc/exim4.old-$(date +%F)"
     fi
     packages_remove --purge exim4-\*
 
@@ -1716,6 +1732,9 @@ MAIN_TIMEOUT_FROZEN_AFTER = 2d
 # include special filters if you have, like replacing a header from: or reply-to: to another one
 #system_filter = /etc/exim4/filter-headers.conf
 
+# SPF filtering
+CHECK_RCPT_SPF = true
+
 # DNS blacklist:
 #CHECK_RCPT_IP_DNSBLS = sbl.spamhaus.org:bl.spamcop.net:cbl.abuseat.org
 CHECK_RCPT_IP_DNSBLS = zen.spamhaus.org
@@ -1739,6 +1758,10 @@ login_server:
 
 EOF
 
+    # edit the conf file to deny blacklisted ip's (instead of warn about them)
+    # note: very nice 'ed' howto: https://www.computerhope.com/unix/ued.htm
+    echo -e "/ifdef CHECK_RCPT_IP_DNSBLS\n+1\ns/warn/deny/\nw\nq" | ed /etc/exim4/conf.d/acl/30_exim4-config_check_rcpt 1>/dev/null
+
     systemctl stop exim4.service
     rm -f /var/log/exim4/paniclog
     rm -rf /var/log/exim4/* /var/log/mail*
@@ -1756,6 +1779,7 @@ EOF
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
     # TODO: configure email-sender too ?
+
 
     # Dovecot:
     el_info "Installing Dovecot IMAP email server..."
@@ -1809,6 +1833,20 @@ EOF
 
     # restart
     systemctl restart dovecot.service
+
+    if el_confirm "Do you want to install the Anti-Spam Spamassasin system? (Important: this feature will use 100 MB of your RAM resources)" ; then
+        el_info "Installing SpamAssassin antispam system..."
+        packages_install \
+            spamassassin
+
+        # enable it
+        changeconfig "spamd_address =" "spamd_address = 127.0.0.1 783" /etc/exim4/conf.d/main/02_exim4-config_options
+
+        echo -e "/Reject spam messages\n-1\na\n\n  # put headers in all messages (no matter if spam or not)\n  warn  spam = debian-spamd:true\n     add_header = X-Spam-Score: \$spam_score (\$spam_bar)\n     add_header = X-Spam-Report: \$spam_report\n\n  # add second subject line with *SPAM* marker when message is over threshold\n  warn  spam = debian-spamd\n     add_header = Subject: ***SPAM (score:\$spam_score)*** \$h_Subject:\n\n  # reject spam at high scores (> 12)\n  deny  spam = debian-spamd:true\n      condition = \${if >{\$spam_score_int}{120}{1}{0}}\n      message = This message scored \$spam_score spam points.\n\n.\nw\nq" | ed /etc/exim4/conf.d/acl/40_exim4-config_check_data 1>/dev/null
+
+        systemctl enable spamassassin.service
+        systemctl restart spamassassin.service
+    fi
 
 
     installed_set "exim"
