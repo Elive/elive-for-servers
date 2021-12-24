@@ -1604,22 +1604,20 @@ install_exim(){
     ask_variable "email_password" "Insert an email password for your Email SMTP sending"
     ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
 
+    update_variables
 
-    #if [[ -n "$wp_webname" ]] ; then
-        #mail_hostname="$wp_webname"
-    #fi
+    mail_hostname="$hostnamefull"
     #if [[ -z "$mail_hostname" ]] || [[ "${mail_hostname#www.}" = "$domain" ]] ; then
         #mail_hostname="$domain"
     #fi
-    #if [[ "$mail_hostname" != "$domain" ]] ; then
-        #if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
-            #wp_webname="$domain"
-        #fi
-    #fi
+    if [[ "$mail_hostname" != "$domain" ]] ; then
+        if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$hostnamefull' domain)" ; then
+            mail_hostname="$domain"
+            # XXX rDNS should point to this one, so domains should be allowed too
+        fi
+    fi
 
-    update_variables
     require_variables "domain|email_admin|username|username_mail_password|email_password|hostnamefull"
-    mail_hostname="$hostnamefull" # we should strictly use hostnamefull apparently, because rdns should point to it
     email_username="${username}@${mail_hostname}"
 
     # cleanup old install and configuration
@@ -1782,6 +1780,8 @@ MAIN_LOG_SELECTOR = \
 
 
 EOF
+    # TODO: verify with fail2ban-client regex tool if the log_selector configuration doesn't conflict (test by enabling/disabling our conf and see how many matches we have, but we will need for that to have newly generated logs which will show different results, hum....)
+
     # configure the login system:
     cat >> /etc/exim4/conf.d/auth/30_exim4-config_examples << 'EOF'
 
@@ -2098,7 +2098,11 @@ final_steps(){
     echo -e "\n"
 
     if [[ -s /etc/cloud/cloud.cfg ]] ; then
-        NOREPORTS=1 el_info "You have a Cloud configuration file in '/etc/cloud/', which you may configure it to manage your users or other server settings, like automtic reconfiguration of your hosts file, re-creation of dummy users, etc..."
+        el_info "You have a Cloud configuration file in '/etc/cloud/', which you may configure it to manage your users or other server settings, like automtic reconfiguration of your hosts file, re-creation of dummy users, etc..."
+    fi
+
+    if [[ "$( ls -1 /boot/vmlinuz-* | wc -l )" -gt 1 ]] ; then
+        el_info "You have more than one kernels installed, you can free up some disk space by uninstalling the old ones"
     fi
 
     # TODO: review and remove
@@ -2139,33 +2143,51 @@ final_steps(){
     fi
 
     if ((is_installed_exim)) ; then
-        # TODO: tell about all the configurations needed, like  dnssec?
         # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
 
         el_info "DNS: you must configure your server's dns to follow these entries:"
-        for i in ${mail_hostname}
+
+        # SPF & other DNS
+        el_info "DNS type A record with (empty) name '' with data '${domain_ip}'"
+
+        if [[ "$mail_hostname" = "$domain" ]] ; then
+            el_info "DNS type A record named 'smtp' with data '${domain_ip}'"
+            el_info "DNS type A record named 'imap' with data '${domain_ip}'"
+            el_info "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'"
+            el_info "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'"
+            el_info "DNS type MX record with (empty) name '' with data 'smtp.${domain}'"
+        else
+            el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
+            el_info "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'"
+            el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
+            el_info "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'"
+            el_info "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'"
+            el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        fi
+        #el_info "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed?
+        #el_info "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
+        #el_info "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        #el_info "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        if [[ "$wp_webname" != "$mail_hostname" ]] ; then
+            el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}'"
+        fi
+        for i in ${mail_hostname} ${domain}
         do
             [[ -z "$i" ]] && continue
             [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
-            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i}' with these contents:"
+            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i%%.*}' with these contents:"
             echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
         done
-
-        # SPF & other DNS
-        el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
-        el_info "DNS type A record named 'smtp.${mail_hostname}' with data '${domain_ip}'"
-        #el_info "DNS type A record named 'mail.${mail_hostname}' with data '${domain_ip}'"
-        el_info "DNS type A record named 'imap.${mail_hostname}' with data '${domain_ip}'"
-        el_info "DNS type TXT record named '_dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};"
-        el_info "DNS type TXT record named '${mail_hostname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
-        el_info "IPv6 address, you have one? Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address, also append ip6:YOUR-IP6-ADDR to the TXT record of your SPF"
-        #el_info "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed?
-        #el_info "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
-        #el_info "DNS type MX record named '${mail_hostname}' with data 'mail.${mail_hostname}'"
-        #el_info "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        #el_info "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         el_info "DNS in your 'reverse DNS', set it to '${mail_hostname}'"
+        # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
+
+        el_info "If you have IPv6:"
+        echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address"
+        echo -e "    * Append ip6:YOUR-IP6-ADDR to your previous TXT record of SPF"
+        echo -e "    * Set the Reverse-DNS for your IPv6 to be '${mail_hostname}'"
+
+        el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service"
+        # TODO: add mta-sts
 
         # SMTP conf
         el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
