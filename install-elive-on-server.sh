@@ -478,7 +478,7 @@ sources_update_adapt(){
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
 
     update_variables
-    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|debian_version"
+    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|hostnameshort|hostnamefull|debian_version"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
     cd "$( dirname "$sources" )"
@@ -513,12 +513,12 @@ sources_update_adapt(){
     find "${templates}" -type f -exec sed -i "s|${previous_ip}|${domain_ip}|g" {} \;
     zsh <<EOF
 rename "s/elivecd.org/$domain/" ${templates}/**/*(.)
-rename "s/hostdo1/${hostname}/" ${templates}/**/*(.)
+rename "s/hostdo1/${hostnameshort}/" ${templates}/**/*(.)
 EOF
 
     find "$templates" -type f -exec sed -i \
         -e "s|elivecd.org|${domain}|g" \
-        -e "s|hostdo1|${hostname}|g" \
+        -e "s|hostdo1|${hostnameshort}|g" \
         "{}" \;
 
     if [[ -n "$username" ]] ; then
@@ -573,7 +573,7 @@ install_templates(){
     find . -type f -o -type l -o -type p -o -type s | sed -e 's|^\./||g' | cpio -padu -- "${dest%/}"
     cd ~
 
-    el_info "Installed template '$name'"
+    el_debug "Installed template '$name'"
 }
 
 
@@ -610,6 +610,10 @@ update_variables(){
             # get x.x from x.x.x version
             php_version="$( echo "$php_version" | awk -v FS="." '{print $1"."$2}' )"
         fi
+    fi
+
+    if ! echo "$hostnamefull" | grep -qs ".*\..*\..*" ; then
+        hostnamefull="${hostnameshort}.${domain}"
     fi
 
     #ifconfig lo down
@@ -1133,7 +1137,7 @@ install_mariadb(){
         wait
         systemctl restart mariadb.service 2>/dev/null || true
 
-        el_info "Your MYSQL root Password will be '${pass_mariadb_root}'. KEEP IT SAFE and do not lose it!"
+        el_info "Your MYSQL root Password will be '${pass_mariadb_root}'"
     else
         NOREPORTS=1 el_warning "password for your root DB not provided, you may want to run again and give a root password for your datbase server"
     fi
@@ -1189,7 +1193,7 @@ install_wordpress(){
     sync
     systemctl restart mariadb.service
 
-    el_info "Created Database '${wp_db_name}' with username '${wp_db_user}' and pass '${wp_db_pass}'. KEEP IT SAFE and do not lose it!"
+    el_info "Created Database '${wp_db_name}' with username '${wp_db_user}' and pass '${wp_db_pass}'."
 
     # }}}
     # create user if not exist {{{
@@ -1534,8 +1538,8 @@ install_fail2ban(){
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
 
-    require_variables "email_admin|domain_ip|hostname|domain"
-    hostnamefull="${hostname}.${domain}"
+    require_variables "email_admin|domain_ip|hostnamefull|domain"
+    update_variables
 
     sources_update_adapt
 
@@ -1594,25 +1598,29 @@ install_exim(){
     packages_remove  postfix || true
 
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
-    ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
+    #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
     ask_variable "email_password" "Insert an email password for your Email SMTP sending"
     ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
 
 
-    if [[ -z "$wp_webname" ]] || [[ "${wp_webname#www.}" = "$domain" ]] ; then
-        wp_webname="$domain"
-    fi
-    if [[ "$wp_webname" != "$domain" ]] ; then
-        if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
-            wp_webname="$domain"
-        fi
-    fi
+    #if [[ -n "$wp_webname" ]] ; then
+        #mail_hostname="$wp_webname"
+    #fi
+    #if [[ -z "$mail_hostname" ]] || [[ "${mail_hostname#www.}" = "$domain" ]] ; then
+        #mail_hostname="$domain"
+    #fi
+    #if [[ "$mail_hostname" != "$domain" ]] ; then
+        #if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$wp_webname' domain)" ; then
+            #wp_webname="$domain"
+        #fi
+    #fi
 
     update_variables
-    require_variables "domain|email_admin|wp_webname|username|username_mail_password|email_password"
-    email_username="${username}@${wp_webname}"
+    require_variables "domain|email_admin|username|username_mail_password|email_password|hostnamefull"
+    mail_hostname="$hostnamefull" # we should strictly use hostnamefull apparently, because rdns should point to it
+    email_username="${username}@${mail_hostname}"
 
     # cleanup old install and configuration
     if [[ -d /etc/exim4 ]] ; then
@@ -1622,7 +1630,7 @@ install_exim(){
     packages_remove --purge exim4-\*
 
 
-    echo "$wp_webname" > /etc/mailname
+    echo "$mail_hostname" > /etc/mailname
     # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
@@ -1635,10 +1643,10 @@ install_exim(){
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.25 " | debconf-set-selections
     fi
     # if you send emails to these domains, accept them:
-    if [[ "$wp_webname" = "$domain" ]] ; then
-        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname}" | debconf-set-selections
+    if [[ "$mail_hostname" = "$domain" ]] ; then
+        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${mail_hostname}" | debconf-set-selections
     else
-        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${wp_webname} ; ${domain}" | debconf-set-selections
+        echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${mail_hostname} ; ${domain}" | debconf-set-selections
     fi
     echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
@@ -1670,17 +1678,17 @@ install_exim(){
 
     # install certificate
     # TODO: before to install exim, we need to have the DNS's configured with everything we need, for example smtp.domain.com to point to this machine, otherwise some steps will fail like certbot
-    if [[ ! -d "/etc/letsencrypt/live/smtp.${wp_webname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${wp_webname}" ]] ; then
-        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${wp_webname}' and also 'imap.${wp_webname}' to point to this IP before to continue:"
-        if ! ping -c 1 smtp.${wp_webname} 1>/dev/null 2>&1 ; then
-            echo -e "You are going to install a Letsencrypt certificate for 'smtp.${wp_webname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
+    if [[ ! -d "/etc/letsencrypt/live/smtp.${mail_hostname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${mail_hostname}" ]] ; then
+        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${mail_hostname}' and also 'imap.${mail_hostname}' to point to this IP before to continue:"
+        if ! ping -c 1 smtp.${mail_hostname} 1>/dev/null 2>&1 ; then
+            echo -e "You are going to install a Letsencrypt certificate for 'smtp.${mail_hostname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
             read nothing
         fi
 
         # TODO: auto-renew
         if installed_check "nginx" ; then
-            letsencrypt certonly -d smtp.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
-            letsencrypt certonly -d imap.${wp_webname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
         else
             if ((has_ufw)) ; then
                 ufw allow 80/tcp
@@ -1690,8 +1698,8 @@ install_exim(){
                 fi
             fi
 
-            letsencrypt certonly -d smtp.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
-            letsencrypt certonly -d imap.${wp_webname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
         fi
     fi
 
@@ -1699,15 +1707,14 @@ install_exim(){
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
     groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
-    chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$wp_webname} /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
-    chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$wp_webname} /etc/letsencrypt/live/imap.${wp_webname}/privkey.pem
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$mail_hostname} /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$mail_hostname} /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
-    #chmod g+r /etc/letsencrypt/archive/smtp.${wp_webname}/privkey1.pem
-    chmod g+r /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
-    chmod g+r /etc/letsencrypt/live/imap.${wp_webname}/privkey.pem
+    chmod g+r /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
+    chmod g+r /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
 
     # be able to send from this domain, add a dkim signature
-    /usr/local/sbin/exim_adddkim "${wp_webname}"
+    /usr/local/sbin/exim_adddkim "${mail_hostname}"
     echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # our server settings
@@ -1715,13 +1722,13 @@ install_exim(){
 
 # require TLS (encrypted connections) to connect
 MAIN_TLS_ENABLE = yes
-MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/smtp.${wp_webname}/fullchain.pem
-MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${wp_webname}/privkey.pem
+MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/smtp.${mail_hostname}/fullchain.pem
+MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
 
 # set the DKIM configuration
-DKIM_DOMAIN = ${wp_webname}
+DKIM_DOMAIN = ${mail_hostname}
 DKIM_SELECTOR = mail
-DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
+DKIM_PRIVATE_KEY = /etc/exim4/${mail_hostname}/dkim_private.key
 
 # No local deliveries will ever be run under the uids of these users (a colon-
 # separated list). An attempt to do so gets changed so that it runs under the
@@ -1807,7 +1814,7 @@ EOF
     # configure mailx-send to work
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
     changeconfig "password=" "password=\"$email_password\"" /usr/local/bin/mailx-send
-    changeconfig "smtp_connect=" "smtp_connect=\"smtp.${wp_webname}\"" /usr/local/bin/mailx-send
+    changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
@@ -1821,8 +1828,8 @@ EOF
 
     usermod -aG mailers dovecot
 
-    changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/imap.${wp_webname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
-    changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/imap.${wp_webname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/imap.${mail_hostname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
     changeconfig "auth_mechanisms =" "auth_mechanisms = plain login" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^\!include auth-system.conf.ext|#\!include auth-system.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^#\!include auth-passwdfile.conf.ext|\!include auth-passwdfile.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
@@ -1995,7 +2002,7 @@ install_iptables(){
 install_monit(){
     el_info "Installing Monit..."
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
-    hostnamefull="${hostname}.${domain}"
+    update_variables
     require_variables "hostnamefull|domain|email_admin"
 
     packages_install  monit
@@ -2136,7 +2143,7 @@ final_steps(){
         # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
 
         el_info "DNS: you must configure your server's dns to follow these entries:"
-        for i in ${wp_webname}
+        for i in ${mail_hostname}
         do
             [[ -z "$i" ]] && continue
             [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
@@ -2145,26 +2152,26 @@ final_steps(){
         done
 
         # SPF & other DNS
-        el_info "DNS type A record named '${wp_webname}' with data '${domain_ip}'"
-        el_info "DNS type A record named 'smtp.${wp_webname}' with data '${domain_ip}'"
-        #el_info "DNS type A record named 'mail.${wp_webname}' with data '${domain_ip}'"
-        el_info "DNS type A record named 'imap.${wp_webname}' with data '${domain_ip}'"
-        el_info "DNS type TXT record named '${wp_webname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
-        el_info "DNS type TXT record named '_dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${wp_webname};"
-        el_info "IPv6 address, you have one? Add DNS type AAAA record named '${wp_webname}' with data of your IPv6 address, also append ip6:YOUR-IP6-ADDR to the TXT record of your SPF"
-        #el_info "DNS type TXT record named '*._report._dmarc.${wp_webname}' with data 'v=DMARC1;" # TODO: needed?
-        #el_info "DNS type TXT record named '*._dmarc.${wp_webname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
-        #el_info "DNS type MX record named '${wp_webname}' with data 'mail.${wp_webname}'"
-        #el_info "DNS type MX record named '@' with data 'mail.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        #el_info "DNS type MX record named '@' with data 'smtp.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${wp_webname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        el_info "DNS in your 'reverse DNS', set it to '${wp_webname}'"
+        el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
+        el_info "DNS type A record named 'smtp.${mail_hostname}' with data '${domain_ip}'"
+        #el_info "DNS type A record named 'mail.${mail_hostname}' with data '${domain_ip}'"
+        el_info "DNS type A record named 'imap.${mail_hostname}' with data '${domain_ip}'"
+        el_info "DNS type TXT record named '_dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};"
+        el_info "DNS type TXT record named '${mail_hostname}' with data 'v=spf1 a ip4:${domain_ip} -all'"
+        el_info "IPv6 address, you have one? Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address, also append ip6:YOUR-IP6-ADDR to the TXT record of your SPF"
+        #el_info "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed?
+        #el_info "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
+        #el_info "DNS type MX record named '${mail_hostname}' with data 'mail.${mail_hostname}'"
+        #el_info "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        #el_info "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+        el_info "DNS in your 'reverse DNS', set it to '${mail_hostname}'"
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${wp_webname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
-        el_info "Note: When you send emails from no-reply@${wp_webname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
-        el_info "IMAP connect: connect to your email as: URL 'imap.${wp_webname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
-        #if [[ "$wp_webname" != "$domain" ]] ; then
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
+        el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
+        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
+        #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
         echo
@@ -2271,7 +2278,7 @@ main(){
 
 
     hostname="$(hostname)"
-    hostname="${hostname%%.*}"
+    hostnameshort="${hostname%%.*}"
     # do not change this value unless you know what you are doing, it is used to replace old configuration template files to your server:
     # TODO: ip of elive server actually is:  139.59.157.208
     previous_ip="188.226.235.52"
