@@ -1585,6 +1585,9 @@ install_fail2ban(){
 install_exim(){
     # Howto's used as base:
     # * https://transang.me/setup-a-production-ready-exim-dovecot-server/
+    # other nice howto's:
+    #   * document with many examples: http://www.sput.nl/software/exim.html
+    #   * customized conf example: https://files.directadmin.com/services/exim4.conf
     el_info "Installing Exim mail server..."
     local packages_extra
     systemctl stop  postfix.service  2>/dev/null || true
@@ -1707,8 +1710,8 @@ install_exim(){
     /usr/local/sbin/exim_adddkim "${wp_webname}"
     echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
-    # require TLS
-    cat >> /etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs << EOF
+    # our server settings
+    cat >> /etc/exim4/conf.d/main/000_localmacros << EOF
 
 # require TLS (encrypted connections) to connect
 MAIN_TLS_ENABLE = yes
@@ -1720,7 +1723,12 @@ DKIM_DOMAIN = ${wp_webname}
 DKIM_SELECTOR = mail
 DKIM_PRIVATE_KEY = /etc/exim4/${wp_webname}/dkim_private.key
 
-# Security: forbid logins from root
+# No local deliveries will ever be run under the uids of these users (a colon-
+# separated list). An attempt to do so gets changed so that it runs under the
+# uid of "nobody" instead. This is a paranoic safety catch. Note the default
+# setting means you cannot deliver mail addressed to root as if it were a
+# normal user. This isn't usually a problem, as most sites have an alias for
+# root that redirects such mail to a human administrator.
 never_users                        = root
 
 # Improve defaults
@@ -1735,11 +1743,36 @@ MAIN_TIMEOUT_FROZEN_AFTER = 2d
 # SPF filtering
 CHECK_RCPT_SPF = true
 
+# extra options
+CHECK_MAIL_HELO_ISSUED = true
+CHECK_RCPT_REVERSE_DNS = true
+CHECK_DATA_VERIFY_HEADER_SYNTAX = true
+
 # DNS blacklist:
 #CHECK_RCPT_IP_DNSBLS = sbl.spamhaus.org:bl.spamcop.net:cbl.abuseat.org
 CHECK_RCPT_IP_DNSBLS = zen.spamhaus.org
 #CHECK_RCPT_DOMAIN_DNSBLS = dnsbl.spfbl.net/\$sender_address_domain
 #CHECK_RCPT_DOMAIN_DNSBLS = dnsbl.sorbs.net/\$sender_address_domain : dnsbl.spfbl.net/\$sender_address_domain
+
+# Logging details, also needed for fail2ban, change it with caution:
+MAIN_LOG_SELECTOR = \
+  +all \
+  +subject \
+  -arguments
+  #+delivery_size \
+  #+sender_on_delivery \
+  #+received_recipients \
+  #+received_sender \
+  #+smtp_confirmation \
+  #+subject \
+  #+smtp_incomplete_transaction
+  #-dnslist_defer \
+  #-host_lookup_failed \
+  #-queue_run \
+  #-rejected_header \
+  #-retry_defer \
+  #-skip_delivery
+
 
 EOF
     # configure the login system:
@@ -1844,6 +1877,9 @@ EOF
 
         echo -e "/Reject spam messages\n-1\na\n\n  # put headers in all messages (no matter if spam or not)\n  warn  spam = debian-spamd:true\n     add_header = X-Spam-Score: \$spam_score (\$spam_bar)\n     add_header = X-Spam-Report: \$spam_report\n\n  # add second subject line with *SPAM* marker when message is over threshold\n  warn  spam = debian-spamd\n     add_header = Subject: ***SPAM (score:\$spam_score)*** \$h_Subject:\n\n  # reject spam at high scores (> 12)\n  deny  spam = debian-spamd:true\n      condition = \${if >{\$spam_score_int}{120}{1}{0}}\n      message = This message scored \$spam_score spam points.\n\n.\nw\nq" | ed /etc/exim4/conf.d/acl/40_exim4-config_check_data 1>/dev/null
 
+        changeconfig "CRON=0" "CRON=1" /etc/default/spamassassin
+
+        sa-update
         systemctl enable spamassassin.service
         systemctl restart spamassassin.service
     fi
