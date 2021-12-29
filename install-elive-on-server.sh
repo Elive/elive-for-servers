@@ -848,14 +848,15 @@ echo
 EOF
         chsh -s "/bin/zsh" "$username"
 
-        rm -rf $DHOME/$username/.*.old 2>/dev/null || true
-        if [[ -d "$DHOME/$username/.ssh" ]] ; then
-            rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
-            mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
-        fi
 
         if [[ -d "/root/.ssh" ]] ; then
             if el_confirm "Do you want to copy the SSH settings of your root (admin) user to your '$username' user? (this is suggested to re-use its ssh keys)" ; then
+                rm -rf $DHOME/$username/.*.old 2>/dev/null || true
+                if [[ -d "$DHOME/$username/.ssh" ]] ; then
+                    rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
+                    mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
+                fi
+
                 cp -a "/root/.ssh" "$DHOME/$username/"
                 chown -R "$username:$username" "$DHOME/$username/.ssh"
             fi
