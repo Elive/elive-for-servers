@@ -206,7 +206,6 @@ get_args(){
                 ;;
             "--betatesting")
                 # automated / no-asking options, only for betatesting
-                unset is_production
                 is_tool_beta=1
                 ;;
 
@@ -214,20 +213,19 @@ get_args(){
     done
 
     if ((is_production)) ; then
-
         if ((is_extra_service)) ; then
             if ! el_confirm "\nImportant: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. Also MAKE SURE you do a full backup of your server first. Do you want to continue?" ; then
                 exit 1
             fi
         fi
+    fi
 
-        # alpha/beta version should report errors of this tool, betatesting phase
-        if ((is_tool_beta)) && ((is_production)) ; then
-            export EL_REPORTS=1
-            conf_send_debug_reports="yes"
-            conf_send_debug_reports_email="EliveForServers"
-            unset is_terminal
-        fi
+    # alpha/beta version should report errors of this tool, betatesting phase
+    if ((is_tool_beta)) && ((is_production)) ; then
+        export EL_REPORTS=1
+        conf_send_debug_reports="yes"
+        conf_send_debug_reports_email="EliveForServers"
+        unset is_terminal
     fi
 
     if [[ "$EL_DEBUG" -gt 2 ]] ; then
@@ -2034,6 +2032,7 @@ install_iptables(){
 install_monit(){
     el_info "Installing Monit..."
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
     update_variables
     require_variables "hostnamefull|domain|email_admin"
 
@@ -2433,7 +2432,9 @@ main(){
     # install Elive features {{{
     #if ! [[ -e /var/lib/dpkg/info/elive-tools.list ]] ; then
     if ((is_wanted_elive)) ; then
-        install_elive
+        if ! installed_check "elive" ; then
+            install_elive
+        fi
     else
         #if ! [[ -s /etc/elive-version ]] ; then
         if installed_ask "elive" "This server has not yet Elive superpowers. Install them? (required)" ; then
@@ -2530,8 +2531,12 @@ main(){
 
     # install monit {{{
     if ((is_wanted_monit)) ; then
-        if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
-            install_monit
+        if [[ "$debian_version" = "buster" ]] ; then
+            NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster"
+        else
+            if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
+                install_monit
+            fi
         fi
     fi
     # }}}
