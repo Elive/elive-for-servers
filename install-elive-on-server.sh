@@ -723,9 +723,11 @@ install_elive(){
         buster)
             # Buster is old, backports is suggested, especially since their install is not on priority
             # monit requires install from backports because there's no other candidate
-            rm -f /etc/apt/sources.list.d/ggg-debian-backports.list
-            if ! grep -qsi "^deb .* buster-backports " /etc/apt/sources.list ; then
-                echo -e "\n# is good to have backports in the old buster, especially since their installation is not on priority\ndeb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/ggg-debian-backports.list
+            if ! ((is_ubuntu)) ; then
+                rm -f /etc/apt/sources.list.d/ggg-debian-backports.list
+                if ! grep -qsi "^deb .* buster-backports " /etc/apt/sources.list ; then
+                    echo -e "\n# is good to have backports in the old buster, especially since their installation is not on priority\ndeb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/ggg-debian-backports.list
+                fi
             fi
             #packages_extra="openntpd ntpdate $packages_extra"
             ;;
