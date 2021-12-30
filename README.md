@@ -1,17 +1,12 @@
 # Elive for Servers, with superpowers!
 Enjoy your server with some Elive super-powers, and you can also optionally install well-tuned services in one shot!
 
-_Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
+_Important: this tool installs packages in your server to improve it with Elive features, and you can optionally install full services too_
 
-**Distros supported**:
-- Debian Buster
-- Debian Bullseye
+### Distros supported:
+ * **Debian**: Bullseye, Buster
+ * **Ubuntu**: 21.10 "Impish", 21.04 "Irsute", 20.04 "Focal", 18.04 "Bionic"
 
-**Ubuntu versions**:
-- 21.10 "Impish"
-- 21.04 "Irsute"
-- 20.04 "Focal"
-- 18.04 "Bionic"
 
 #### :warning: Note: Ubuntu installs are added for compatibility, but we *strongly* suggest to use Debian instead. If you use Ubuntu send *Pull requests* instead of bug reports.
 
