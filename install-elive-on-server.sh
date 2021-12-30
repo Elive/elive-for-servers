@@ -428,7 +428,7 @@ el_confirm(){
 
 require_variables(){
     if ! el_check_variables "$@" ; then
-        NOREPORTS=1 el_error "Needed variable is not set, function '${FUNCNAME[1]}'. See the --help to show the available options"
+        el_error "Needed variable '$@' is not set, function '${FUNCNAME[1]}'. See the --help to show the available options"
         exit 1
     fi
 }
@@ -975,7 +975,7 @@ install_php(){
 
             if el_confirm "\nDo you want to use unnoficial repositories to install a more recent version of PHP?" ; then
                 notimplemented
-                NOREPORTS=1 el_warning "Ignore error messages about apache and service restarts..."
+                NOREPORTS=1 el_warning "Ignore the next possible error messages about apache and service restarts..."
                 sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
                 sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
                 apt-get -q update
