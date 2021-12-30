@@ -15,6 +15,8 @@ set +o histexpand
 # verbose:
 #set -x
 
+sources="/root/elive-for-servers.git"
+
 # logs to a file at the same time as in terminal
 logs="/tmp/.${SOURCE}-${USER}-logs.txt"
 rm -rf "$logs" 2>/dev/null || true
@@ -205,6 +207,7 @@ get_args(){
             "--betatesting")
                 # automated / no-asking options, only for betatesting
                 unset is_production
+                is_tool_beta=1
                 ;;
 
         esac
@@ -221,9 +224,9 @@ get_args(){
         # alpha/beta version should report errors of this tool, betatesting phase
         if ((is_tool_beta)) && ((is_production)) ; then
             export EL_REPORTS=1
-            #export FORCE_REPORTS=1
             conf_send_debug_reports="yes"
             conf_send_debug_reports_email="EliveForServers"
+            unset is_terminal
         fi
     fi
 
@@ -325,11 +328,12 @@ changeconfig(){
 
 
 exit_error(){
+    set +x
     # cleanups
     rm -rf "$sources"
 
-    if [[ -s "$logs" ]] ; then
-        el_report_to_elive "$( tail -n 6 "$logs" )"
+    if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
+        el_report_to_elive "$( tail -n 22 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
@@ -338,9 +342,8 @@ exit_error(){
     exit 1
 }
 exit_ok(){
-    rm -rf "$sources"
-    rm -rf "$logs"
-    wait ; sync ; LC_ALL=C sleep 0.5
+    rm -rf "$sources" "$logs"
+    sync ; LC_ALL=C sleep 0.5
 }
 trap "exit_error" ERR
 trap "exit_ok" EXIT
@@ -493,7 +496,6 @@ packages_remove(){
 }
 
 sources_update_adapt(){
-    sources="/root/elive-for-servers"
     templates="$sources/templates"
 
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
@@ -638,6 +640,7 @@ update_variables(){
     fi
 
     conf_send_debug_reports_email="$email_admin"
+    unset is_terminal
 
     #ifconfig lo down
     #if ifconfig | grep -qs "inet6" ; then
@@ -1156,10 +1159,10 @@ install_mariadb(){
         for i in mysqld mariadbd mysqld_safe mariadbd-safe ; do
             killall -9 "$i" 1>/dev/null 2>&1 || true
         done
-        sync ; sleep 5
+        sync ; sleep 8
 
-        wait
         systemctl restart mariadb.service 2>/dev/null || true
+        sync ; sleep 1
 
         el_info "Your MYSQL root Password will be '${pass_mariadb_root}'"
     else
@@ -2279,13 +2282,13 @@ Notes:
 main(){
     # TODO: set to 1 for release, to 0 for betatesting more automated installs
     is_production=1
-    # TODO: release:
+    # TODO: comment after release has been debugged
     is_tool_beta=1
 
     # get user options
     get_args "$@"
 
-    # TODO: betatests
+    # TODO: remove betatests after release
     if ! ((is_production)) ; then
         pass_mariadb_root=dbpassroot
         wp_db_name=dbname
