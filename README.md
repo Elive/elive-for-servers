@@ -8,7 +8,7 @@ _Important: this tool installs packages in your server to improve it with Elive 
  * **Ubuntu**: 21.10 "Impish", 21.04 "Irsute", 20.04 "Focal", 18.04 "Bionic"
 
 
-_:warning: Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead. If you use Ubuntu send 'Pull requests' instead of bug reports_
+_:warning: Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead. If you use Ubuntu we don't accept but reports, only 'Pull requests' if you send the improvements/fixes_
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
@@ -41,7 +41,7 @@ _This is the login of your server after installing it, where you can see:_
 
 ## **Install it** (from root):
 
- * Basic Elive features install:
+ * Basic Elive features installation:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
@@ -52,7 +52,7 @@ _This is the login of your server after installing it, where you can see:_
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
- * Install Wordpress with an email server: 
+ * Install Wordpress with an email server:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
 
