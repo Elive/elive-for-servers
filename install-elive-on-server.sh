@@ -296,6 +296,7 @@ addconfig(){
             echo -e "${1}" >> "$2"
         fi
     else
+        set +x
         el_error "file '$2' doesn't exist"
         exit 1
     fi
@@ -304,6 +305,7 @@ changeconfig(){
     # change $1 conf to $2 value in $3 file
     # $1 = orig-string, $2 = change, $3 = file
     if echo "$1 $2" | grep -qsE "(\[|\]|\\\\|\|)" ; then
+        set +x
         el_error "invalid chars in '$1' or '$2', func ${FUNCNAME} from ${FUNCNAME[1]}"
         exit 1
     fi
@@ -319,6 +321,7 @@ changeconfig(){
             fi
         fi
     else
+        set +x
         el_error "file '$3' doesn't exist"
         exit 1
     fi
@@ -428,6 +431,7 @@ el_confirm(){
 
 require_variables(){
     if ! el_check_variables "$@" ; then
+        set +x
         el_error "Needed variable '$@' is not set, function '${FUNCNAME[1]}'. See the --help to show the available options"
         exit 1
     fi
@@ -458,11 +462,13 @@ packages_install(){
             do
                 if ! apt-get install $apt_options $package ; then
                     # report to the user to contribute to github and to wait for possible fixes
+                    set +x
                     el_error "Problem installing package '$package', debian_version '$debian_version' DISTRIB '$DISTRIB_ID - $DISTRIB_CODENAME', aborting..."
                     exit 1
                 fi
             done
         else
+            set +x
             el_error "Something failed ^ installing packages: $@"
             exit 1
         fi
@@ -480,11 +486,13 @@ packages_remove(){
             for package in $@
             do
                 if ! apt-get remove $apt_options $package ; then
+                    set +x
                     el_error "Problem removing package '$package', aborting..."
                     exit 1
                 fi
             done
         else
+            set +x
             el_error "Something failed ^ removing packages: $@"
             exit 1
         fi
@@ -589,6 +597,7 @@ install_templates(){
     sources_update_adapt
 
     if ! [[ -d "$templates/${debian_version}/$name" ]] ; then
+        set +x
         el_error "Templates missing: '$name'. Service install unable to be completed"
         exit 1
     fi
@@ -613,6 +622,7 @@ update_variables(){
         fi
         read -r domain_ip <<< "$domain_ip"
         if ! echo "$domain_ip" | grep -qs "^[[:digit:]]" ; then
+            set +x
             el_error "Unable to get machine IP"
             exit 1
         fi
@@ -624,6 +634,7 @@ update_variables(){
             sleep 2
             elive_version="$( lynx -connect_timeout 20 -dump https://www.elivecd.org/news/ | grep -i "elive .* released" | head -1 | sed -e 's|^.*Elive ||g' -e 's| .*$||g' )"
             if [[ -z "$elive_version" ]] ; then
+                set +x
                 el_error "Unable to get elive_version, please install 'lynx' first?"
                 exit 1
             fi
@@ -659,7 +670,9 @@ install_elive(){
     mkdir -p /etc/apt/sources.list.d /etc/apt/preferences.d /etc/apt/trusted.gpg.d
 
     if [[ -z "$debian_version" ]] || [[ -z "$elive_version" ]] || [[ -z "$elive_repo" ]] ; then
+        set +x
         el_error "missing variables required"
+        exit 1
     fi
 
     # we don't need these, so save some space and time
@@ -698,8 +711,9 @@ install_elive(){
             ;;
         *)
             # TODO: add a default message saying github collaboration
+            set +x
             el_error "debian version '$debian_version' is not supported (yet?)"
-            exit
+            exit 1
             ;;
     esac
 
@@ -1504,7 +1518,9 @@ EOF
 
     # reload services
     if ! systemctl restart nginx.service php${php_version}-fpm.service mariadb.service ; then
+        set +x
         el_error "failed to restart web services"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} - ${VERSION_ID}:\n$( journalctl -xe | tail -n 40 | sed -e '/^$/d' )"
     fi
     sleep 5
 
@@ -1514,6 +1530,7 @@ EOF
         installed_set "wordpress"
         is_installed_wordpress=1
     else
+        set +x
         el_error "Your wordpress site seems to not be correctly working"
     fi
 
@@ -1552,6 +1569,7 @@ install_phpmyadmin(){
         cd /tmp
         rm -rf /usr/share/phpmyadmin-updated || true
     else
+        set +x
         el_error "Unable to get the download url of phpMyAdmin from internet: $( lynx -dump https://www.phpmyadmin.net/downloads/ | grep zip )"
         exit 1
     fi
@@ -2310,6 +2328,7 @@ main(){
     fi
 
     if [[ "$UID" != "0" ]] ; then
+        set +x
         el_error "You need to be root to run this tool"
         exit 1
     fi
