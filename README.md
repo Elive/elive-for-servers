@@ -8,7 +8,7 @@ _Important: this tool installs packages in your server to improve it with Elive 
  * **Ubuntu**: 21.10 "Impish", 21.04 "Irsute", 20.04 "Focal", 18.04 "Bionic"
 
 
-#### :warning: Note: Ubuntu installs are added for compatibility, but we *strongly* suggest to use Debian instead. If you use Ubuntu send *Pull requests* instead of bug reports.
+_:warning: Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead. If you use Ubuntu send 'Pull requests' instead of bug reports_
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
@@ -33,7 +33,7 @@ _Important: this tool installs packages in your server to improve it with Elive 
 ### Elive shell
 ![screenshot login](screenshots/screenshot-login.png)
 
-_This is the login of your server after installing it, description:_
+_This is the login of your server after installing it, where you can see:_
 * root user is always written and marked in red so you clearly know if you are root
 * shell sessions automatically starts in tmux where you will not lose the work when disconnecting the terminal
 * press ctrl + down to open more shells, ctrl + arrows to switch between them
@@ -41,24 +41,31 @@ _This is the login of your server after installing it, description:_
 
 ## **Install it** (from root):
 
+ * Basic Elive features install:
+
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
 
 
 ### Installing extra services:
 
-_Install Wordpress:_
+ * Install Wordpress:
+
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
 
-_Install Wordpress with an email server_
+ * Install Wordpress with an email server: 
+
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
 
-_To create a new user:_
+ * To create a new user:
+
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
 
-_Help & list with more options:_
+ * **Etc**.. See the Help with more options:
+
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --help`
 
-___Note: it's important to set all the options wanted in a single install, so that the configurator will know all the values to configure for the resulting system and have everything working___
+
+___Note: it's important to set all the options wanted in a single command, so that the configurator will know all the values to configure for the resulting system and have everything working___
 
 ## Services
  You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... for example using the options:
