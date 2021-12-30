@@ -983,47 +983,49 @@ install_php(){
     # default version provided ?
     php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
 
-    if el_confirm "\nDo you want to use the default provided PHP version? ($php_version) ?" ; then
-        rm -f "/etc/apt/sources.list.d/php.list"
-        unset php_version
-    else
-        if which php 1>/dev/null ; then
-            #if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
-                packages_remove --purge php\*
-            #fi
-        fi
+    if [[ "$debian_version" != "buster" ]] && ! ((is_ubuntu)) ; then
+        if el_confirm "\nDo you want to use the default provided PHP version? ($php_version) ?" ; then
+            rm -f "/etc/apt/sources.list.d/php.list"
+            unset php_version
+        else
+            if which php 1>/dev/null ; then
+                #if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
+                    packages_remove --purge php\*
+                #fi
+            fi
 
-        if [[ "$debian_version" = "bullseye" ]] ; then
+            if [[ "$debian_version" = "bullseye" ]] ; then
 
-            if el_confirm "\nDo you want to use unnoficial repositories to install a more recent version of PHP?" ; then
-                notimplemented
-                NOREPORTS=1 el_warning "Ignore the next possible error messages about apache and service restarts..."
-                sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-                sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
-                apt-get -q update
+                if el_confirm "\nDo you want to use unnoficial repositories to install a more recent version of PHP?" ; then
+                    notimplemented
+                    NOREPORTS=1 el_warning "Ignore the next possible error messages about apache and service restarts..."
+                    sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+                    sudo sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+                    apt-get -q update
 
-                # get new version
-                php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
-                if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (if you say no, you will select one from all the versions available)" ; then
-                    unset php_version
-                    rm -f "/etc/apt/sources.list.d/php.list"
+                    # get new version
+                    php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
+                    if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (if you say no, you will select one from all the versions available)" ; then
+                        unset php_version
+                        rm -f "/etc/apt/sources.list.d/php.list"
+                    fi
                 fi
             fi
-        fi
 
-        if [[ -z "$php_version" ]] ; then
-            NOREPORTS=1 el_warning "Selecting experimental versions for PHP can lead to websites not working, do not report bugs to Elive"
-            el_info "Versions of PHP available:"
-            apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
-            echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
-            read php_version
-            # checks
-            if echo "$php_version" | grep -qs "^[[:digit:]].*[[:digit:]]$" ; then
-                if ! apt-cache show php${php_version}-fpm 1>/dev/null 2>&1 ; then
+            if [[ -z "$php_version" ]] ; then
+                NOREPORTS=1 el_warning "Selecting experimental versions for PHP can lead to websites not working, do not report bugs to Elive"
+                el_info "Versions of PHP available:"
+                apt-cache search php-fpm | grep -E "^php[[:digit:]]+.*-fpm" | awk '{print $1}' | sed -e 's|^php||g' -e 's|-.*$||g' | sort -Vu
+                echo -e "Type the version of PHP you whish to use (press Enter to use the default one)"
+                read php_version
+                # checks
+                if echo "$php_version" | grep -qs "^[[:digit:]].*[[:digit:]]$" ; then
+                    if ! apt-cache show php${php_version}-fpm 1>/dev/null 2>&1 ; then
+                        unset php_version
+                    fi
+                else
                     unset php_version
                 fi
-            else
-                unset php_version
             fi
         fi
     fi
