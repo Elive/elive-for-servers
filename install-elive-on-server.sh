@@ -15,6 +15,12 @@ set +o histexpand
 # verbose:
 #set -x
 
+# logs to a file at the same time as in terminal
+logs="/tmp/.${SOURCE}-${USER}-logs.txt"
+rm -rf "$logs" 2>/dev/null || true
+touch "$logs"
+exec > >(tee -a "$logs" ) 2> >(tee -a "$logs" >&2)
+
 # phpmyadmin must be configured manually to not install database
 #export DEBIAN_FRONTEND=noninteractive
 #TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true
@@ -215,7 +221,9 @@ get_args(){
         # alpha/beta version should report errors of this tool, betatesting phase
         if ((is_tool_beta)) && ((is_production)) ; then
             export EL_REPORTS=1
-            export FORCE_REPORTS=1
+            #export FORCE_REPORTS=1
+            conf_send_debug_reports="yes"
+            conf_send_debug_reports_email="EliveForServers"
         fi
     fi
 
@@ -224,6 +232,10 @@ get_args(){
     fi
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
         is_mode_curl=1
+    fi
+
+    if ((is_tool_beta)) ; then
+        set -x
     fi
 
     # - arguments & features }}}
@@ -312,17 +324,26 @@ changeconfig(){
 }
 
 
-error_signal_trapped(){
+exit_error(){
     # cleanups
     rm -rf "$sources"
 
+    if [[ -s "$logs" ]] ; then
+        el_report_to_elive "$( tail -n 6 "$logs" )"
+    fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
     prepare_environment stop
 
     exit 1
 }
-trap "error_signal_trapped" ERR
+exit_ok(){
+    rm -rf "$sources"
+    rm -rf "$logs"
+    wait ; sync ; LC_ALL=C sleep 0.5
+}
+trap "exit_error" ERR
+trap "exit_ok" EXIT
 #trap "exit_error" 1 2 3 6 9 11 13 14 15
 
 prepare_environment(){
@@ -615,6 +636,8 @@ update_variables(){
     if ! echo "$hostnamefull" | grep -qs ".*\..*\..*" ; then
         hostnamefull="${hostnameshort}.${domain}"
     fi
+
+    conf_send_debug_reports_email="$email_admin"
 
     #ifconfig lo down
     #if ifconfig | grep -qs "inet6" ; then
@@ -2439,7 +2462,7 @@ main(){
             addconfig "/swapfile.swp swap swap defaults 0 0" /etc/fstab
         fi
 
-        installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's disk"
+        installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's HD"
     fi
     # tune
     if swapon -s | grep -qs "^/" ; then
