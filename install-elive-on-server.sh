@@ -333,7 +333,7 @@ exit_error(){
     rm -rf "$sources"
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
-        el_report_to_elive "$( tail -n 22 "$logs" | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds)\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
