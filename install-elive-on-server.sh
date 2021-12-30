@@ -1442,6 +1442,7 @@ EOF
         letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
+        NOREPORTS=1 el_warning "You must have your DNS configured to point your domain to this server machine in order to validate the certificates"
 
         if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week. (if you select no, your server will run on plain http with port 80 instead)" ; then
             # register first if needed:
@@ -1553,8 +1554,13 @@ EOF
 
 install_phpmyadmin(){
     el_info "Installing PHPMyAdmin..."
+    local packages_extra
     # configure & install {{{
     echo -e "phpmyadmin\tphpmyadmin/dbconfig-install\tboolean\tfalse" | debconf-set-selections
+
+    if [[ "$debian_version" = "buster" ]] && ! ((is_ubuntu)) ; then
+        packages_extra="php-twig/buster-backports $packages_extra"
+    fi
 
 
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
@@ -2560,19 +2566,6 @@ main(){
     fi
     # }}}
 
-    # install monit {{{
-    if ((is_wanted_monit)) ; then
-        #if [[ "$debian_version" = "buster" ]] ; then
-            #NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster, press Enter to continue..."
-            #read nothing
-        #else
-            if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
-                install_monit
-            fi
-        #fi
-    fi
-    # }}}
-
     # install wordpress {{{
     if ((is_wanted_wordpress)) ; then
         if installed_ask "wordpress" "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
@@ -2598,6 +2591,19 @@ main(){
         fi
     fi
 
+    # }}}
+
+    # install monit {{{
+    if ((is_wanted_monit)) ; then
+        #if [[ "$debian_version" = "buster" ]] ; then
+            #NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster, press Enter to continue..."
+            #read nothing
+        #else
+            if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
+                install_monit
+            fi
+        #fi
+    fi
     # }}}
 
 
