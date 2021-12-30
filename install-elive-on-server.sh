@@ -720,9 +720,15 @@ install_elive(){
 
     # packages to install
     case "$debian_version" in
-        #buster)
+        buster)
+            # Buster is old, backports is suggested, especially since their install is not on priority
+            # monit requires install from backports because there's no other candidate
+            rm -f /etc/apt/sources.list.d/ggg-debian-backports.list
+            if ! grep -qsi "^deb .* buster-backports " /etc/apt/sources.list ; then
+                echo -e "\n# is good to have backports in the old buster, especially since their installation is not on priority\ndeb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/ggg-debian-backports.list
+            fi
             #packages_extra="openntpd ntpdate $packages_extra"
-            #;;
+            ;;
         bullseye|*)
             packages_extra="apt-transport-https $packages_extra"
             #if ! dpkg -l | grep -qsE "^ii .*(ntp|systemd-timesyncd)" ; then
@@ -2550,13 +2556,14 @@ main(){
 
     # install monit {{{
     if ((is_wanted_monit)) ; then
-        if [[ "$debian_version" = "buster" ]] ; then
-            NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster"
-        else
+        #if [[ "$debian_version" = "buster" ]] ; then
+            #NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster, press Enter to continue..."
+            #read nothing
+        #else
             if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
                 install_monit
             fi
-        fi
+        #fi
     fi
     # }}}
 
