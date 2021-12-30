@@ -3,37 +3,17 @@ Enjoy your server with some Elive super-powers, and you can also optionally inst
 
 _Important: this tool will install packages in your server to improve it with Elive features, you can optionally install services too_
 
-**Install it** (from root):
-
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
-
-**Distros supported**:  
+**Distros supported**:
 - Debian Buster
 - Debian Bullseye
 
-**Ubuntu versions**:  
+**Ubuntu versions**:
 - 21.10 "Impish"
 - 21.04 "Irsute"
 - 20.04 "Focal"
 - 18.04 "Bionic"
 
-#### :warning: Note: Ubuntu installs are added for compatibility, but we *strongly* suggest to use Debian instead. Send patches instead of bug reports if you are using Ubuntu.
-
-### Installing extra services:
-
-_Install Wordpress:_
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
-
-_Install Wordpress with an email server_
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
-
-_To create a new user:_
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
-
-_Help & list with more options:_
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --help`
-
-___Note: it's important to set all the options wanted in a single install, so that the configurator will know all the values to configure for the resulting system and have everything working___
+#### :warning: Note: Ubuntu installs are added for compatibility, but we *strongly* suggest to use Debian instead. If you use Ubuntu send *Pull requests* instead of bug reports.
 
 ## Features:
 * Turn an ugly server into a full Elive powered one
@@ -63,8 +43,29 @@ _This is the login of your server after installing it, description:_
 * shell sessions automatically starts in tmux where you will not lose the work when disconnecting the terminal
 * press ctrl + down to open more shells, ctrl + arrows to switch between them
 * name of server is shown, datetime, opened windows, returned codes, etc
- 
- ## Services
+
+## **Install it** (from root):
+
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" )`
+
+
+### Installing extra services:
+
+_Install Wordpress:_
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress`
+
+_Install Wordpress with an email server_
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --install=exim`
+
+_To create a new user:_
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
+
+_Help & list with more options:_
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --help`
+
+___Note: it's important to set all the options wanted in a single install, so that the configurator will know all the values to configure for the resulting system and have everything working___
+
+## Services
  You can install services in one shot, like nginx / php / WORDPRESS / email server / etc... for example using the options:
  * --install=wordpress      - _full wordpress install with fine tunned options_
  * --install=exim           - _full email server with settings ready to use_
