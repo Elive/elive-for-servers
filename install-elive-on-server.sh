@@ -2235,6 +2235,7 @@ final_steps(){
 
 
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL AND SAVED THE CONFIGURATIONS TO USE IN SOME BACKUP PLACE"
+    wlkejlwjkelwkjelwkjelwe
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
