@@ -148,11 +148,11 @@ get_args(){
                 is_wanted_php=1
                 is_extra_service=1
                 ;;
-            "--install=mariadb")
+            "--install=mariadb"|"--install=db"|"--install=mysql")
                 is_wanted_mariadb=1
                 is_extra_service=1
                 ;;
-            "--install=exim")
+            "--install=exim"|"--install=email")
                 is_wanted_exim=1
                 is_extra_service=1
                 ;;
@@ -333,7 +333,7 @@ exit_error(){
     rm -rf "$sources"
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
-        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME}:\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} - ${VERSION_ID}:\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
@@ -535,11 +535,13 @@ sources_update_adapt(){
     # TODO: search and replace in templates for all extra eliveuser, elivewp, ips, thana... etc, do a standard base templates system
     find "${templates}" -type f -exec sed -i "s|${previous_ip}|${domain_ip}|g" {} \;
     zsh <<EOF
+rename "s/hostdo1.elivecd.org/${hostnamefull}/" ${templates}/**/*(.)
 rename "s/elivecd.org/$domain/" ${templates}/**/*(.)
 rename "s/hostdo1/${hostnameshort}/" ${templates}/**/*(.)
 EOF
 
     find "$templates" -type f -exec sed -i \
+        -e "s|hostdo1.elivecd.org|${hostnamefull}|g" \
         -e "s|elivecd.org|${domain}|g" \
         -e "s|hostdo1|${hostnameshort}|g" \
         "{}" \;
@@ -556,7 +558,8 @@ EOF
         find "$templates" -type f -exec sed -i \
             -e "s|webmaster@elivecd.org|${email_admin}|g" \
             -e "s|hostmaster@elivecd.org|${email_admin}|g" \
-            -e "s|@elivecd.org|@${hostnamefull}|g" \
+            -e "s|@hostdo1.elivecd.org|@${hostnamefull}|g" \
+            -e "s|@elivecd.org|@${domain}|g" \
             "{}" \;
     fi
 
