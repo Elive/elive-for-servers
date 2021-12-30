@@ -334,7 +334,7 @@ exit_error(){
     rm -rf "$sources"
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
-        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 32 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
@@ -1197,8 +1197,10 @@ install_mariadb(){
     fi
 
     # setup, if needed
-    mysql_install_db
-    mysql_upgrade
+    if [[ "$debian_version" != "buster" ]] && ! ((is_ubuntu)) ; then
+        mysql_install_db
+        mysql_upgrade
+    fi
     # secure your database
     #mysql_secure_installation
 
