@@ -235,9 +235,9 @@ get_args(){
         is_mode_curl=1
     fi
 
-    if ((is_tool_beta)) ; then
-        set -x
-    fi
+    #if ((is_tool_beta)) ; then
+        #set -x
+    #fi
 
     # - arguments & features }}}
 }
@@ -334,7 +334,7 @@ exit_error(){
     rm -rf "$sources"
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
-        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} - ${VERSION_ID}:\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 22 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
@@ -1520,7 +1520,7 @@ EOF
     if ! systemctl restart nginx.service php${php_version}-fpm.service mariadb.service ; then
         set +x
         el_error "failed to restart web services"
-        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} - ${VERSION_ID}:\n$( journalctl -xe | tail -n 40 | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( journalctl -xe | tail -n 40 | sed -e '/^$/d' )"
     fi
     sleep 5
 
