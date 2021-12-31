@@ -206,7 +206,7 @@ get_args(){
                 ;;
             "--betatesting")
                 # automated / no-asking options, only for betatesting
-                is_tool_beta=1
+                is_betatesting=1
 
                 pass_mariadb_root=dbpassroot
                 wp_db_name=dbname
@@ -288,7 +288,7 @@ installed_ask(){
     if installed_check "$1" ; then
         return 1
     else
-        if ((is_tool_beta)) ; then
+        if ((is_betatesting)) ; then
             # betatest mode always say yes
             return 0
         else
@@ -378,12 +378,6 @@ letsencrypt_wrapper(){
 
         if ! letsencrypt "$@" ; then
             NOREPORTS=1 el_error "Something is wrong trying to generate the Letsencrypt certificate, see if you have a DNS problem or fix what you need and then run again this tool."
-
-            if ((is_tool_beta)) && ! ((is_production)) ; then
-                if el_confirm "Do you want to continue IGNORING the letsencrypt error? (note that the installation will not work correctly)" ; then
-                    return 0
-                fi
-            fi
 
             unset EL_REPORTS
             exit_error
@@ -2373,8 +2367,7 @@ final_steps(){
         echo
     fi
 
-
-    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL AND SAVED THE CONFIGURATIONS TO USE IN SOME BACKUP PLACE"
+    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. SAVE THE CONFIGURATIONS / USERS / PASSWORDS IN A BACKUP SOMEWHERE"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
