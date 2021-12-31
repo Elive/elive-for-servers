@@ -2110,8 +2110,11 @@ install_monit(){
     el_info "Installing Monit..."
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
+
     update_variables
     require_variables "hostnamefull|domain|email_admin"
+
+    install_templates "monit" "/"
 
     packages_install  monit
     #addconfig "set daemon 120" /etc/monit/monitrc
@@ -2146,8 +2149,6 @@ install_monit(){
     systemctl restart monit.service
 
     installed_set "monit"
-    # TODO: user must enable the wanted services, or we should provide templates
-    # TODO: check all the templates we have in scp-files dir for other things
 }
 
 install_rootkitcheck(){
@@ -2579,7 +2580,6 @@ main(){
         if installed_ask "nginx" "You are going to install NGINX, it will remove apache if you have it. Continue?" ; then
             install_nginx
         fi
-        # TODO: install templates?
     fi
     # }}}
 
@@ -2588,7 +2588,6 @@ main(){
         if installed_ask "php" "You are going to install PHP, it will include NGINX and remove apache if you have it. PHP-FPM will be installed too. Continue?" ; then
             install_php
         fi
-        # TODO: install templates?
     fi
     # }}}
 
