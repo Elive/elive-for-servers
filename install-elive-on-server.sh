@@ -391,7 +391,7 @@ prepare_environment(){
                 && ! [[ -e "/usr/sbin/update-initramfs.orig" ]] ; then
 
             mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
-            ln -sf /bin/true "/usr/sbin/update-initramfs"
+            ln -fs /bin/true "/usr/sbin/update-initramfs"
             fi
 
             # stop processes that can annoy us
@@ -1456,7 +1456,7 @@ EOF
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" "/etc/nginx/sites-available/${wp_webname}"
 
     # enable site
-    ln -sf "../sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
+    ln -fs "../sites-available/${wp_webname}" "/etc/nginx/sites-enabled/${wp_webname}"
     systemctl restart nginx.service
 
 
@@ -2126,24 +2126,24 @@ install_monit(){
     # enable features like "monit summary" or other commands
     addconfig "# enable http interface so we can use 'monit summary' and other commands\nset httpd port 2811 and\n    use address localhost\n    allow localhost\n    allow admin:monit" /etc/monit/monitrc
 
-    ln -s ../conf-available/openssh-server /etc/monit/conf-enabled
-    ln -s ../conf-available/file_systems /etc/monit/conf-enabled
-    ln -s ../conf-available/system /etc/monit/conf-enabled
-    #ln -s ../conf-available/ /etc/monit/conf-enabled
+    ln -fs ../conf-available/openssh-server /etc/monit/conf-enabled
+    ln -fs ../conf-available/file_systems /etc/monit/conf-enabled
+    ln -fs ../conf-available/system /etc/monit/conf-enabled
+    #ln -fs ../conf-available/ /etc/monit/conf-enabled
     if ! ((is_wanted_freespace)) ; then
-        ln -s ../conf-available/rsyslog /etc/monit/conf-enabled
+        ln -fs ../conf-available/rsyslog /etc/monit/conf-enabled
     fi
     if installed_check "mariadb" ; then
-        ln -s ../conf-available/mysql /etc/monit/conf-enabled
+        ln -fs ../conf-available/mysql /etc/monit/conf-enabled
     fi
     if installed_check "nginx" ; then
-        ln -s ../conf-available/nginx /etc/monit/conf-enabled
+        ln -fs ../conf-available/nginx /etc/monit/conf-enabled
     fi
     if installed_check "exim" ; then
-        ln -s ../conf-available/exim4 /etc/monit/conf-enabled
+        ln -fs ../conf-available/exim4 /etc/monit/conf-enabled
     fi
     if installed_check "php" ; then
-        ln -s ../conf-available/php /etc/monit/conf-enabled
+        ln -fs ../conf-available/php /etc/monit/conf-enabled
     fi
 
     systemctl restart monit.service
