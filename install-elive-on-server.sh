@@ -341,6 +341,12 @@ changeconfig(){
     fi
 }
 
+letsencrypt_wrapper(){
+    if ! letsencrypt "$@" ; then
+        NOREPORTS=1 el_error "Failed to issue Letsencrypt certificate, make sure your DNS's are correctly configured with the new names/IP to use (detailed previously) otherwise the certificate will fail"
+        exit_error
+    fi
+}
 
 exit_error(){
     set +x
@@ -354,7 +360,7 @@ exit_error(){
 
     prepare_environment stop
 
-    exit 1
+    exit
 }
 exit_ok(){
     rm -rf "$sources" "$logs"
@@ -1453,7 +1459,7 @@ EOF
     el_info "Letsencrypt SSL (httpS) certificate install request"
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         # re-install certificate, needed
-        letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+        letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
     else
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
         NOREPORTS=1 el_warning "You must have your DNS configured to point your domain to this server machine in order to validate the certificates"
@@ -1461,12 +1467,12 @@ EOF
         if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week. (if you select no, your server will run on plain http with port 80 instead)" ; then
             # register first if needed:
             if [[ ! -d "/etc/letsencrypt/accounts" ]] ; then
-                letsencrypt register
+                letsencrypt_wrapper register
             fi
 
-            if ! letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
+            if ! letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
                 el_info "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-                letsencrypt --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+                letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
             fi
         fi
     fi
@@ -1765,8 +1771,8 @@ install_exim(){
 
         # TODO: auto-renew
         if installed_check "nginx" ; then
-            letsencrypt certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
-            letsencrypt certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
         else
             if ((has_ufw)) ; then
                 ufw allow 80/tcp
@@ -1776,8 +1782,8 @@ install_exim(){
                 fi
             fi
 
-            letsencrypt certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
-            letsencrypt certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
         fi
     fi
 
