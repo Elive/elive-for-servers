@@ -1803,6 +1803,8 @@ install_exim(){
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
     groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
+    mkdir -p /etc/letsencrypt/{live,archive}{,/smtp.$mail_hostname} /etc/letsencrypt/live/smtp.${mail_hostname} /etc/letsencrypt/{live,archive}{,/imap.$mail_hostname} /etc/letsencrypt/live/imap.${mail_hostname} /etc/letsencrypt/{live,archive}
+
     chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$mail_hostname} /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
     chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$mail_hostname} /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
