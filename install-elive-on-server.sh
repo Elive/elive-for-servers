@@ -344,7 +344,19 @@ changeconfig(){
 letsencrypt_wrapper(){
     if ! letsencrypt "$@" ; then
         NOREPORTS=1 el_error "Failed to issue Letsencrypt certificate, make sure your DNS's are correctly configured with the new names/IP to use (detailed previously) otherwise the certificate will fail"
-        exit_error
+        el_info "This is a second opportunity, configure correctly your DNS, wait the needed time for them to propagate and press Enter to try again..."
+        read nothing
+
+        if ! letsencrypt "$@" ; then
+            NOREPORTS=1 el_error "Something is wrong trying to generate the Letsencrypt certificate, see if you have a DNS problem or fix what you need and then run again this tool."
+
+            if el_confirm "Do you want to continue IGNORING the letsencrypt error? (note that the installation will not work correctly)" ; then
+                return 0
+            else
+                unset EL_REPORTS
+                exit_error
+            fi
+        fi
     fi
 }
 
@@ -360,7 +372,7 @@ exit_error(){
 
     prepare_environment stop
 
-    exit
+    exit 1
 }
 exit_ok(){
     rm -rf "$sources" "$logs"
