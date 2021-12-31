@@ -341,6 +341,35 @@ changeconfig(){
     fi
 }
 
+apt_wait(){
+    local is_waiting i
+    i=0
+
+    tput sc
+    while fuser /var/lib/dpkg/lock /var/lib/apt/lists/lock  >/dev/null 2>&1 ; do
+        case $(($i % 4)) in
+            0 ) j="-" ;;
+            1 ) j="\\" ;;
+            2 ) j="|" ;;
+            3 ) j="/" ;;
+        esac
+        tput rc
+        echo -en "\r\033[K[$j] Waiting for other software managers to finish..."
+        is_waiting=1
+
+        LC_ALL=C  sleep 0.5
+        ((i=i+1))
+    done
+
+    # make sure that dpkg/apt still not running
+    if ((is_waiting)) ; then
+        unset is_waiting
+        LC_ALL=C  sleep 4
+        # recursively call it again
+        $FUNCNAME
+    fi
+}
+
 letsencrypt_wrapper(){
     if ! letsencrypt "$@" ; then
         NOREPORTS=1 el_error "Failed to issue Letsencrypt certificate, make sure your DNS's are correctly configured with the new names/IP to use (detailed previously) otherwise the certificate will fail"
@@ -482,6 +511,7 @@ ask_variable(){
 packages_install(){
     local package
 
+    apt_wait
     apt-get -qq clean
     apt-get -q update
     apt-get -qq autoremove
@@ -489,6 +519,7 @@ packages_install(){
     # TODO: add functions el_debug, warning & error before to source our real functions
     el_debug "Packages wanted to be installed: $@"
 
+    apt_wait
     if ! apt-get install $apt_options $@ ; then
         if ((is_production)) ; then
             el_debug "Unable to install all packages in one shot, looping one to one..."
@@ -513,6 +544,7 @@ packages_install(){
 packages_remove(){
     local package
 
+    apt_wait
     if ! apt-get remove $apt_options $@ ; then
         if ((is_production)) ; then
             el_debug "Unable to remove all packages in one shot, looping one to one..."
@@ -719,7 +751,9 @@ install_elive(){
     sed -i 's/^deb-src /#&/' /etc/apt/sources.list
     rm -f /etc/apt/sources.list.d/aaa-elive.list
 
+
     # upgrade the system first
+    apt_wait
     apt-get -qq clean
     apt-get update
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
@@ -789,6 +823,7 @@ APT::Get::Clean always;
 EOF
 
     rm -f /var/cache/apt/*bin
+    apt_wait
     apt-get -qq clean
     apt-get -q update
 
@@ -2216,6 +2251,7 @@ EOF
 
 final_steps(){
     # clean all
+    apt_wait
     apt-get -q clean
     if ((is_production)) ; then
         rm -rf "$sources"
