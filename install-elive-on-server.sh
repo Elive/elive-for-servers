@@ -207,6 +207,20 @@ get_args(){
             "--betatesting")
                 # automated / no-asking options, only for betatesting
                 is_tool_beta=1
+
+                pass_mariadb_root=dbpassroot
+                wp_db_name=dbname
+                wp_db_user=dbuser
+                wp_db_pass=dbpass
+                wp_webname=wp.thanatermesis.org
+                username=elivewp
+                domain=thanatermesis.org
+                email_admin="thanatermesis@gmail.com"
+                httaccess_user="webuser"
+                httaccess_password="webpass"
+                #email_username="user@wp.thanatermesis.org"
+                email_password="supapass"
+                username_mail_password="supapass"
                 ;;
 
         esac
@@ -1564,7 +1578,7 @@ install_phpmyadmin(){
 
 
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
-        packages_install phpmyadmin
+        packages_install phpmyadmin $packages_extra
 
     # }}}
     # install an updated version of phpmyadmin which works better and less bugged {{{
@@ -2353,22 +2367,6 @@ main(){
     # get user options
     get_args "$@"
 
-    # TODO: remove betatests after release
-    if ! ((is_production)) ; then
-        pass_mariadb_root=dbpassroot
-        wp_db_name=dbname
-        wp_db_user=dbuser
-        wp_db_pass=dbpass
-        wp_webname=wp.thanatermesis.org
-        username=elivewp
-        domain=thanatermesis.org
-        email_admin="thanatermesis@gmail.com"
-        httaccess_user="webuser"
-        httaccess_password="webpass"
-        #email_username="user@wp.thanatermesis.org"
-        email_password="supapass"
-        username_mail_password="supapass"
-    fi
 
     if [[ "$UID" != "0" ]] ; then
         set +x
