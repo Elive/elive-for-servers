@@ -7,7 +7,7 @@ check process php-fpm with pidfile /run/php/php7.3-fpm.pid
       #and request '/ping'
       #with timeout 60 seconds
       #for 3 cycles
-  #    then exec "/root/packages/bin/reload_webserver"
+  #    then exec "/usr/local/sbin/reload_webserver"
       then restart
 
   if 2 restarts within 2 cycles then alert

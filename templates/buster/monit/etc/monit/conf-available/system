@@ -3,7 +3,7 @@ check system $HOST
     #if loadavg (20min) > 10 then alert
     if memory usage > 88% for 4 cycles then alert
     if swap usage > 50% for 4 cycles then alert
-    if swap usage > 70% for 4 cycles then exec "/root/packages/bin/reload_webserver"
+    if swap usage > 70% for 4 cycles then exec "/usr/local/sbin/reload_webserver"
 
     # Test the user part of CPU usage
     #if cpu usage (user) > 80% for 2 cycles then alert

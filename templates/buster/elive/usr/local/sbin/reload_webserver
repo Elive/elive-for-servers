@@ -1,0 +1,98 @@
+#!/bin/bash
+renice +20 -p $$ 1>/dev/null 2>&1
+ionice -c3 -p$$ 1>/dev/null 2>&1
+#set -x
+
+
+# root only
+if [[ "$UID" != 0 ]] ; then
+    echo "root please"
+    exit 1
+fi
+
+#DAEMON="/etc/init.d/nginx"
+
+
+reload_server(){
+    echo -e "restarting server" 1>&2
+    #/usr/sbin/service mysql stop
+    /usr/sbin/service mariadb stop
+    /usr/sbin/service php7.3-fpm stop || true
+    /usr/sbin/service nginx stop
+
+    sync ; LC_ALL=C sleep 1
+
+    /usr/sbin/service mysql start
+    /usr/sbin/service php7.3-fpm start || true
+    /usr/sbin/service nginx start
+
+    sync ; LC_ALL=C sleep 2
+
+    # note: run after mysql reloaded
+    if [[ -s "/swapfile.swp" ]] ; then
+        /sbin/swapoff /swapfile.swp 2>/dev/null || true
+        /sbin/swapon /swapfile.swp 2>/dev/null || true
+    fi
+
+    # do a first (triggered) curl
+    sync ; sleep 2
+    curl -L -m 120 -s -A "Mozilla" www.elivecd.org 1>/dev/null 2>&1 || curl -L -m 120 -s -A "Mozilla" localhost 1>/dev/null 2>&1 || true
+
+}
+
+verify_website(){
+    # test if everything is fine
+    for i in $(seq 4)
+    do
+        if curl -L -m 30 -s -A "Mozilla" www.elivecd.org 2>&1 | grep -qEi "(wordpress|dynamix|massivedynamic|javascript)" 1>/dev/null ; then
+            return 0
+        else
+            sleep 2
+        fi
+    done
+
+    if curl -L -m 30 -s -A "Mozilla" www.elivecd.org 2>&1 | grep -qEi "(wordpress|dynamix|massivedynamic|javascript)" 1>/dev/null ; then
+        return 0
+    else
+        if curl -L -m 30 -A "Mozilla" www.elivecd.org 2>&1 | grep -qsi "ssl certificate problem" ; then
+            /root/packages/bin/mailx-send "webmaster@elivecd.org" "restarting_attemps" "Error: Certificate SSL error trying to get elivecd.org website contents"
+            return 0
+        else
+            /root/packages/bin/mailx-send "webmaster@elivecd.org" "restarting_attemps" "Error: We are unable to verify that the 'www.elivecd.org' website has correct contents (wordpress, etc), fix the tool '$0' to make it work or disable the 'verify_website' part in the code if you don't have wordpress"
+            echo -e "Problem checking www.elivecd.org contents website" 1>&2
+            curl -L -m 30 -s -A "Mozilla" www.elivecd.org 2>&1 | grep -Ei "(wordpress|dynamix|massivedynamic|javascript)" 1>&2
+            curl -L -m 30 -s -A "Mozilla" www.elivecd.org 1>&2
+            return 1
+        fi
+    fi
+}
+
+
+reload_server
+
+counter=1
+counter_max=5
+
+# XXX Note: if you don't have wordpress installed you should skip the "verify website" part, but if you can improve this tool to support it would be better
+while true
+do
+    if verify_website ; then
+        break
+    else
+        echo -e "website doesn't work, restarting server..." 1>&2
+        reload_server
+        sleep 15
+        counter="$(( $counter + 1 ))"
+    fi
+
+    if [[ "$counter" -gt "$counter_max" ]] ; then
+        /root/packages/bin/mailx-send "webmaster@elivecd.org" "restarting_attemps" "Unable to restart web from '$0', you should fix it manually, reboot the server, and/or improve this tool"
+        break
+    fi
+done
+
+if [[ $counter -gt 1 ]] ; then
+    /root/packages/bin/mailx-send "webmaster@elivecd.org" "restarting_attemps" "Server was needed to restart '$counter' times in order to work"
+fi
+
+
