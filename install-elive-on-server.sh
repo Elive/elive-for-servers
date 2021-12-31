@@ -288,16 +288,16 @@ installed_ask(){
     if installed_check "$1" ; then
         return 1
     else
-        if ((is_production)) ; then
+        if ((is_tool_beta)) ; then
+            # betatest mode always say yes
+            return 0
+        else
             # ask user if wants to install
             if el_confirm "\n$2" ; then
                 return 0
             else
                 return 1
             fi
-        else
-            # betatest mode always say yes
-            return 0
         fi
     fi
 }
@@ -2536,22 +2536,24 @@ main(){
     # }}}
 
     # create a swap file {{{
-    if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! installed_check "swapfile" 1>/dev/null 2>&1 && ! swapon -s | grep -qs "^/" ; then
-        if el_confirm "\nYour server doesn't has much RAM, do you want to add a swapfile?" ; then
-            is_wanted_swapfile=1
-        fi
-    fi
-
-    if ((is_wanted_swapfile)) ; then
-        if ! [[ -s "/swapfile.swp" ]] ; then
-            dd if=/dev/zero of=/swapfile.swp bs=1M count=1000
-            chmod 0600 /swapfile.swp
-            mkswap /swapfile.swp
-            swapon /swapfile.swp
-            addconfig "/swapfile.swp swap swap defaults 0 0" /etc/fstab
+    if ! installed_check "swapfile" 1>/dev/null 2>&1 && ! swapon -s | grep -qs "^/" ; then
+        if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! swapon -s | grep -qs "^/" ; then
+            if el_confirm "\nYour server doesn't has much RAM, do you want to add a swapfile?" ; then
+                is_wanted_swapfile=1
+            fi
         fi
 
-        installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's HD"
+        if ((is_wanted_swapfile)) ; then
+            if ! [[ -s "/swapfile.swp" ]] ; then
+                dd if=/dev/zero of=/swapfile.swp bs=1M count=1000
+                chmod 0600 /swapfile.swp
+                mkswap /swapfile.swp
+                swapon /swapfile.swp
+                addconfig "/swapfile.swp swap swap defaults 0 0" /etc/fstab
+            fi
+
+            installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's HD"
+        fi
     fi
     # tune
     if swapon -s | grep -qs "^/" ; then
