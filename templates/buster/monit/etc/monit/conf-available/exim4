@@ -1,0 +1,29 @@
+#check process exim4 with pidfile /run/exim4/exim.pid
+#    start program = "/etc/init.d/exim4 start" with timeout 60 seconds
+#    stop program  = "/etc/init.d/exim4 stop"
+#    if failed port 25 protocol smtp then restart
+#    if 3 restarts within 5 cycles then alert
+
+ check process exim with pidfile /run/exim4/exim.pid
+   group mail
+   start program = "/etc/init.d/exim4 start" with timeout 90 seconds
+   stop  program = "/etc/init.d/exim4 stop"
+   if failed port 25 protocol smtp for 3 cycles then restart
+   if failed port 587 protocol smtps for 3 cycles then restart
+     if 3 restarts within 5 cycles then alert
+   depends on exim_bin
+   depends on exim_rc
+
+ check file exim_bin with path /usr/sbin/exim
+   group mail
+   if failed checksum then unmonitor
+   if failed permission 4755 then unmonitor
+   if failed uid root then unmonitor
+   if failed gid root then unmonitor
+
+ check file exim_rc with path /etc/init.d/exim4
+   group mail
+   if failed checksum then unmonitor
+   if failed permission 755 then unmonitor
+   if failed uid root then unmonitor
+   if failed gid root then unmonitor

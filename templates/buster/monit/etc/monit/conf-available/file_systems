@@ -1,0 +1,16 @@
+# Disks check
+check device rootfs with path /
+    if space usage > 82% then alert
+    #if space usage > 92% for 5 times within 15 cycles then alert
+    #if space usage > 97% then alert
+    if space usage > 90% for 5 cycles then exec '/root/packages/bin/free-used-space' 'force-remove'
+    mode passive
+
+
+#check filesystem md3 with path /dev/md3
+#group server
+#if failed permission 660 then unmonitor
+#if failed uid root then unmonitor
+#if failed gid disk then unmonitor
+#if space usage > 80 % then alert
+#if inode usage > 80 % then alert

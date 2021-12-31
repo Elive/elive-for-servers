@@ -368,7 +368,7 @@ exit_error(){
     rm -rf "$sources"
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
-        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 32 "$logs" | sed -e '/^$/d' )"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 26 "$logs" | sed -e '/^$/d' )"
     fi
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
@@ -603,6 +603,12 @@ EOF
             "{}" \;
     fi
 
+    if [[ -n "$php_version" ]] ; then
+        find "$templates" -type f -exec sed -i \
+            -e "s|php7.3-fpm|php${php_version}-fpm|g" \
+            "{}" \;
+    fi
+
     if [[ -n "$wp_webname" ]] ; then
         zsh <<EOF
 rename "s/mywordpress.com/${wp_webname}/" ${templates}/**/*(.)
@@ -782,6 +788,7 @@ DSELECT::Clean always;
 APT::Get::Clean always;
 EOF
 
+    rm -f /var/cache/apt/*bin
     apt-get -qq clean
     apt-get -q update
 
@@ -2119,7 +2126,7 @@ install_monit(){
     ln -s ../conf-available/openssh-server /etc/monit/conf-enabled
     ln -s ../conf-available/file_systems /etc/monit/conf-enabled
     ln -s ../conf-available/system /etc/monit/conf-enabled
-    ln -s ../conf-available/ /etc/monit/conf-enabled
+    #ln -s ../conf-available/ /etc/monit/conf-enabled
     if ! ((is_wanted_freespace)) ; then
         ln -s ../conf-available/rsyslog /etc/monit/conf-enabled
     fi
@@ -2134,7 +2141,6 @@ install_monit(){
     fi
     if installed_check "php" ; then
         ln -s ../conf-available/php /etc/monit/conf-enabled
-        sed -i -e "s|php...-fpm|php${php_version}-fpm|g" /etc/monit/conf-enabled/php
     fi
 
     systemctl restart monit.service
