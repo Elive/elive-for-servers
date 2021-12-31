@@ -2079,6 +2079,31 @@ install_monit(){
     addconfig "set mailserver localhost port 25" /etc/monit/monitrc
     addconfig "set mail-format { from: monit-daemon@$hostnamefull }" /etc/monit/monitrc
     addconfig "set alert ${email_admin} not {instance}" /etc/monit/monitrc
+    # enable features like "monit summary" or other commands
+    addconfig "# enable http interface so we can use 'monit summary' and other commands\nset httpd port 2811 and\n    use address localhost\n    allow localhost\n    allow admin:monit" /etc/monit/monitrc
+
+    ln -s ../conf-available/openssh-server /etc/monit/conf-enabled
+    ln -s ../conf-available/file_systems /etc/monit/conf-enabled
+    ln -s ../conf-available/system /etc/monit/conf-enabled
+    ln -s ../conf-available/ /etc/monit/conf-enabled
+    if ! ((is_wanted_freespace)) ; then
+        ln -s ../conf-available/rsyslog /etc/monit/conf-enabled
+    fi
+    if installed_check "mariadb" ; then
+        ln -s ../conf-available/mysql /etc/monit/conf-enabled
+    fi
+    if installed_check "nginx" ; then
+        ln -s ../conf-available/nginx /etc/monit/conf-enabled
+    fi
+    if installed_check "exim" ; then
+        ln -s ../conf-available/exim4 /etc/monit/conf-enabled
+    fi
+    if installed_check "php" ; then
+        ln -s ../conf-available/php /etc/monit/conf-enabled
+        sed -i -e "s|php...-fpm|php${php_version}-fpm|g" /etc/monit/conf-enabled/php
+    fi
+
+    systemctl restart monit.service
 
     installed_set "monit"
     # TODO: user must enable the wanted services, or we should provide templates
