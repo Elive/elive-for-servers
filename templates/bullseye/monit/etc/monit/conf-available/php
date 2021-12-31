@@ -2,19 +2,6 @@
 check process php-fpm with pidfile /run/php/php7.3-fpm.pid
   start program = "/etc/init.d/php7.3-fpm start"
   stop program  = "/etc/init.d/php7.3-fpm stop"
-  #if failed host www.elivecd.org port 443 protocol https
-        #with ssl options {verify: disable}
-      #and request '/ping'
-      #with timeout 60 seconds
-      #for 3 cycles
-  #    then exec "/usr/local/sbin/reload_webserver"
-      then restart
-
-  if 2 restarts within 2 cycles then alert
- # group www-data
- # depends on nginx_rc
-
-      #with timeout 20 seconds for 3 cycles
-  #if failed host www.elivecd.org port 80 protocol http
-   #   then restart
-
+  if failed unixsocket /run/php/php7.3-fpm-elivewp.sock then restart
+  #if failed port 9000 type TCP then restart
+  if 3 restarts within 5 cycles then timeout

@@ -1127,7 +1127,7 @@ install_php(){
 
     if [[ -s /etc/php/$php_version/fpm/pool.d/www.conf ]] ; then
         # enable monitoring state
-        #changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
+        changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
@@ -2142,8 +2142,8 @@ install_monit(){
     if installed_check "exim" ; then
         ln -fs ../conf-available/exim4 /etc/monit/conf-enabled
     fi
-    if installed_check "php" ; then
-        ln -fs ../conf-available/php /etc/monit/conf-enabled
+    if installed_check "wordpress" ; then
+        ln -fs ../conf-available/wordpress /etc/monit/conf-enabled
     fi
 
     systemctl restart monit.service
