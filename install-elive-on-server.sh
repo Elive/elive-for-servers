@@ -1705,6 +1705,10 @@ install_fail2ban(){
     if installed_check "exim" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/exim.conf
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/dovecot.conf
+        # enable ddos / bruteforce preventions:
+        #changeconfig "mode = " "mode = aggressive" /etc/fail2ban/filter.d/exim.conf
+        changeconfig "mode = " "mode = aggressive" /etc/fail2ban/filter.d/exim-elive.conf
+        changeconfig "mode = " "mode = aggressive" /etc/fail2ban/filter.d/dovecot.conf
     fi
 
     if installed_check "nginx" 2>/dev/null || installed_check "wordpress" 2>/dev/null ; then
@@ -1714,6 +1718,11 @@ install_fail2ban(){
     if installed_check "mariadb" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/mysqld.conf
     fi
+
+    if installed_check "monit" ; then
+        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
+    fi
+
 
 
     systemctl restart  fail2ban.service
@@ -2104,6 +2113,10 @@ install_iptables(){
         #iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
         #iptables -A INPUT -p tcp -m tcp --dport 143 -j ACCEPT
         #iptables -A INPUT -p tcp -m tcp --dport 993 -j ACCEPT
+
+        # rate-limited pop3 connections (avoids bruteforce attacks), untested
+        #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --update --seconds 60 --hitcount 5 -j DROP
+        #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --set -j ACCEPT
 
         # only give access to mysql from localhost (already configured default debian aparently)
         #iptables -A INPUT -p tcp --dport 3306 -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT
@@ -2661,15 +2674,6 @@ main(){
 
     # LAST SERVICES TO INSTALL
 
-    # install fail2ban {{{
-    if ((is_wanted_fail2ban)) ; then
-        if installed_ask "fail2ban" "You are going to install FAIL2BAN, it will include custom templates for your running services, WE RECOMMEND to install first all the services you want to have. Continue?" ; then
-            install_fail2ban
-        fi
-    fi
-
-    # }}}
-
     # install monit {{{
     if ((is_wanted_monit)) ; then
         #if [[ "$debian_version" = "buster" ]] ; then
@@ -2681,6 +2685,15 @@ main(){
             fi
         #fi
     fi
+    # }}}
+
+    # install fail2ban {{{
+    if ((is_wanted_fail2ban)) ; then
+        if installed_ask "fail2ban" "You are going to install FAIL2BAN, it will include custom templates for your running services, WE RECOMMEND to install first all the services you want to have. Continue?" ; then
+            install_fail2ban
+        fi
+    fi
+
     # }}}
 
 
