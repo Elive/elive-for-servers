@@ -2158,10 +2158,8 @@ install_monit(){
     ln -fs ../conf-available/openssh-server /etc/monit/conf-enabled
     ln -fs ../conf-available/file_systems /etc/monit/conf-enabled
     ln -fs ../conf-available/system /etc/monit/conf-enabled
-    #ln -fs ../conf-available/ /etc/monit/conf-enabled
-    #if ! ((is_wanted_freespace)) ; then
-        #ln -fs ../conf-available/rsyslog /etc/monit/conf-enabled
-    #fi
+    ln -fs ../conf-available/rsyslog /etc/monit/conf-enabled
+
     if installed_check "mariadb" ; then
         ln -fs ../conf-available/mysql /etc/monit/conf-enabled
     fi
