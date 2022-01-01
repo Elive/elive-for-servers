@@ -1,0 +1,15 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    # show Subjects of Emails in the queue
+    set -x
+    grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :

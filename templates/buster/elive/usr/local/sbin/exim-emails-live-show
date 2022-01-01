@@ -1,0 +1,16 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    set -x
+    # listen / show emails in ~ realtime
+    tail -f -n 500 /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog | sed -e 's| F=.* C="|    |g' -e 's|^.* T="|    "|g' -e 's| from |   from |g' -e 's| for |   for |g' -e 's| 250 |   \t\t250 |g' | grep -viE "(verification succeeded|closed by QUIT|SMTP connection\s+from | Completed | queue run:|<= monit.hostdo| Completed$|removed by root)"
+
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :

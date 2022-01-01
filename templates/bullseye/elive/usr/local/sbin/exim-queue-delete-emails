@@ -1,0 +1,15 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    # delete all the queued emails
+    set -x
+    exim -bp | exiqgrep -i | xargs exim -Mrm
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :

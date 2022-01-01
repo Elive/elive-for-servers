@@ -1,0 +1,15 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    # summary of emails in queue
+    set -x
+    exim -bp | exiqsumm | egrep -v "\-\-|Volume|^$" | sort -bg | awk '{print "Volume: " $1 " t Domain: " $5}'
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :
