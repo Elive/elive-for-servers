@@ -2297,12 +2297,12 @@ final_steps(){
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
-        echo
+        echo 1>&2
     fi
 
     if ((is_mode_curl)) ; then
         el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
-        echo
+        echo 1>&2
     fi
 
     if ((is_installed_exim)) ; then
@@ -2339,15 +2339,15 @@ final_steps(){
             [[ -z "$i" ]] && continue
             [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
             el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i%%.*}' with these contents:"
-            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )"
+            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
         done
         el_info "DNS in your 'reverse DNS', set it to '${mail_hostname}'"
         # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
 
         el_info "If you have IPv6:"
-        echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address"
-        echo -e "    * Append ip6:YOUR-IP6-ADDR to your previous TXT record of SPF"
-        echo -e "    * Set the Reverse-DNS for your IPv6 to be '${mail_hostname}'"
+        echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address" 1>&2
+        echo -e "    * Append ip6:YOUR-IP6-ADDR to your previous TXT record of SPF" 1>&2
+        echo -e "    * Set the Reverse-DNS for your IPv6 to be '${mail_hostname}'" 1>&2
 
         el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service"
         # TODO: add mta-sts
@@ -2359,12 +2359,12 @@ final_steps(){
         #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
-        echo
+        echo 1>&2
     fi
 
     if ((is_installed_fail2ban)) ; then
         el_info "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban"
-        echo
+        echo 1>&2
     fi
 
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. SAVE THE CONFIGURATIONS / USERS / PASSWORDS IN A BACKUP SOMEWHERE"
@@ -2381,7 +2381,7 @@ notimplemented(){
         return
     fi
 
-    NOREPORTS=1 el_warning "Note: Feature may be not not fully functional"
+    NOREPORTS=1 el_warning "Note: This feature may not be fully working / functional / stable"
     if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. DO NOT REPORT BUGS BY USING THIS OPTION. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
         exit
     fi
