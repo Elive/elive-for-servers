@@ -241,8 +241,6 @@ get_args(){
         rm -rf "$logs" 2>/dev/null || true
         touch "$logs"
         exec > >(tee -a "$logs" ) 2> >(tee -a "$logs" >&2)
-        # in beta mode we need better debug, otherwise we may not know what failed
-        set -x
     fi
 
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
@@ -251,6 +249,12 @@ get_args(){
 
     if [[ "$EL_DEBUG" -ge 3 ]] ; then
         set -x
+    fi
+
+    if [[ -e "/tmp/.${SOURCE}.failed" ]] ; then
+        if el_confirm "A previous attempt of use this tool failed, do you want to add extra debug? (suggested)" ; then
+        set -x
+        fi
     fi
 
     # - arguments & features }}}
@@ -406,6 +410,9 @@ exit_error(){
     NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a 'pull request' so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
     prepare_environment stop
+
+    # mark a failed step
+    rm -f "/tmp/.${SOURCE}.failed"
 
     exit 1
 }
@@ -2397,6 +2404,9 @@ final_steps(){
     swapoff -a 1>/dev/null 2>&1 || true
     swapon -a 1>/dev/null 2>&1 || true
 
+    # unmark a possible previously failed attempt
+    rm -f "/tmp/.${SOURCE}.failed"
+
     # }}}
 
     echo -e "\n"
@@ -2437,6 +2447,7 @@ final_steps(){
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
+        el_info "You have 'nginx.conf' files in your wordpress install, read them to enable or disable configurations, like for example restricting all your admin access with a basic password"
         NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
         echo 1>&2
     fi
