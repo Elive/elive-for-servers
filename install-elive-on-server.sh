@@ -2062,6 +2062,9 @@ EOF
         sa-update
         systemctl enable spamassassin.service
         systemctl restart spamassassin.service
+
+    else
+        packages_remove spamassassin
     fi
 
 
