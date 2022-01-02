@@ -1822,6 +1822,7 @@ install_exim(){
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${mail_hostname}"
+    sed -i -e "/^${email_username}: /d" /etc/exim4/passwd
     echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # our server settings
@@ -1959,10 +1960,10 @@ echo -e "# Set default editor\n#set editor=\"vim\"" >> \$HOME/.mutt/accounts/eli
 echo -e "# sort messages by thread\nset sort=threads" >> \$HOME/.mutt/accounts/elive-sender
 # make it default if we had not another config previously
 if [[ ! -e "\$HOME/.muttrc" ]] ; then
-    ln -s "\$HOME/.mutt/accounts/elive-sender" "\$HOME/.muttrc"
+    ln -fs "\$HOME/.mutt/accounts/elive-sender" "\$HOME/.muttrc"
 fi
 # symlink the user mail location to make it compatible with mutt or other tools
-ln -s \$HOME/Maildir /var/mail/\$USER
+ln -fs \$HOME/Maildir /var/mail/\$USER || true
 '
 EOF
 
@@ -1990,12 +1991,15 @@ EOF
     # add credentials
     touch /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
+    sed -i -e "/^${username}:/d" /etc/dovecot/users
     echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
     if [[ "${email_username%@*}" != "$username" ]] ; then
+        sed -i -e "/^${email_username%@*}: /d" /etc/aliases
         echo "${email_username%@*}: ${username}" >> /etc/aliases
     fi
+    sed -i -e "/^no-reply: ${username}$/d" /etc/aliases
     echo "no-reply: ${username}" >> /etc/aliases
     #echo "notification: ${username}" >> /etc/aliases
 
