@@ -169,7 +169,7 @@ get_args(){
                 is_wanted_rootkitcheck=1
                 #is_wanted_vnstat=1
                 is_wanted_swapfile=1
-                #is_wanted_iptables=1
+                is_wanted_iptables=1
                 ;;
             "--install=monit")
                 is_wanted_monit=1
@@ -188,10 +188,9 @@ get_args(){
             "--install=swapfile")
                 is_wanted_swapfile=1
                 ;;
-            #"--install=iptables")
-                #is_wanted_iptables=1
-                #notimplemented
-                #;;
+            "--install=iptables")
+                is_wanted_iptables=1
+                ;;
             "--want-sudo-nopass")
                 # use it at your own risk, not recommended (undocumented on purpose) , especially on servers
                 is_wanted_sudo_nopass=1
@@ -2095,8 +2094,9 @@ q
 EOF
         fi
 
-        # ddos protection
-        if ((is_installed_wordpress)) ; then
+        # ddos protection for web
+        if installed_check "wordpress" ; then
+
             if el_confirm "Do you want to protect your webserver against DDOS attacks?" ; then
             ed /etc/ufw/before.rules <<EOF
 /^\\*filter
@@ -2365,12 +2365,16 @@ final_steps(){
     fi
 
     # save settings {{{
-    if ((has_iptables)) && ! ((has_ufw)) ; then
-        packages_install iptables-persistent
-        netfilter-persistent save || true
-        # save all iptables configs
-        ip6tables-save > /etc/ip6tables.rules
-        iptables-save > /etc/iptables.rules
+    if ((has_ufw)) ; then
+        true
+    else
+        if ((has_iptables)) ; then
+            packages_install iptables-persistent
+            netfilter-persistent save || true
+            # save all iptables configs
+            ip6tables-save > /etc/ip6tables.rules
+            iptables-save > /etc/iptables.rules
+        fi
     fi
 
     crontab /root/.crontab
@@ -2782,12 +2786,11 @@ main(){
     # }}}
 
     # install iptables {{{
-    # UPDATE: disabled since we are using ufw now, seems like not so needed anymore
-    #if ((is_wanted_iptables)) ; then
-        #if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
-            #install_iptables
-        #fi
-    #fi
+    if ((is_wanted_iptables)) ; then
+        if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
+            install_iptables
+        fi
+    fi
     # }}}
 
     # LAST SERVICES TO INSTALL
