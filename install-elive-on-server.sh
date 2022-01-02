@@ -19,9 +19,6 @@ sources="/root/elive-for-servers.git"
 
 # logs to a file at the same time as in terminal
 logs="/tmp/.${SOURCE}-${USER}-logs.txt"
-rm -rf "$logs" 2>/dev/null || true
-touch "$logs"
-exec > >(tee -a "$logs" ) 2> >(tee -a "$logs" >&2)
 
 # phpmyadmin must be configured manually to not install database
 #export DEBIAN_FRONTEND=noninteractive
@@ -87,7 +84,9 @@ else
 fi
 
 el_debug(){
-    echo -e "${el_c_c}D: ${el_c_c}${@}${el_c_n}" 1>&2
+    if [[ "$EL_DEBUG" -ge 2 ]] ; then
+        echo -e "${el_c_c}D: ${el_c_c}${@}${el_c_n}" 1>&2
+    fi
 }
 el_info(){
     echo -e "${el_c_c2}I: ${el_c_c2}${@}${el_c_n}" 1>&2
@@ -201,7 +200,6 @@ get_args(){
                 usage
                 ;;
             "--force"|"-f")
-                # TODO: do we need this option? instead we should always re-install things when its called
                 is_force=1
                 ;;
             "--betatesting")
@@ -240,18 +238,19 @@ get_args(){
         conf_send_debug_reports="yes"
         conf_send_debug_reports_email="EliveForServers"
         unset is_terminal
+        # create a file of logs
+        rm -rf "$logs" 2>/dev/null || true
+        touch "$logs"
+        exec > >(tee -a "$logs" ) 2> >(tee -a "$logs" >&2)
     fi
 
-    if [[ "$EL_DEBUG" -gt 2 ]] ; then
-        el_debug "\$0 is $0"
-    fi
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
         is_mode_curl=1
     fi
 
-    #if ((is_tool_beta)) ; then
-        #set -x
-    #fi
+    if [[ "$EL_DEBUG" -ge 3 ]] ; then
+        set -x
+    fi
 
     # - arguments & features }}}
 }
@@ -341,6 +340,10 @@ changeconfig(){
     fi
 }
 
+message_github(){
+    el_info "You are welcome to improve this tool and create a 'pull request' in our git source repository at https://github.com/Elive/elive-for-servers"
+}
+
 apt_wait(){
     local is_waiting i
     i=0
@@ -383,6 +386,12 @@ letsencrypt_wrapper(){
             exit_error
         fi
     fi
+
+    # update: seems like with systemd is not needed to setup manual renewals
+    #if el_check_dir_has_files /etc/letsencrypt/renewal/ 1>/dev/null 2>&1 ; then
+        ## uncomment the renewwal of certificates if we have any of them configured
+        #sed -i -e '/certbot renew/s|^#||g' /root/.crontab
+    #fi
 }
 
 exit_error(){
@@ -393,7 +402,7 @@ exit_error(){
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
         el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 26 "$logs" | sed -e '/^$/d' )"
     fi
-    NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a pull request so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
+    NOREPORTS=1 el_error "Trapped error signal, please verify what failed ^, then try to fix the script and do a 'pull request' so we can have it updated and improved on: https://github.com/Elive/elive-for-servers\n"
 
     prepare_environment stop
 
@@ -510,7 +519,6 @@ packages_install(){
     apt-get -q update
     apt-get -qq autoremove
 
-    # TODO: add functions el_debug, warning & error before to source our real functions
     el_debug "Packages wanted to be installed: $@"
 
     apt_wait
@@ -520,9 +528,9 @@ packages_install(){
             for package in $@
             do
                 if ! apt-get install $apt_options $package ; then
-                    # report to the user to contribute to github and to wait for possible fixes
                     set +x
                     el_error "Problem installing package '$package', debian_version '$debian_version' DISTRIB '$DISTRIB_ID - $DISTRIB_CODENAME', aborting..."
+                    message_github
                     exit 1
                 fi
             done
@@ -575,21 +583,6 @@ sources_update_adapt(){
     # zip mode? https://github.com/Elive/elive-for-servers/archive/refs/heads/main.zip
     git clone -q https://github.com/Elive/elive-for-servers.git "$sources"
 
-    # check for updated tool | not works and not good to have
-    #if ! ((is_mode_curl)) ; then
-        #if [[ -s "$sources/install-elive-on-server.sh" ]] ; then
-            #if [[ "$( diff "$0" "$sources/install-elive-on-server.sh" | wc -l )" -gt 4 ]] ; then
-                ##if el_confirm "\nSeems like this tool has new updates from its git version, do you want to update it first?" ; then
-                    #cp -f "$sources/install-elive-on-server.sh" "$0"
-
-                    #el_warning "tool updated: running it again..."
-                    #"$0" "$args"
-                    #exit
-                ##fi
-            #fi
-        #fi
-    #fi
-
     # set the date of builded elive as the last commit date on the repo
     touch /etc/elive-version
     cd "$sources"
@@ -598,7 +591,7 @@ sources_update_adapt(){
 
     el_debug "Replacing template conf files with your values:"
     cd "$templates"
-    # TODO: search and replace in templates for all extra eliveuser, elivewp, ips, thana... etc, do a standard base templates system
+    # TODO: search and replace in templates remainings for all extra eliveuser, elivewp, ips, thana... etc, do a standard base templates system
     find "${templates}" -type f -exec sed -i "s|${previous_ip}|${domain_ip}|g" {} \;
     zsh <<EOF
 rename "s/hostdo1.elivecd.org/${hostnamefull}/" ${templates}/**/*(.)
@@ -768,7 +761,6 @@ install_elive(){
     # elive repo key
     cd ~
     case "$debian_version" in
-        # TODO: do a betatesting in BUSTER a dropplet to see if works good and complatible, so we need ot release it compatible
         buster)
             wget -q "http://main.elivecd.org/tmp/elive-key.gpg"
             cat elive-key.gpg | apt-key add -
@@ -778,9 +770,9 @@ install_elive(){
             wget -q -O /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg "http://main.elivecd.org/tmp/elive-archive-bullseye-automatic.gpg"
             ;;
         *)
-            # TODO: add a default message saying github collaboration
             set +x
             el_error "debian version '$debian_version' is not supported (yet?)"
+            message_github
             exit 1
             ;;
     esac
@@ -843,31 +835,13 @@ EOF
     install_templates "elive" "/"
 
 
-    # TODO: in our elive server we have it, do we need it? (better: just check which packages we had installed that are not in the new/next server)
-    #apt-get install -y imagemagick # note: it installs many dependencies, do we need it?
-
     update-command-not-found 2>/dev/null || true
-
-    #mv /etc/apt/preferences.d/elive*pref "/tmp"
-    #apt-get install --allow-downgrades -y zsh-elive
-    #mv /tmp/elive*pref "/etc/apt/preferences.d/"
-
-
-    # install manually dependencies if we cannot install the packages manually: TODO: document this
-    #if [[ -d "/tmp/packages-to-expand_$(arch)" ]] ; then
-        #for i in /tmp/packages-to-expand_$(arch)/*deb
-        #do
-            #dpkg -x "$i" /
-        #done
-    #fi
 
     # fixes & free space:
     rm -rf /etc/skel/.gimp* 2>/dev/null || true
     rm -rf /etc/skel/.Skype* 2>/dev/null || true
     rm -rf /etc/skel/.enlight* 2>/dev/null || true
     rm -rf /etc/skel/.e 2>/dev/null || true
-    #sed -i -e '/mode-mouse/d' /etc/skel/.tmux.conf
-    #sed -i -e '/status-utf8/d' /etc/skel/.tmux.conf
 
     # configure root user
     elive-skel user root
@@ -918,8 +892,6 @@ EOF
     if ((is_ubuntu)) ; then
         sed -i -e 's|Debian|Ubuntu|g' /etc/os-release 2>/dev/null || true
     fi
-
-    #apt-get install -y vim-common zsh-elive || bash # try if possible
 
     installed_set "elive"
 }
@@ -1006,7 +978,6 @@ EOF
 
 
 install_nginx(){
-    # TODO: make a system to verify incompatible services, like apache/lightttps/etc and same for email, to warn the user about these needs to be removed
     el_info "Installing NGINX..."
     systemctl stop apache2.service tomcat9.service lighttpd.service  2>/dev/null || true
     packages_remove apache2 apache2-data apache2-bin tomcat9 lighttpd || true
@@ -1310,7 +1281,6 @@ install_wordpress(){
     # create database {{{
 
 
-    # TODO: check if DB already exist and ask for delete it if --force
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE USER IF NOT EXISTS ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}';"
     mysql -u root -p"${pass_mariadb_root}" -e "CREATE DATABASE IF NOT EXISTS ${wp_db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
     #GRANT ALL PRIVILEGES ON ${wp_db_name}.* TO ${wp_db_user}@localhost IDENTIFIED BY '${wp_db_pass}' WITH GRANT OPTION;
@@ -1543,7 +1513,7 @@ EOF
 
     # create and configure local configuration file
     require_variables "php_version|username|wp_webname"
-    # TODO: betatest the resulting file if \ chars are correctly inserted etc..
+
     cat > "$DHOME/${username}/${wp_webname}/nginx-local.conf" << EOF
 # User configurations goes here
 
@@ -1663,8 +1633,6 @@ install_phpmyadmin(){
     fi
 
     installed_set "phpmyadmin"
-    # TODO: document it in the end of the install too
-    # TODO: document al lthe other remaining ones
     is_installed_phpmyadmin=1
     # }}}
 }
@@ -1691,7 +1659,7 @@ install_fail2ban(){
     changeconfig "ignoreself " "ignoreself = true" /etc/fail2ban/jail.conf
     changeconfig "ignoreip " "ignoreip = 127.0.0.1/8 ::1 ${domain_ip}" /etc/fail2ban/jail.conf
     changeconfig "bantime " "bantime = 1d" /etc/fail2ban/jail.conf
-    # TODO: in buster was needed to use these ones in order to make it correctly working
+    # NOTE: in buster was needed to use these ones in order to make it correctly working (at least in my setup)
     #   banaction = nftables-multiport
     #   banaction_allports = nftables-allports
 
@@ -1722,7 +1690,6 @@ install_fail2ban(){
     if installed_check "monit" ; then
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
     fi
-
 
 
     systemctl restart  fail2ban.service
@@ -1774,7 +1741,6 @@ install_exim(){
 
 
     echo "$mail_hostname" > /etc/mailname
-    # TODO FIXME:  this doesn't seems to work
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
@@ -1820,7 +1786,6 @@ install_exim(){
     dpkg-reconfigure -fnoninteractive exim4-config
 
     # install certificate
-    # TODO: before to install exim, we need to have the DNS's configured with everything we need, for example smtp.domain.com to point to this machine, otherwise some steps will fail like certbot
     if [[ ! -d "/etc/letsencrypt/live/smtp.${mail_hostname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${mail_hostname}" ]] ; then
         NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${mail_hostname}' and also 'imap.${mail_hostname}' to point to this IP before to continue:"
         if ! ping -c 1 smtp.${mail_hostname} 1>/dev/null 2>&1 ; then
@@ -1828,7 +1793,6 @@ install_exim(){
             read nothing
         fi
 
-        # TODO: auto-renew
         if installed_check "nginx" ; then
             letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
             letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
@@ -1925,7 +1889,6 @@ MAIN_LOG_SELECTOR = \
 
 
 EOF
-    # TODO: verify with fail2ban-client regex tool if the log_selector configuration doesn't conflict (test by enabling/disabling our conf and see how many matches we have, but we will need for that to have newly generated logs which will show different results, hum....)
 
     # configure the login system:
     cat >> /etc/exim4/conf.d/auth/30_exim4-config_examples << 'EOF'
@@ -1963,7 +1926,37 @@ EOF
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
-    # TODO: configure email-sender too ?
+    # configure our tool email-sender too
+    su - "$username" <<EOF
+bash -c '
+set -e
+mkdir -p \$HOME/.config
+rm -f \$HOME/.config/email-sender
+echo -e "email_account=\"${email_username}\"" >> \$HOME/.config/email-sender
+echo -e "email_password=\"${email_password}\"" >> \$HOME/.config/email-sender
+mkdir -p \$HOME/.mutt/accounts
+rm -f \$HOME/.mutt/accounts/elive-sender
+echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_pass = \"${email_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set realname = \"${username^} in ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set copy = no" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set timeout = 60" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_user = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_pass = \"${username_mail_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set postponed = \"=Drafts"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_keepalive = 10" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set ssl_force_tls = yes" >> \$HOME/.mutt/accounts/elive-sender
+'
+EOF
 
 
     # Dovecot:
@@ -2188,6 +2181,7 @@ install_monit(){
 
     systemctl restart monit.service
 
+    is_installed_monit=1
     installed_set "monit"
 }
 
@@ -2267,6 +2261,8 @@ final_steps(){
         netfilter-persistent save
     fi
 
+    crontab /root/.crontab
+
     # }}}
 
     echo -e "\n"
@@ -2312,7 +2308,7 @@ final_steps(){
     fi
 
     if ((is_mode_curl)) ; then
-        el_info " *** You have installed Elive on your server, run again the tool to know all the other options available like installing services in one shot ***"
+        el_info " *** You have installed Elive on your server, run again the tool with the '--help' option to know all the other options available like installing services in one shot ***"
         echo 1>&2
     fi
 
@@ -2374,7 +2370,12 @@ final_steps(){
     fi
 
     if ((is_installed_fail2ban)) ; then
-        el_info "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban"
+        el_info "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban, if you are unable to connect to your server it could be by a false positive so make sure your IP is not blacklisted on that moment in fail2ban and improve this tool if needed"
+        echo 1>&2
+    fi
+
+    if ((is_installed_monit)) ; then
+        el_info "Monit: monit is a daemon that watch the other daemons are correctly running and if is not the case, restarts it. So if a daemon is restarted when you don't expect to, this feature can be the reason."
         echo 1>&2
     fi
 
@@ -2497,7 +2498,7 @@ main(){
             elive_repo="deb ${repoarch} https://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
             ;;
         *)
-            echo -e "E: sorry, this version of Debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
+            echo -e "E: sorry, this version of Debian is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers" 1>&2
             exit 1
             ;;
     esac
@@ -2523,7 +2524,7 @@ main(){
                 elive_repo="deb http://repo.${debian_version}.elive.elivecd.org/ ${debian_version} main elive"
                 ;;
             *)
-                echo -e "E: sorry, this version of Ubuntu is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers"
+                echo -e "E: sorry, this version of Ubuntu is not supported, you can help implementing it on: https://github.com/Elive/elive-for-servers" 1>&2
                 exit 1
                 ;;
         esac

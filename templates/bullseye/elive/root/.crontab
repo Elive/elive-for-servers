@@ -13,7 +13,7 @@ PATH="/root/packages/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin
 #30 5 */5 * * /root/packages/bin/backup-mysqls 1>/dev/null
 
 # renew certbot's letsencrypt ssl certificates # weekly on monday
-#41 0 * * 1 /root/packages/bin/certbot-renew-certs.sh 1>/dev/null
+#41 0 * * 1  certbot renew 1>/var/log/letsencrypt.log 2>&1
 
 # reload nginx conf every hour to update the configs made by wordpress (like banned ips)
 #2 * * * * /etc/init.d/nginx reload 1>/dev/null
