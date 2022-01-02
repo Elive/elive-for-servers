@@ -263,7 +263,7 @@ get_args(){
 installed_set(){
     touch /etc/elive-server
     addconfig "Installed: $1" /etc/elive-server
-    el_info "Installed ${1^^} ${2}"
+    el_info "Done installation of '${1^^}' ${2}"
 }
 installed_unset(){
     sed -i -e "/^Installed: ${1}$/d" /etc/elive-server || true
@@ -1307,7 +1307,7 @@ install_wordpress(){
 
     # }}}
     # create user if not exist {{{
-    if ! [[ -d $DHOME/${username} ]] ; then
+    if ! [[ -d "$DHOME/${username}" ]] ; then
         install_user
     fi
     # cleanups
@@ -1318,7 +1318,6 @@ install_wordpress(){
         fi
     fi
 
-    #su -c "bash -c 'mkdir -p "~/${wp_webname}" ; cd "~/${wp_webname}" '" "$username"
     su - "$username" <<EOF
 bash -c '
 set -e
@@ -1444,7 +1443,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 
     # configure WP in nginx {{{
     require_variables "php_version"
-    changeconfig "fastcgi_pass" "        fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;" "/etc/nginx/sites-available/${wp_webname}"
+    changeconfig "fastcgi_pass " "        fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;" "/etc/nginx/sites-available/${wp_webname}"
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
@@ -2093,7 +2092,7 @@ install_iptables(){
     # only ufw mode:
     if ((has_ufw)) ; then
         if ! grep -qs "syn-flood attack" /etc/ufw/before.rules ; then
-            ed /etc/ufw/before.rules <<EOF
+            ed /etc/ufw/before.rules 1>/dev/null <<EOF
 /End required lines
 a
 
@@ -2114,7 +2113,7 @@ EOF
         if installed_check "wordpress" ; then
 
             if el_confirm "Do you want to protect your webserver against DDOS attacks?" ; then
-            ed /etc/ufw/before.rules <<EOF
+            ed /etc/ufw/before.rules 1>/dev/null <<EOF
 /^\\*filter
 a
 :ufw-http - [0:0]
@@ -2452,8 +2451,8 @@ final_steps(){
         echo 1>&2
     fi
 
-    if ((is_mode_curl)) ; then
-        el_info " *** You have installed Elive on your server, run again the tool with the '--help' option to know all the other options available like installing services in one shot ***"
+    if ((is_mode_curl)) || ! ((is_extra_service)) ; then
+        el_info " *** You have installed Elive on your server, optionally you can run again the tool with the '--help' option to know all the other options available like installing full-featured services in one shot ***"
         echo 1>&2
     fi
 
@@ -2756,7 +2755,7 @@ main(){
     # }}}
 
     # create user if not exist {{{
-    if [[ -n "$username" ]] && ! [[ -d $DHOME/${username} ]] ; then
+    if [[ -n "$username" ]] && ! [[ -d "$DHOME/${username}" ]] ; then
         install_user
     fi
     #}}}
