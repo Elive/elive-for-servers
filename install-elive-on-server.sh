@@ -261,7 +261,7 @@ installed_set(){
     el_info "Installed ${1^^} ${2}"
 }
 installed_unset(){
-    sed -i -e "/^Installed: ${1}$/d" /etc/elive-server
+    sed -i -e "/^Installed: ${1}$/d" /etc/elive-server || true
 }
 installed_check(){
     if grep -qs "^Installed: ${1}$" /etc/elive-server ; then
@@ -1823,7 +1823,7 @@ install_exim(){
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${mail_hostname}"
-    sed -i -e "/^${email_username}: /d" /etc/exim4/passwd
+    sed -i -e "/^${email_username}: /d" /etc/exim4/passwd 2>/dev/null || true
     echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # our server settings
@@ -1992,15 +1992,15 @@ EOF
     # add credentials
     touch /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
-    sed -i -e "/^${username}:/d" /etc/dovecot/users
+    sed -i -e "/^${username}:/d" /etc/dovecot/users 2>/dev/null || true
     echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
     if [[ "${email_username%@*}" != "$username" ]] ; then
-        sed -i -e "/^${email_username%@*}: /d" /etc/aliases
+        sed -i -e "/^${email_username%@*}: /d" /etc/aliases 2>/dev/null || true
         echo "${email_username%@*}: ${username}" >> /etc/aliases
     fi
-    sed -i -e "/^no-reply: ${username}$/d" /etc/aliases
+    sed -i -e "/^no-reply: ${username}$/d" /etc/aliases 2>/dev/null || true
     echo "no-reply: ${username}" >> /etc/aliases
     #echo "notification: ${username}" >> /etc/aliases
 
@@ -2408,7 +2408,7 @@ notimplemented(){
         return
     fi
 
-    NOREPORTS=1 el_warning "Note: This feature may not be fully working / functional / stable"
+    NOREPORTS=1 el_warning "Note: This feature should have been correctly tested but it may be not fully working / functional / stable, use it at your own risk"
     if ! el_confirm "\nDo you want to proceed even if is not implemented or completely integrated? it may not work as expected or wanted. DO NOT REPORT BUGS BY USING THIS OPTION. You are welcome to improve this tool to make it working.\nContinue anyways?" ; then
         exit
     fi
