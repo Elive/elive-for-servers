@@ -225,7 +225,7 @@ get_args(){
 
     if ((is_production)) ; then
         if ((is_extra_service)) ; then
-            if ! el_confirm "\nImportant: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. Also MAKE SURE you do a full backup of your server first. Do you want to continue?" ; then
+            if ! el_confirm "\nImportant: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. MAKE SURE you do a full backup of your server first and use it AT YOUR OWN RISK. Do you want to continue?" ; then
                 exit 1
             fi
         fi
@@ -1046,7 +1046,7 @@ install_php(){
 
                     # get new version
                     php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
-                    if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (if you say no, you will select one from all the versions available)" ; then
+                    if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (suggested, but if you say no, you will select one from all the versions available)" ; then
                         unset php_version
                     fi
                 fi
@@ -1156,6 +1156,9 @@ install_php(){
 
     addconfig "soft nofile 4096" /etc/security/limits.conf
     addconfig "hard nofile 4096" /etc/security/limits.conf
+
+    # reconfigure other possible versions previously configured of php
+    sed -i -e "s|php...-fpm|php${php_version}-fpm|g" /etc/nginx/sites-available/* /etc/monit/conf-available/* 2>/dev/null || true
 
     if ((is_ubuntu)) ; then
         systemctl stop apache2.service 2>/dev/null || true
