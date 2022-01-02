@@ -2600,7 +2600,7 @@ main(){
     #if ((is_production)) ; then
         #apt_options="-q --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0 "
     #else
-        apt_options="-q -y --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0"
+        apt_options="-q -y --allow-downgrades -o APT::Install-Suggests=0 -o APT::Install-Recommends=0 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew"
     #fi
 
     #domain_names="www.${domain} ${domain} blog.${domain} forum.${domain}"
