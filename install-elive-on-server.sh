@@ -988,8 +988,7 @@ install_nginx(){
 
     # enable ports
     if ((has_ufw)) ; then
-        ufw allow 80/tcp
-        ufw allow 443/tcp
+        ufw allow 'Nginx Full'
     else
         if ((has_iptables)) ; then
             iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
@@ -1798,7 +1797,9 @@ install_exim(){
             letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
         else
             if ((has_ufw)) ; then
-                ufw allow 80/tcp
+                if ! iptables -S | grep -qsE "(\s+|,)80(\s+|,)" ; then
+                    ufw allow 80/tcp
+                fi
             else
                 if ((has_iptables)) ; then
                     iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
@@ -2049,10 +2050,10 @@ EOF
 
 install_iptables(){
     el_info "Installing Iptables..."
-    if ((has_ufw)) ; then
-        NOREPORTS=1 el_error "You have UFW firewall installed, you must uninstall it first in order to install our iptables service"
-        exit 1
-    fi
+    #if ((has_ufw)) ; then
+        #NOREPORTS=1 el_error "You have UFW firewall installed, you must uninstall it first in order to install our iptables service"
+        #exit 1
+    #fi
     packages_install  iptables
 
     # make things more secured
@@ -2084,6 +2085,7 @@ install_iptables(){
         iptables -A INPUT -p tcp -m tcp --dport 60001 -j ACCEPT
         iptables -A INPUT -p tcp -m tcp --dport 60008 -j ACCEPT
 
+        #TODO: save iptables rules after install so we can have a list of the "good setup" before anything can be messed in the future, same for ufw directory
         # putiso (isos zsync)
         #iptables -A OUTPUT -p tcp -m tcp --dport 8091 -j ACCEPT
         #iptables -A INPUT -p tcp -m tcp --dport 8092 -j ACCEPT
@@ -2653,15 +2655,6 @@ main(){
     fi
     # }}}
 
-    # install iptables {{{
-    if ((is_wanted_iptables)) ; then
-        # TODO: let's move to ufw instead which is more easy to configure?
-        if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
-            install_iptables
-        fi
-    fi
-    # }}}
-
     # install chkrootkits {{{
     if ((is_wanted_rootkitcheck)) ; then
         if installed_ask "rootkitcheck" "You are going to install ROOTKIT checkers, it will run daily verifiers of the server. Continue?" ; then
@@ -2682,6 +2675,15 @@ main(){
     if ((is_wanted_exim)) ; then
         if installed_ask "exim" "You are going to install EXIM mail server, it will be configured for you with users, dkim keys, etc. Continue?" ; then
             install_exim
+        fi
+    fi
+    # }}}
+
+    # install iptables {{{
+    if ((is_wanted_iptables)) ; then
+        # TODO: let's move to ufw instead which is more easy to configure?
+        if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
+            install_iptables
         fi
     fi
     # }}}
