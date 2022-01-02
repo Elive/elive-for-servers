@@ -1950,7 +1950,7 @@ echo -e "set imap_pass = \"${username_mail_password}\"" >> \$HOME/.mutt/accounts
 echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set postponed = \"=Drafts"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set postponed = \"=Drafts\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_keepalive = 10" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "" >> \$HOME/.mutt/accounts/elive-sender
@@ -2272,7 +2272,7 @@ final_steps(){
     fi
 
     if [[ "$( ls -1 /boot/vmlinuz-* | wc -l )" -gt 1 ]] ; then
-        el_info "You have more than one kernels installed, you can free up some disk space by uninstalling the old ones"
+        el_info "You have more than one kernels installed, you can free up some disk space by uninstalling the old ones (maybe you need to reboot first to switch to the new one)"
     fi
 
     # TODO: review and remove
