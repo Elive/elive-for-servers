@@ -1722,7 +1722,7 @@ install_exim(){
         #mail_hostname="$domain"
     #fi
     if [[ "$mail_hostname" != "$domain" ]] ; then
-        if el_confirm "Do you want to use this server as your main Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$hostnamefull' domain)" ; then
+        if el_confirm "Do you want to use this server as your MAIN Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$hostnamefull' domain)" ; then
             mail_hostname="$domain"
             # XXX rDNS should point to this one, so domains should be allowed too
         fi
@@ -2053,9 +2053,9 @@ a
     condition = \${if >{\$spam_score_int}{120}{1}{0}}
     message = This message scored \$spam_score spam points.
 
-    .
-    w
-    q
+.
+w
+q
 EOF
         changeconfig "CRON=0" "CRON=1" /etc/default/spamassassin
 
