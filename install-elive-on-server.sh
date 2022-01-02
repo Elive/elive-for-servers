@@ -1940,12 +1940,12 @@ echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set smtp_pass = \"${email_password}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set realname = \"${username^} in ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set realname = \"${username^} from ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set copy = no" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set timeout = 60" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set imap_user = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_user = \"${username}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_pass = \"${username_mail_password}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
@@ -1955,8 +1955,17 @@ echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_keepalive = 10" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set ssl_force_tls = yes" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# Set default editor\n#set editor=\"vim\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# sort messages by thread\nset sort=threads" >> \$HOME/.mutt/accounts/elive-sender
+# make it default if we had not another config previously
+if [[ ! -e "\$HOME/.muttrc" ]] ; then
+    ln -s "\$HOME/.mutt/accounts/elive-sender" "\$HOME/.muttrc"
+fi
+# symlink the user mail location to make it compatible with mutt or other tools
+ln -s \$HOME/Maildir /var/mail/\$USER
 '
 EOF
+
 
 
     # Dovecot:
