@@ -188,10 +188,10 @@ get_args(){
             "--install=swapfile")
                 is_wanted_swapfile=1
                 ;;
-            "--install=iptables")
-                is_wanted_iptables=1
-                notimplemented
-                ;;
+            #"--install=iptables")
+                #is_wanted_iptables=1
+                #notimplemented
+                #;;
             "--want-sudo-nopass")
                 # use it at your own risk, not recommended (undocumented on purpose) , especially on servers
                 is_wanted_sudo_nopass=1
@@ -2034,8 +2034,29 @@ EOF
         # enable it
         changeconfig "spamd_address =" "spamd_address = 127.0.0.1 783" /etc/exim4/conf.d/main/02_exim4-config_options
 
-        echo -e "/Reject spam messages\n-1\na\n\n  # put headers in all messages (no matter if spam or not)\n  warn  spam = debian-spamd:true\n     add_header = X-Spam-Score: \$spam_score (\$spam_bar)\n     add_header = X-Spam-Report: \$spam_report\n\n  # add second subject line with *SPAM* marker when message is over threshold\n  warn  spam = debian-spamd\n     add_header = Subject: ***SPAM (score:\$spam_score)*** \$h_Subject:\n\n  # reject spam at high scores (> 12)\n  deny  spam = debian-spamd:true\n      condition = \${if >{\$spam_score_int}{120}{1}{0}}\n      message = This message scored \$spam_score spam points.\n\n.\nw\nq" | ed /etc/exim4/conf.d/acl/40_exim4-config_check_data 1>/dev/null
+        ed /etc/exim4/conf.d/acl/40_exim4-config_check_data 1>/dev/null <<EOF
+/Reject spam messages
+-1
+a
 
+  # put headers in all messages (no matter if spam or not)
+  warn  spam = debian-spamd:true
+    add_header = X-Spam-Score: \$spam_score (\$spam_bar)
+    add_header = X-Spam-Report: \$spam_report
+
+  # add second subject line with *SPAM* marker when message is over threshold
+  warn  spam = debian-spamd
+    add_header = Subject: ***SPAM (score:\$spam_score)*** \$h_Subject:
+
+  # reject spam at high scores (> 12)
+  deny  spam = debian-spamd:true
+    condition = \${if >{\$spam_score_int}{120}{1}{0}}
+    message = This message scored \$spam_score spam points.
+
+    .
+    w
+    q
+EOF
         changeconfig "CRON=0" "CRON=1" /etc/default/spamassassin
 
         sa-update
@@ -2050,107 +2071,176 @@ EOF
 
 install_iptables(){
     el_info "Installing Iptables..."
-    #if ((has_ufw)) ; then
-        #NOREPORTS=1 el_error "You have UFW firewall installed, you must uninstall it first in order to install our iptables service"
-        #exit 1
-    #fi
-    packages_install  iptables
 
-    # make things more secured
-    if ! [[ -e /etc/iptables.rules ]] ; then
+    # only ufw mode:
+    if ((has_ufw)) ; then
+        if ! grep -qs "syn-flood attack" /etc/ufw/before.rules ; then
+            ed /etc/ufw/before.rules <<EOF
+/End required lines
+a
 
-        # nice howto: https://www.digitalocean.com/community/tutorials/iptables-essentials-common-firewall-rules-and-commands
+# block null packets
+iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+# reject syn-flood attack
+iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+# reject x-mas packets
+iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
 
-        # enable all outgoing traffic
-        iptables -P OUTPUT ACCEPT
+.
+w
+q
+EOF
+        fi
 
-        # disable ipv6 ssh' attempts, important
-        ip6tables -t filter -A INPUT -p tcp --dport 22 -j DROP
+        # ddos protection
+        if ((is_installed_wordpress)) ; then
+            if el_confirm "Do you want to protect your webserver against DDOS attacks?" ; then
+            ed /etc/ufw/before.rules <<EOF
+/^\\*filter
+a
+:ufw-http - [0:0]
+:ufw-http-logdrop - [0:0]
+.
+/^COMMIT\$
+-2
+a
+### start ###
+# Enter rule
+-A ufw-before-input -p tcp --dport 80 -j ufw-http
+-A ufw-before-input -p tcp --dport 443 -j ufw-http
 
-        # block null packets
-        iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
-        # reject syn-flood attack
-        iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
-        # reject x-mas packets
-        iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+# Limit connections per Class C
+-A ufw-http -p tcp --syn -m connlimit --connlimit-above 50 --connlimit-mask 24 -j ufw-http-logdrop
 
-        # accept needed services
-        iptables -A INPUT -i lo -j ACCEPT
-        iptables -A OUTPUT -o lo -j ACCEPT
-        iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
-        iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
-        iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
-        # netcat elive services (reports)
-        # TODO: implement it outside this script (we should support a plugins system? maybe just a script to run after?)
-        iptables -A INPUT -p tcp -m tcp --dport 60001 -j ACCEPT
-        iptables -A INPUT -p tcp -m tcp --dport 60008 -j ACCEPT
+# Limit connections per IP
+-A ufw-http -m state --state NEW -m recent --name conn_per_ip --set
+-A ufw-http -m state --state NEW -m recent --name conn_per_ip --update --seconds 10 --hitcount 20 -j ufw-http-logdrop
 
-        #TODO: save iptables rules after install so we can have a list of the "good setup" before anything can be messed in the future, same for ufw directory
-        # putiso (isos zsync)
-        #iptables -A OUTPUT -p tcp -m tcp --dport 8091 -j ACCEPT
-        #iptables -A INPUT -p tcp -m tcp --dport 8092 -j ACCEPT
+# Limit packets per IP
+-A ufw-http -m recent --name pack_per_ip --set
+-A ufw-http -m recent --name pack_per_ip --update --seconds 1 --hitcount 20 -j ufw-http-logdrop
 
-        # discourse (docker container) uses this ip: 172.17.0.2
-        # UPDATE: we may not need them (auto iptables!)
-        # mail-receiver container:
-        # send?
-        #iptables -A INPUT -p tcp -s 172.17.0.1 -j ACCEPT
-        ## receive?
-        #iptables -A INPUT -p tcp -s 172.17.0.3 -j ACCEPT
-        ## open all from container:
-        #iptables -A INPUT -p tcp -i docker0 -j ACCEPT
-        #iptables -A OUTPUT -p tcp -i docker0 -j ACCEPT
-        #iptables -A INPUT -p tcp -s 172.17.0.2 -j ACCEPT
-        iptables -A INPUT -p tcp -s 172.17.0.2 --dport 587 -j ACCEPT
-        iptables -A INPUT -p tcp -s 172.17.0.3 --dport 587 -j ACCEPT
-        ##iptables -A INPUT -p tcp -s 172.17.0.0/16 -j ACCEPT
-        ## these are ports specific for nginx reverse proxy & ssl configurations
-        #iptables -A INPUT -p tcp -m tcp --dport 25654 -j ACCEPT
-        #iptables -A INPUT -p tcp -m tcp --dport 25655 -j ACCEPT
-        ## allow all communication with the docker:
-        #iptables -A FORWARD -i docker0 -o eth0 -j ACCEPT
-        #iptables -A FORWARD -i eth0 -o docker0 -j ACCEPT
-        #That allows forwarding traffic back to your docker hosts on connections that have already been established.
-        #iptables -A FORWARD -i eth0 -o docker0 --state RELATED,ESTABLISHED -j ACCEPT
+# Finally accept
+-A ufw-http -j ACCEPT
 
-        # enable if you want to access to the SMTP remotely (or from a docker, like for discourse)
-        #iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT  # do not accept as much as possible, is insecure and only lamers use it
-        #iptables -A INPUT -p tcp -m tcp --dport 25 -j REJECT  # do not accept!
-        #iptables -A INPUT -p tcp -m tcp --dport 465 -j ACCEPT # <ikevin> if you need to allow external ip to send mail using your vps, just allow the 465 and use ssl
-        #iptables -A INPUT -p tcp -m tcp --dport 110 -j ACCEPT
-        #iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
-        #iptables -A INPUT -p tcp -m tcp --dport 143 -j ACCEPT
-        #iptables -A INPUT -p tcp -m tcp --dport 993 -j ACCEPT
+# Log
+-A ufw-http-logdrop -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW HTTP DROP] "
+-A ufw-http-logdrop -j DROP
+### end ###
+w
+q
+EOF
 
-        # rate-limited pop3 connections (avoids bruteforce attacks), untested
-        #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --update --seconds 60 --hitcount 5 -j DROP
-        #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --set -j ACCEPT
+            # comment the original 80,443 port opening to use only our settings
+            sed -i -e '/443.*Nginx/s|.*|#&|g' /etc/ufw/user.rules
 
-        # only give access to mysql from localhost (already configured default debian aparently)
-        #iptables -A INPUT -p tcp --dport 3306 -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT
+            fi
+        fi
 
-        # allow pings
-        iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
-        iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+        ufw reload
 
-        # accept all packet who come from "lo", lo is always localhost
-        iptables -A INPUT -i lo -j ACCEPT
+    else
 
-        # we need to add one more rule that will allow us to use outgoing connections (ie. ping from VPS or run software updates);
-        iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        # iptables only mode:
+        packages_install  iptables
 
-        # send dropped packets to syslog
-        #iptables -I INPUT 5 -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
-        iptables -I INPUT 5 -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
+        # make things more secured
+        if ! [[ -e /etc/iptables.rules ]] ; then
 
-        # It will allow any established outgoing connections to receive replies from the VPS on the other side of that connection. When we have it all set up, we will block everything else, and allow all outgoing connections.
-        iptables -P OUTPUT ACCEPT
-        iptables -P INPUT DROP
+            # nice howto: https://www.digitalocean.com/community/tutorials/iptables-essentials-common-firewall-rules-and-commands
 
-        # save all iptables configs
-        ip6tables-save > /etc/ip6tables.rules
-        iptables-save > /etc/iptables.rules
+            # enable all outgoing traffic
+            iptables -P OUTPUT ACCEPT
+
+            # disable ipv6 ssh' attempts, important
+            ip6tables -t filter -A INPUT -p tcp --dport 22 -j DROP
+
+            # block null packets
+            iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+            # reject syn-flood attack
+            iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+            # reject x-mas packets
+            iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+
+            # accept needed services
+            iptables -A INPUT -i lo -j ACCEPT
+            iptables -A OUTPUT -o lo -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+            # extra services:
+            iptables -A INPUT -p tcp -m tcp --dport 60001 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 60008 -j ACCEPT
+
+            # putiso (isos zsync)
+            #iptables -A OUTPUT -p tcp -m tcp --dport 8091 -j ACCEPT
+            #iptables -A INPUT -p tcp -m tcp --dport 8092 -j ACCEPT
+
+            # discourse (docker container) uses this ip: 172.17.0.2
+            # UPDATE: we may not need them (auto iptables!)
+            # mail-receiver container:
+            # send?
+            #iptables -A INPUT -p tcp -s 172.17.0.1 -j ACCEPT
+            ## receive?
+            #iptables -A INPUT -p tcp -s 172.17.0.3 -j ACCEPT
+            ## open all from container:
+            #iptables -A INPUT -p tcp -i docker0 -j ACCEPT
+            #iptables -A OUTPUT -p tcp -i docker0 -j ACCEPT
+            #iptables -A INPUT -p tcp -s 172.17.0.2 -j ACCEPT
+            iptables -A INPUT -p tcp -s 172.17.0.2 --dport 587 -j ACCEPT
+            iptables -A INPUT -p tcp -s 172.17.0.3 --dport 587 -j ACCEPT
+            ##iptables -A INPUT -p tcp -s 172.17.0.0/16 -j ACCEPT
+            ## these are ports specific for nginx reverse proxy & ssl configurations
+            #iptables -A INPUT -p tcp -m tcp --dport 25654 -j ACCEPT
+            #iptables -A INPUT -p tcp -m tcp --dport 25655 -j ACCEPT
+            ## allow all communication with the docker:
+            #iptables -A FORWARD -i docker0 -o eth0 -j ACCEPT
+            #iptables -A FORWARD -i eth0 -o docker0 -j ACCEPT
+            #That allows forwarding traffic back to your docker hosts on connections that have already been established.
+            #iptables -A FORWARD -i eth0 -o docker0 --state RELATED,ESTABLISHED -j ACCEPT
+
+            # enable if you want to access to the SMTP remotely (or from a docker, like for discourse)
+            #iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT  # do not accept as much as possible, is insecure and only lamers use it
+            #iptables -A INPUT -p tcp -m tcp --dport 25 -j REJECT  # do not accept!
+            #iptables -A INPUT -p tcp -m tcp --dport 465 -j ACCEPT # <ikevin> if you need to allow external ip to send mail using your vps, just allow the 465 and use ssl
+            #iptables -A INPUT -p tcp -m tcp --dport 110 -j ACCEPT
+            #iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
+            #iptables -A INPUT -p tcp -m tcp --dport 143 -j ACCEPT
+            #iptables -A INPUT -p tcp -m tcp --dport 993 -j ACCEPT
+
+            # rate-limited pop3 connections (avoids bruteforce attacks), untested
+            #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --update --seconds 60 --hitcount 5 -j DROP
+            #iptables -A INPUT -p tcp --dport 110 -m state --state NEW -m recent --name pop --rsource --set -j ACCEPT
+
+            # only give access to mysql from localhost (already configured default debian aparently)
+            #iptables -A INPUT -p tcp --dport 3306 -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT
+
+            # allow pings
+            iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+            iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+
+            # accept all packet who come from "lo", lo is always localhost
+            iptables -A INPUT -i lo -j ACCEPT
+
+            # we need to add one more rule that will allow us to use outgoing connections (ie. ping from VPS or run software updates);
+            iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+            # send dropped packets to syslog
+            #iptables -I INPUT 5 -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
+            iptables -I INPUT 5 -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
+
+            # It will allow any established outgoing connections to receive replies from the VPS on the other side of that connection. When we have it all set up, we will block everything else, and allow all outgoing connections.
+            iptables -P OUTPUT ACCEPT
+            iptables -P INPUT DROP
+
+            # save all iptables configs
+            ip6tables-save > /etc/ip6tables.rules
+            iptables-save > /etc/iptables.rules
+
+            netfilter-persistent save || true
+        fi
+
     fi
 
     installed_set "iptables"
@@ -2273,10 +2363,19 @@ final_steps(){
 
     # save settings {{{
     if ((has_iptables)) && ! ((has_ufw)) ; then
-        netfilter-persistent save
+        packages_install iptables-persistent
+        netfilter-persistent save || true
+        # save all iptables configs
+        ip6tables-save > /etc/ip6tables.rules
+        iptables-save > /etc/iptables.rules
     fi
 
     crontab /root/.crontab
+
+    # save a backup of the full etc created
+    rm -rf /etc.bak-after-elive-setup 2>/dev/null || true
+    cp -a /etc /etc.bak-after-elive-setup
+
 
     # }}}
 
@@ -2680,12 +2779,12 @@ main(){
     # }}}
 
     # install iptables {{{
-    if ((is_wanted_iptables)) ; then
-        # TODO: let's move to ufw instead which is more easy to configure?
-        if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
-            install_iptables
-        fi
-    fi
+    # UPDATE: disabled since we are using ufw now, seems like not so needed anymore
+    #if ((is_wanted_iptables)) ; then
+        #if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
+            #install_iptables
+        #fi
+    #fi
     # }}}
 
     # LAST SERVICES TO INSTALL
