@@ -2082,11 +2082,11 @@ install_iptables(){
 a
 
 # block null packets
-iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+-A INPUT -p tcp --tcp-flags ALL NONE -j DROP
 # reject syn-flood attack
-iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+-A INPUT -p tcp ! --syn -m state --state NEW -j DROP
 # reject x-mas packets
-iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+-A INPUT -p tcp --tcp-flags ALL ALL -j DROP
 
 .
 w
@@ -2130,6 +2130,7 @@ a
 -A ufw-http-logdrop -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW HTTP DROP] "
 -A ufw-http-logdrop -j DROP
 ### end ###
+.
 w
 q
 EOF
@@ -2366,7 +2367,7 @@ final_steps(){
 
     # save settings {{{
     if ((has_ufw)) ; then
-        true
+        ufw reload
     else
         if ((has_iptables)) ; then
             packages_install iptables-persistent
@@ -2383,6 +2384,9 @@ final_steps(){
     rm -rf /etc.bak-after-elive-setup 2>/dev/null || true
     cp -a /etc /etc.bak-after-elive-setup
 
+
+    swapoff -a 1>/dev/null 2>&1 || true
+    swapon -a 1>/dev/null 2>&1 || true
 
     # }}}
 
