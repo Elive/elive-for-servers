@@ -241,6 +241,8 @@ get_args(){
         rm -rf "$logs" 2>/dev/null || true
         touch "$logs"
         exec > >(tee -a "$logs" ) 2> >(tee -a "$logs" >&2)
+        # in beta mode we need better debug, otherwise we may not know what failed
+        set -x
     fi
 
     if [[ "$0" = "/proc/self/fd/"* ]] || [[ "$0" = "/dev/fd/"* ]] ; then
@@ -1046,7 +1048,6 @@ install_php(){
                     php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
                     if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (if you say no, you will select one from all the versions available)" ; then
                         unset php_version
-                        rm -f "/etc/apt/sources.list.d/php.list"
                     fi
                 fi
             fi
@@ -1067,6 +1068,11 @@ install_php(){
                 fi
             fi
         fi
+    fi
+
+    # remove unneeded repository
+    if ! apt-cache madison php${php_version} | grep -qs "sury.org" ; then
+        rm -f "/etc/apt/sources.list.d/php.list"
     fi
 
     # select all the wanted php packages
