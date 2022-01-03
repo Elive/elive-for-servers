@@ -515,6 +515,15 @@ ask_variable(){
     if [[ -z "${!1}" ]] ; then
         echo -e "${el_c_c2}${2}${el_c_n}" 1>&2
         read $1
+        if [[ -z "${!1}" ]] ; then
+            NOREPORTS=1 el_error "You didn't inserted any value, try again..."
+            echo -e "${el_c_c2}${2}${el_c_n}" 1>&2
+            read $1
+            if [[ -z "${!1}" ]] ; then
+                NOREPORTS=1 el_error "You didn't inserted any value, aborting..."
+                exit_error
+            fi
+        fi
     fi
 }
 
@@ -1292,6 +1301,11 @@ install_wordpress(){
     ask_variable "username" "Insert a desired username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
 
     require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username"
+
+    # get the domain (last two . elements) from wp_webname
+    if [[ -z "$domain" ]] ; then
+        domain="$( echo "$wp_webname" | awk '{n=split($0, a, "."); printf("%s.%s", a[n-1], a[n])}' )"
+    fi
 
     # }}}
     # create database {{{
