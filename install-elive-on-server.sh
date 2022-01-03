@@ -216,8 +216,8 @@ get_args(){
                 httaccess_user="webuser"
                 httaccess_password="webpass"
                 #email_username="user@wp.thanatermesis.org"
-                email_password="supapass"
-                username_mail_password="supapass"
+                email_smtp_password="supapass"
+                email_imap_password="supapass"
                 ;;
 
         esac
@@ -1726,8 +1726,8 @@ install_exim(){
     #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
-    ask_variable "email_password" "Insert an email password for your Email SMTP sending"
-    ask_variable "username_mail_password" "Your '${username}' username will receive emails. Insert a password to read them using IMAP"
+    ask_variable "email_smtp_password" "Insert an email password for your Email SMTP sending"
+    ask_variable "email_imap_password" "Your '${username}' username will receive emails. Insert a password to access to this email account using IMAP"
 
     update_variables
 
@@ -1742,7 +1742,7 @@ install_exim(){
         fi
     fi
 
-    require_variables "domain|email_admin|username|username_mail_password|email_password|hostnamefull"
+    require_variables "domain|email_admin|username|email_imap_password|email_smtp_password|hostnamefull"
     email_username="${username}@${mail_hostname}"
 
     # cleanup old install and configuration
@@ -1838,7 +1838,7 @@ install_exim(){
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${mail_hostname}"
     sed -i -e "/^${email_username}: /d" /etc/exim4/passwd 2>/dev/null || true
-    echo -e "\n${email_username}: $( echo "${email_password}" | mkpasswd -s )" >> /etc/exim4/passwd
+    echo -e "\n${email_username}: $( echo "${email_smtp_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # our server settings
     cat >> /etc/exim4/conf.d/main/000_localmacros << EOF
@@ -1937,7 +1937,7 @@ EOF
 
     # configure mailx-send to work
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
-    changeconfig "password=" "password=\"$email_password\"" /usr/local/bin/mailx-send
+    changeconfig "password=" "password=\"$email_smtp_password\"" /usr/local/bin/mailx-send
     changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
@@ -1949,12 +1949,12 @@ set -e
 mkdir -p \$HOME/.config
 rm -f \$HOME/.config/email-sender
 echo -e "email_account=\"${email_username}\"" >> \$HOME/.config/email-sender
-echo -e "email_password=\"${email_password}\"" >> \$HOME/.config/email-sender
+echo -e "email_password=\"${email_smtp_password}\"" >> \$HOME/.config/email-sender
 mkdir -p \$HOME/.mutt/accounts
 rm -f \$HOME/.mutt/accounts/elive-sender
 echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set smtp_pass = \"${email_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_pass = \"${email_smtp_password}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set realname = \"${username^} from ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set copy = no" >> \$HOME/.mutt/accounts/elive-sender
@@ -1962,7 +1962,7 @@ echo -e "set timeout = 60" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_user = \"${username}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set imap_pass = \"${username_mail_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_pass = \"${email_imap_password}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
@@ -2007,7 +2007,7 @@ EOF
     touch /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
     sed -i -e "/^${username}:/d" /etc/dovecot/users 2>/dev/null || true
-    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${username_mail_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${email_imap_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
     if [[ "${email_username%@*}" != "$username" ]] ; then
@@ -2122,7 +2122,7 @@ a
 /^COMMIT\$
 -2
 a
-### start ###
+### start ddos atacks prevention ###
 # Enter rule
 -A ufw-before-input -p tcp --dport 80 -j ufw-http
 -A ufw-before-input -p tcp --dport 443 -j ufw-http
@@ -2142,9 +2142,10 @@ a
 -A ufw-http -j ACCEPT
 
 # Log
--A ufw-http-logdrop -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW HTTP DROP] "
+-A ufw-http-logdrop -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW HTTP DROP (DDOS prevention)] "
 -A ufw-http-logdrop -j DROP
 ### end ###
+
 .
 w
 q
@@ -2504,9 +2505,9 @@ final_steps(){
         # TODO: add mta-sts
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_password}'"
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_smtp_password}'"
         el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
-        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${username_mail_password}'. So the emails will be received on this user of your server"
+        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
         #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
