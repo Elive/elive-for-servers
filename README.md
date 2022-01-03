@@ -15,6 +15,7 @@ _:warning: Note: Ubuntu installs are added for compatibility, but we **strongly*
 * Set up a very powerful server using the lowest resources! (optimized wordpress & email server, with watchers & protections)
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
   * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
+  * install multiple wordpress websites in the same machine and still being light on resources
 * Install PHP / Mariadb / Nginx / Exim email server / etc services in one shot
 * Well tuned and optimized customizations for the services
 * Powerful configurations for server tools like VIM with plugins and the best color syntax

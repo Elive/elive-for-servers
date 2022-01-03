@@ -1139,6 +1139,8 @@ install_php(){
     if [[ -s /etc/php/$php_version/fpm/pool.d/www.conf ]] ; then
         # enable monitoring state
         changeconfig ";ping.path =" "ping.path = /ping" /etc/php/$php_version/fpm/pool.d/www.conf
+        # do not waste resources
+        changeconfig "pm = dynamic" "pm = ondemand" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
@@ -1482,6 +1484,8 @@ EOF
     changeconfig "user =" "user = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "group =" "group = ${username}" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     changeconfig "listen =" "listen = /run/php/php${php_version}-fpm-${username}.sock" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
+    # do not waste resources
+    changeconfig "pm = " "pm = ondemand" "/etc/php/$php_version/fpm/pool.d/${wp_webname}.conf"
     # disable default php conf if we are not going to use it
     systemctl restart php${php_version}-fpm.service
     # }}}
