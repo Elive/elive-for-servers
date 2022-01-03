@@ -2795,7 +2795,7 @@ main(){
 
     # install wordpress {{{
     if ((is_wanted_wordpress)) ; then
-        if installed_ask "wordpress" "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
+        if el_confirm "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
             install_wordpress
         fi
     fi
