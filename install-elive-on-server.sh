@@ -1463,7 +1463,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 
     # redir non-www to www
     sed -i -e '/^# vim: set/d' "/etc/nginx/sites-available/${wp_webname}"
-    if ! echo "$wp_webname" | grep -qsi "^www\." ; then
+    if echo "$wp_webname" | grep -qsi "^www\." ; then
 
         #if el_confirm "\nDo you want to redirect '${wp_webname}' to '${wp_webname}' ?" ; then
             cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
