@@ -1744,8 +1744,8 @@ install_exim(){
     #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
-    ask_variable "email_smtp_password" "Insert an email password for your Email SMTP sending"
     ask_variable "email_imap_password" "Your '${username}' username will receive emails. Insert a password to access to this email account using IMAP"
+    ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')"
 
     update_variables
 
@@ -2399,6 +2399,14 @@ final_steps(){
         rm -rf "$sources"
     fi
 
+    # make system lighter
+    # this is a freaking waste of resources, some devs really don't care about lightness, but Elive do :P so let's fix this bug:
+    if systemctl status unattended-upgrades.service 2>&1 | colors-remove | grep -qsi "Active: active" ; then
+        systemctl stop unattended-upgrades.service
+        systemctl disable unattended-upgrades.service
+        echo -e "\n# Run unattended-upgrades in one shot daily instead of a waste-resources daemon\n0 8 * * * /usr/local/sbin/unattended-upgrades-light 1>/dev/null" >> /root/.crontab
+    fi
+
     # save settings {{{
     if ((has_ufw)) ; then
         ufw reload
@@ -2542,7 +2550,7 @@ final_steps(){
         echo 1>&2
     fi
 
-    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. SAVE THE CONFIGURATIONS / USERS / PASSWORDS IN A BACKUP SOMEWHERE"
+    el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. YOU CAN COPY-PASTE EVERYTHING JUST LIKE PASSWORDS AND ALL TO SAVE IT IN A BACKUP SOMEWHERE, DO NOT LOSE THIS INFO"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
@@ -2829,7 +2837,7 @@ main(){
 
     # install iptables {{{
     if ((is_wanted_iptables)) ; then
-        if installed_ask "iptables" "You are going to install IPTABLES, it will include some default settings. Continue?" ; then
+        if installed_ask "iptables" "You are going to install IPTABLES (or use the installed UFW), it will include some default settings. Continue?" ; then
             install_iptables
         fi
     fi
@@ -2843,7 +2851,7 @@ main(){
             #NOREPORTS=1 el_warning "Ignoring install of MONIT because has no installation candidate for *Buster, press Enter to continue..."
             #read nothing
         #else
-            if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. Continue?" ; then
+            if installed_ask "monit" "You are going to install MONIT, it will feature restarting services when they are found to be down. WE RECOMMEND to install first all the services you want to have. Continue?" ; then
                 install_monit
             fi
         #fi
