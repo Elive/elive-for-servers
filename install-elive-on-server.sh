@@ -216,7 +216,6 @@ get_args(){
                 httaccess_user="webuser"
                 httaccess_password="webpass"
                 #email_username="user@wp.thanatermesis.org"
-                email_smtp_password="supapass"
                 email_imap_password="supapass"
                 ;;
 
@@ -1744,7 +1743,8 @@ install_exim(){
     #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
     ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
     #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
-    ask_variable "email_imap_password" "Your '${username}' username will receive emails. Insert a password to access to this email account using IMAP"
+    ask_variable "email_imap_password" "Insert a password for the email of your '${username}' username"
+    email_smtp_password="$email_imap_password"
     ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')"
 
     update_variables
