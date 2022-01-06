@@ -1,5 +1,6 @@
 #!/bin/bash
 SOURCE="install-elive-on-server.sh"
+source /usr/lib/elive-tools/functions 1>/dev/null 2>&1 || true
 #
 # This tool should be run from a screen/tmux if possible, in order to avoid possible disconnections
 #
