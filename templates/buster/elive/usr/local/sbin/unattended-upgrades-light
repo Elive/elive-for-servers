@@ -1,0 +1,33 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+
+main(){
+    # pre {{{
+    if ! [[ -e "/var/lib/dpkg/info/unattended-upgrades.list" ]] ; then
+        el_debug "unattended upgrades is not installed, ignoring..."
+        exit
+    fi
+
+    if systemctl status unattended-upgrades.service 2>&1 | colors-remove | grep -qsi "Active: active" ; then
+        el_info "unattended upgrades is running on its own, you should disable first the daemon with the command 'systemctl disable unattended-upgrades.service' and then using again this tool to run it manually in one shot, exiting..."
+        exit
+    fi
+
+    # }}}
+    # Runs unattended-upgrades in one shot instead of keeping a 10 MB RAM resources wasted daemon for nothing
+
+    systemctl start unattended-upgrades.service
+    unattended-upgrade --download-only
+    unattended-upgrade -v
+    sync
+    systemctl stop unattended-upgrades.service
+
+
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :
