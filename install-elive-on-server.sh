@@ -778,11 +778,13 @@ install_elive(){
     cd ~
     case "$debian_version" in
         buster)
+            rm -f elive-key.gpg
             wget -q "http://main.elivecd.org/tmp/elive-key.gpg"
             cat elive-key.gpg | apt-key add -
             rm -f elive-key.gpg
             ;;
         bullseye)
+            rm -f /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg || true
             wget -q -O /etc/apt/trusted.gpg.d/elive-archive-bullseye-automatic.gpg "http://main.elivecd.org/tmp/elive-archive-bullseye-automatic.gpg"
             ;;
         *)
