@@ -2406,7 +2406,12 @@ final_steps(){
     if systemctl status unattended-upgrades.service 2>&1 | colors-remove | grep -qsi "Active: active" ; then
         systemctl stop unattended-upgrades.service
         systemctl disable unattended-upgrades.service
+        # run lighter upgrades without daemon
         echo -e "\n# Run unattended-upgrades in one shot daily instead of a waste-resources daemon\n0 8 * * * /usr/local/sbin/unattended-upgrades-light 1>/dev/null" >> /root/.crontab
+    fi
+    # seems like this package is entirely useless in our server and also uses some RAM resources so let's remove it
+    if ! [[ -e /var/lib/dpkg/info/packagekit.list ]] ; then
+        packages_remove  packagekit
     fi
 
     # save settings {{{
