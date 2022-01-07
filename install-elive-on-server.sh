@@ -2533,7 +2533,7 @@ final_steps(){
         echo -e "    * Append ip6:YOUR-IP6-ADDR to your previous TXT record of SPF" 1>&2
         echo -e "    * Set the Reverse-DNS for your IPv6 to be '${mail_hostname}'" 1>&2
 
-        el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service"
+        el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service (caution that this doesn't conflicts with shared DNS among multiple hostings)"
         # TODO: add mta-sts
 
         # SMTP conf
