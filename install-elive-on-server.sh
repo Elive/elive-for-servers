@@ -379,12 +379,12 @@ apt_wait(){
 }
 
 letsencrypt_wrapper(){
-    if ! letsencrypt "$@" ; then
+    if ! letsencrypt --force-interactive "$@" ; then
         NOREPORTS=1 el_error "Failed to issue Letsencrypt certificate, make sure your DNS's are correctly configured with the new names/IP to use (detailed previously) otherwise the certificate will fail"
         el_info "This is a second opportunity, configure correctly your DNS, wait the needed time for them to propagate and press Enter to try again..."
         read nothing
 
-        if ! letsencrypt "$@" ; then
+        if ! letsencrypt --force-interactive "$@" ; then
             NOREPORTS=1 el_error "Something is wrong trying to generate the Letsencrypt certificate, see if you have a DNS problem or fix what you need and then run again this tool."
 
             unset EL_REPORTS
@@ -1296,7 +1296,7 @@ install_wordpress(){
     ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place"
     ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place"
     ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc"
-    ask_variable "username" "Insert a desired username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
+    ask_variable "username" "Insert a desired machine username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
 
     require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username"
 
@@ -1516,6 +1516,11 @@ EOF
         # re-install certificate, needed
         letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
     else
+        if ! ping -c 1 ${wp_webname} 1>/dev/null 2>&1 ; then
+            NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with a record type A as '${wp_webname}' to point to this IP before to continue:"
+            echo -e "Your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
+            read nothing
+        fi
         NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
         NOREPORTS=1 el_warning "You must have your DNS configured to point your domain to this server machine in order to validate the certificates"
 
@@ -1828,8 +1833,8 @@ install_exim(){
 
     # install certificate
     if [[ ! -d "/etc/letsencrypt/live/smtp.${mail_hostname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${mail_hostname}" ]] ; then
-        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${mail_hostname}' and also 'imap.${mail_hostname}' to point to this IP before to continue:"
         if ! ping -c 1 smtp.${mail_hostname} 1>/dev/null 2>&1 ; then
+            NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${mail_hostname}' and also 'imap.${mail_hostname}' to point to this IP before to continue:"
             echo -e "You are going to install a Letsencrypt certificate for 'smtp.${mail_hostname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
             read nothing
         fi
