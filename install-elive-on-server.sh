@@ -2032,8 +2032,8 @@ EOF
     # add credentials
     touch /etc/dovecot/users
     # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
-    sed -i -e "/^${username}:/d" /etc/dovecot/users 2>/dev/null || true
-    echo -e "${username}:{SHA512-CRYPT}$( perl -e "print crypt("${email_imap_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+    sed -i -e "/^${username}@${mail_hostname}:/d" /etc/dovecot/users 2>/dev/null || true
+    echo -e "${username}@${mail_hostname}:{SHA512-CRYPT}$( perl -e "print crypt("${email_imap_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
 
     # redirect emails to your website's user email
     if [[ "${email_username%@*}" != "$username" ]] ; then
@@ -2103,8 +2103,6 @@ EOF
         systemctl enable spamassassin.service
         systemctl restart spamassassin.service
 
-    else
-        packages_remove spamassassin
     fi
 
 
