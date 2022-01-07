@@ -1466,15 +1466,21 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
         #if el_confirm "\nDo you want to redirect '${wp_webname}' to '${wp_webname}' ?" ; then
             cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
 
-# Redirect 'mywordpress.com' to 'www.mywordpress.com'
-server {
-    #listen 443;
-    #listen [::]:443;
+## Redirect 'mywordpress.com' to 'www.mywordpress.com'
+#server {
+    #server_name ${wp_webname#www.};
+    #return 301 https://www.${wp_webname#www.}\$request_uri;
+#}
 
-    server_name ${wp_webname#www.};
+EOF
+    else
+            cat >> "/etc/nginx/sites-available/${wp_webname}" << EOF
 
-    return 301 https://${wp_webname}\$request_uri;
-}
+## Redirect 'www.mywordpress.com' to 'mywordpress.com'
+#server {
+    #server_name www.${wp_webname#www.};
+    #return 301 https://${wp_webname#www.}\$request_uri;
+#}
 
 EOF
         #fi
