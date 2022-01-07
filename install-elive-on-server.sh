@@ -841,7 +841,7 @@ EOF
 
     # install extra features
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
-        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
+        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd patchutils procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
 
     # clean temporal things
@@ -1020,10 +1020,6 @@ install_nginx(){
     addconfig "<h2><i>With Elive super-powers</i></h2>" /var/www/html/index.nginx-debian.html
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" /etc/nginx/sites-enabled/default
 
-    if ! [[ -n "$email_admin" ]] ; then
-        echo -e "Insert the admin email for your web server:"
-        read email_admin
-    fi
     ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
 
     install_templates "nginx" "/"
@@ -2539,7 +2535,7 @@ final_steps(){
         # SMTP conf
         el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_smtp_password}'"
         el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
-        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
+        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
         #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
