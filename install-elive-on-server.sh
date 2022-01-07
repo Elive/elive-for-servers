@@ -1825,16 +1825,16 @@ install_exim(){
     dpkg-reconfigure -fnoninteractive exim4-config
 
     # install certificate
-    if [[ ! -d "/etc/letsencrypt/live/${mail_hostname}" ]] ; then
-        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with '${mail_hostname}' and also '${mail_hostname}' to point to this IP before to continue:"
-        if ! ping -c 1 ${mail_hostname} 1>/dev/null 2>&1 ; then
-            echo -e "You are going to install a Letsencrypt certificate for '${mail_hostname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
+    if [[ ! -d "/etc/letsencrypt/live/smtp.${mail_hostname}" ]] || [[ ! -d "/etc/letsencrypt/live/imap.${mail_hostname}" ]] ; then
+        NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with 'smtp.${mail_hostname}' and also 'imap.${mail_hostname}' to point to this IP before to continue:"
+        if ! ping -c 1 smtp.${mail_hostname} 1>/dev/null 2>&1 ; then
+            echo -e "You are going to install a Letsencrypt certificate for 'smtp.${mail_hostname}', your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
             read nothing
         fi
 
         if installed_check "nginx" ; then
-            letsencrypt_wrapper certonly -d ${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
-            #letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
         else
             if ((has_ufw)) ; then
                 if ! iptables -S | grep -qsE "(\s+|,)80(\s+|,)" ; then
@@ -1846,8 +1846,8 @@ install_exim(){
                 fi
             fi
 
-            letsencrypt_wrapper certonly -d ${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
-            #letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
         fi
     fi
 
@@ -1855,11 +1855,11 @@ install_exim(){
     # TODO: how much reliable is this? are the updated certificates valid or we will end in future "permission problems" because we need to apply again the group values?
     groupadd mailers 2>/dev/null || true
     usermod -aG mailers Debian-exim
-    chgrp mailers /etc/letsencrypt/{live,archive}{,/$mail_hostname} /etc/letsencrypt/live/${mail_hostname}/privkey.pem
-    #chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$mail_hostname} /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/smtp.$mail_hostname} /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
+    chgrp mailers /etc/letsencrypt/{live,archive}{,/imap.$mail_hostname} /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
     chmod g+x /etc/letsencrypt/{live,archive}
-    chmod g+r /etc/letsencrypt/live/${mail_hostname}/privkey.pem
-    #chmod g+r /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
+    chmod g+r /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
+    chmod g+r /etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${mail_hostname}"
@@ -1871,8 +1871,8 @@ install_exim(){
 
 # require TLS (encrypted connections) to connect
 MAIN_TLS_ENABLE = yes
-MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/${mail_hostname}/fullchain.pem
-MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/${mail_hostname}/privkey.pem
+MAIN_TLS_CERTIFICATE = /etc/letsencrypt/live/smtp.${mail_hostname}/fullchain.pem
+MAIN_TLS_PRIVATEKEY = /etc/letsencrypt/live/smtp.${mail_hostname}/privkey.pem
 
 # set the DKIM configuration
 DKIM_DOMAIN = ${mail_hostname}
@@ -1964,7 +1964,7 @@ EOF
     # configure mailx-send to work
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
     changeconfig "password=" "password=\"$email_smtp_password\"" /usr/local/bin/mailx-send
-    changeconfig "smtp_connect=" "smtp_connect=\"${mail_hostname}\"" /usr/local/bin/mailx-send
+    changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
@@ -1979,7 +1979,7 @@ echo -e "email_password=\"${email_smtp_password}\"" >> \$HOME/.config/email-send
 mkdir -p \$HOME/.mutt/accounts
 rm -f \$HOME/.mutt/accounts/elive-sender
 echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set smtp_url = \"smtp://${email_username}@${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set smtp_pass = \"${email_smtp_password}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set realname = \"${username^} from ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
@@ -1989,8 +1989,8 @@ echo -e "" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_user = \"${username}\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set imap_pass = \"${email_imap_password}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set spoolfile = \"imaps://${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set folder = \"imaps://${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set postponed = \"=Drafts\"" >> \$HOME/.mutt/accounts/elive-sender
 echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
@@ -2017,8 +2017,8 @@ EOF
 
     usermod -aG mailers dovecot
 
-    changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/${mail_hostname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
-    changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/${mail_hostname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "ssl_cert =" "ssl_cert = </etc/letsencrypt/live/imap.${mail_hostname}/fullchain.pem" /etc/dovecot/conf.d/10-ssl.conf
+    changeconfig "ssl_key =" "ssl_key = </etc/letsencrypt/live/imap.${mail_hostname}/privkey.pem" /etc/dovecot/conf.d/10-ssl.conf
     changeconfig "auth_mechanisms =" "auth_mechanisms = plain login" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^\!include auth-system.conf.ext|#\!include auth-system.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
     sed -i -e "s|^#\!include auth-passwdfile.conf.ext|\!include auth-passwdfile.conf.ext|g" /etc/dovecot/conf.d/10-auth.conf
@@ -2498,15 +2498,15 @@ final_steps(){
         el_info "DNS type A record with (empty) name '' with data '${domain_ip}'"
 
         if [[ "$mail_hostname" = "$domain" ]] ; then
-            #el_info "DNS type A record named 'smtp' with data '${domain_ip}'"
-            #el_info "DNS type A record named 'imap' with data '${domain_ip}'"
+            el_info "DNS type A record named 'smtp' with data '${domain_ip}'"
+            el_info "DNS type A record named 'imap' with data '${domain_ip}'"
             el_info "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'"
             el_info "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'"
             el_info "DNS type MX record with (empty) name '' with data 'smtp.${domain}'"
         else
             el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
-            el_info "DNS type A record named '${hostnameshort}' with data '${domain_ip}'"
-            #el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
+            el_info "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'"
+            el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
             el_info "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'"
             el_info "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'"
             el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
@@ -2537,9 +2537,9 @@ final_steps(){
         # TODO: add mta-sts
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL '${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_smtp_password}'"
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_smtp_password}'"
         el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
-        el_info "IMAP connect: connect to your email as: URL '${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
+        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
         #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
