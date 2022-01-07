@@ -870,7 +870,7 @@ export PATH="\$HOME/packages/bin:\$PATH"
 elive-logo-show --no-newline ; lsb_release -d -s ; echo
 # suggest to donate to Elive once per every 8 random logins:
 if [[ "\${RANDOM:0:1}" = 5 ]] || [[ "\${RANDOM:0:1}" = 6 ]] ; then
-    echo -e "\${el_c_g}\${el_c_blink}Help Elive to continue making amazing things with a grateful donation! - https://www.elivecd.org/donate/\${el_c_n}"
+    echo -e "\${el_c_g}\${el_c_blink}Help Elive to continue making amazing things! - https://www.elivecd.org/donate/?id=elive-for-servers\${el_c_n}"
 fi
 echo
 EOF
