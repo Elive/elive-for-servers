@@ -917,10 +917,10 @@ EOF
 
 install_user(){
     el_info "Installing User..."
-    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet:"
+    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet"
     require_variables "username|DHOME"
 
-    if [[ -d $DHOME/${username} ]] ; then
+    if [[ -d "$DHOME/${username}" ]] ; then
         NOREPORTS=1 el_warning "user $username already exist, not creating it..."
     else
         # fixes & free space:
@@ -1024,7 +1024,7 @@ install_nginx(){
         echo -e "Insert the admin email for your web server:"
         read email_admin
     fi
-    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
 
     install_templates "nginx" "/"
 
@@ -1673,7 +1673,7 @@ install_phpmyadmin(){
 install_fail2ban(){
     el_info "Installing Fail2Ban..."
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
-    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
 
     require_variables "email_admin|domain_ip|hostnamefull|domain"
     update_variables
@@ -1743,14 +1743,19 @@ install_exim(){
     packages_remove  postfix || true
 
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
+    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet"
     #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
-    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
     #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
     ask_variable "email_imap_password" "Insert a password for the email of your '${username}' username"
     email_smtp_password="$email_imap_password"
     ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')"
 
     update_variables
+
+    if ! [[ -d "$DHOME/${username}" ]] ; then
+        install_user "$username"
+    fi
 
     mail_hostname="$hostnamefull"
     #if [[ -z "$mail_hostname" ]] || [[ "${mail_hostname#www.}" = "$domain" ]] ; then
@@ -2289,7 +2294,7 @@ EOF
 
 install_monit(){
     el_info "Installing Monit..."
-    ask_variable "email_admin" "Insert the email on which you want to receive alert notifications (admin of server)"
+    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
 
     update_variables
