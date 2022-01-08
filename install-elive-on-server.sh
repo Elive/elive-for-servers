@@ -1540,8 +1540,8 @@ EOF
 
     # security
     el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
-    ask_variable "httaccess_user" "Insert an admin Username"
-    ask_variable "httaccess_password" "Insert an admin Password"
+    ask_variable "httaccess_user" "Insert an 'htpasswd' Username"
+    ask_variable "httaccess_password" "Insert an 'htpasswd' Password"
 
     htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htpasswd" "${httaccess_user}" "${httaccess_password}"
     chown "${username}:${username}" "$DHOME/${username}/${wp_webname}/.htpasswd"
@@ -2416,7 +2416,7 @@ final_steps(){
         echo -e "\n# Run unattended-upgrades in one shot daily instead of a waste-resources daemon\n0 8 * * * /usr/local/sbin/unattended-upgrades-light 1>/dev/null" >> /root/.crontab
     fi
     # seems like this package is entirely useless in our server and also uses some RAM resources so let's remove it
-    if ! [[ -e /var/lib/dpkg/info/packagekit.list ]] ; then
+    if [[ -e /var/lib/dpkg/info/packagekit.list ]] ; then
         packages_remove  packagekit
     fi
 
@@ -2482,12 +2482,11 @@ final_steps(){
     if ((is_installed_wordpress)) ; then
         el_info "Wordpress installed:"
         el_info "Your system's user for it is: '${username}' with home in '$DHOME/${username}'"
-        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htpasswd' file"
+        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htpasswd' file (should be manually enabled in the '${DHOME}/${username}/${wp_webname}/nginx.conf' file)"
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
         el_info "You have 'nginx.conf' files in your wordpress install, read them to enable or disable configurations, like for example restricting all your admin access with a basic password"
-        NOREPORTS=1 el_warning "Every extra configuration or modification since here is up on you"
         echo 1>&2
     fi
 
@@ -2546,7 +2545,7 @@ final_steps(){
         # TODO: add mta-sts
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587', username '${email_username}', password (plain) '${email_smtp_password}'"
+        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587' (TLS), username '${email_username}', password (plain) '${email_smtp_password}'"
         el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
         el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
         #if [[ "$mail_hostname" != "$domain" ]] ; then

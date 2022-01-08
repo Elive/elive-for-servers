@@ -1,4 +1,8 @@
 # default Wordpress configuration
+
+# limit the requests to 50 per second
+limit_req_zone $binary_remote_addr zone=wordpress:10m rate=10r/s;
+
 server {
     listen 80;
     listen [::]:80;
@@ -7,6 +11,8 @@ server {
     # don't show the nginx version
     server_tokens   off;
 
+    # but allow shots of 1000 requests to not delay normal page loads
+    limit_req zone=wordpress burst=1000 nodelay;
 
     server_name  mywordpress.com;
     root /home/elivewp/mywordpress.com;
