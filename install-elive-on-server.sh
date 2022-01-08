@@ -693,6 +693,7 @@ update_variables(){
     if [[ -z "$domain_ip" ]] ; then
         if which showmyip 1>/dev/null ; then
             domain_ip="$( showmyip )"
+            domain_ip6="$( showmyip --ipv6 )"
         else
             domain_ip="$( curl -A 'Mozilla' --max-time 8 -s http://icanhazip.com | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | tail -1 )"
         fi
@@ -731,12 +732,6 @@ update_variables(){
 
     conf_send_debug_reports_email="$email_admin"
     unset is_terminal
-
-    #ifconfig lo down
-    #if ifconfig | grep -qs "inet6" ; then
-        #has_ipv6=1
-    #fi
-    #ifconfig lo up
 
 }
 
@@ -2540,10 +2535,12 @@ final_steps(){
         el_info "DNS in your 'reverse DNS', set it to '${mail_hostname}'"
         # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
 
-        el_info "If you have IPv6:"
-        echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data of your IPv6 address" 1>&2
-        echo -e "    * Append ip6:YOUR-IP6-ADDR to your previous TXT record of SPF" 1>&2
-        echo -e "    * Set the Reverse-DNS for your IPv6 to be '${mail_hostname}'" 1>&2
+        if ((has_ipv6)) ; then
+            el_info "For your IPv6 settings, in case you use it:"
+            echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data '${domain_ip6}'" 1>&2
+            echo -e "    * Append 'ip6:${domain_ip6}' to your previous TXT record for SPF" 1>&2
+            echo -e "    * Set the Reverse-DNS in your hosting for your IPv6 to be '${mail_hostname}'" 1>&2
+        fi
 
         el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service (caution that this doesn't conflicts with shared DNS among multiple hostings)"
         # TODO: add mta-sts
