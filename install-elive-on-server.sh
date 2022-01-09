@@ -333,7 +333,7 @@ changeconfig(){
             sed -i "s|^${1}.*$|$2|g" "$3"
         else
             if grep -qs "$1" "$3" ; then
-                sed -i "s|^.*${1}.*$|$2|g" "$3"
+                sed -i "s|^.*${1}.*$|$2|" "$3"
             else
                 echo -e "$2" >> "$3"
             fi
@@ -879,10 +879,26 @@ EOF
     #fi
     #addconfig "$ssh_authorized_key" "~/.ssh/authorized_keys"
     #chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys
-    #if [[ -s ~/.ssh/authorized_keys ]] ; then
-        #changeconfig "^PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
-    #fi
-    #/etc/init.d/ssh restart
+
+    # disable ssh password logins
+    if [[ -s ~/.ssh/authorized_keys ]] ; then
+        if el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead)" ; then
+            changeconfig "PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
+        fi
+    fi
+    # change ssh port
+    if grep -qs "^Port 22" /etc/ssh/sshd_config || ! grep -qs "^Port " /etc/ssh/sshd_config ; then
+        if el_confirm "Do you want to change the default port 22 of your SSH to another one in order?" ; then
+            echo -e "Insert port number:"
+            read port_ssh
+            if [[ -n "$port_ssh" ]] && echo "$port_ssh" | grep -qs "[[:digit:]]" ; then
+                changeconfig "Port 22" "Port $port_ssh" /etc/ssh/sshd_config
+                NOREPORTS=1 el_warning "Your SSH port has changed, you CANNOT LOGIN anymore on SSH using the default port, you need to use 'ssh -p ${port_ssh}' now. Press Enter to continue..."
+                read nothing
+            fi
+        fi
+    fi
+    /etc/init.d/ssh restart
 
     # cronjobs
     if [[ -s /root/.crontab ]] ; then
