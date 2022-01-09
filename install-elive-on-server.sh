@@ -2474,29 +2474,30 @@ final_steps(){
     # TODO: add a beautiful list to show to the user
     # TODO: tell user we would like to know his experience, link to forum dedicated to elive for servers
     if ((is_installed_elive)) ; then
-        el_info "Elive Features installed:"
-        el_info " * many, see github page "
+        el_info "Elive Features installed: Many, see github page: https://github.com/Elive/elive-for-servers"
         echo
     fi
+
+    if ((is_mode_curl)) || ! ((is_extra_service)) ; then
+        el_info " *** You have installed Elive on your server, optionally you can run again the tool with the '--help' option to know all the extra options available like installing full-featured services in one shot ***"
+        echo 1>&2
+    fi
+
 
     if ((is_installed_wordpress)) ; then
         el_info "Wordpress installed:"
         el_info "Your system's user for it is: '${username}' with home in '$DHOME/${username}'"
-        el_info "Database name '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directly's '.htpasswd' file (should be manually enabled in the '${DHOME}/${username}/${wp_webname}/nginx.conf' file)"
+        el_info "Database name is '${wp_db_name}', user '${wp_db_user}', pass '${wp_db_pass}', to manage it you can use the installed phpmyadmin tool from 'https://${wp_webname}/phpmyadmin', password is on your website directory's '.htpasswd' file"
         el_info "Website is: '${wp_webname}', make sure you configure correctly your needed DNS to point to this server"
         el_info "You must add a DNS record in your server, type A named '${wp_webname}' with data '${domain_ip}'"
         el_info "Recommended plugins and templates are included, enable them as your choice and DELETE the ones you are not going to use"
-        el_info "You have 'nginx.conf' files in your wordpress install, read them to enable or disable configurations, like for example restricting all your admin access with a basic password"
-        echo 1>&2
-    fi
-
-    if ((is_mode_curl)) || ! ((is_extra_service)) ; then
-        el_info " *** You have installed Elive on your server, optionally you can run again the tool with the '--help' option to know all the other options available like installing full-featured services in one shot ***"
+        el_info "You have an 'nginx.conf' file in your wordpress install, read them to enable or disable configurations, like for example restricting all your admin access with a basic password"
         echo 1>&2
     fi
 
     if ((is_installed_exim)) ; then
         # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
+        el_info "Exim Email server configurations:"
 
         el_info "DNS: you must configure your server's dns to follow these entries:"
 
