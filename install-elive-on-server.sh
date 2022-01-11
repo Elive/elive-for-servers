@@ -972,16 +972,19 @@ EOF
         chsh -s "/bin/zsh" "$username"
 
 
-        if [[ -d "/root/.ssh" ]] ; then
-            if el_confirm "Do you want to copy the SSH settings of your root (admin) user to your '$username' user? (this is suggested to re-use its ssh keys)" ; then
-                rm -rf $DHOME/$username/.*.old 2>/dev/null || true
-                if [[ -d "$DHOME/$username/.ssh" ]] ; then
-                    rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
-                    mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
-                fi
+        if [[ -s "/root/.ssh/authorized_keys" ]] ; then
+            if el_confirm "Do you want to copy the SSH accepted-keys from your root (admin) user to your '$username' user? (this is suggested, so you can login to your user using the same keys as set for root)" ; then
+                #rm -rf $DHOME/$username/.*.old 2>/dev/null || true
+                #if [[ -d "$DHOME/$username/.ssh" ]] ; then
+                    #rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
+                    #mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
+                #fi
 
-                cp -a "/root/.ssh" "$DHOME/$username/"
-                chown -R "$username:$username" "$DHOME/$username/.ssh"
+                mkdir -p "$DHOME/$username/.ssh"
+                cp -a "/root/.ssh/authorized_keys" "$DHOME/$username/.ssh/"
+                chmod 700 "$DHOME/$username/.ssh"
+                chmod 600 "$DHOME/$username/.ssh/authorized_keys"
+                chown -R "$username:$username" "$DHOME/$username/.ssh/authorized_keys"
             fi
         fi
 
@@ -2582,6 +2585,7 @@ final_steps(){
     fi
 
     el_info "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. YOU CAN COPY-PASTE EVERYTHING JUST LIKE PASSWORDS AND ALL TO SAVE IT IN A BACKUP SOMEWHERE, DO NOT LOSE THIS INFO"
+    el_info "Remember to subscribe to Elive in order to know about more new amazing things - Donate to the project to keep it alive if it helped you!"
 
     # TODO: if this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things
 }
