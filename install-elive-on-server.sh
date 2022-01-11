@@ -2817,6 +2817,7 @@ main(){
                 chmod 0600 /swapfile
                 mkswap /swapfile
                 swapon /swapfile
+                sed -i -e '/^\/swapfile/d' /etc/fstab
                 addconfig "/swapfile        swap       swap     defaults    0 0" /etc/fstab
             fi
 
@@ -2860,14 +2861,6 @@ main(){
     fi
     # }}}
 
-    # install chkrootkits {{{
-    if ((is_wanted_rootkitcheck)) ; then
-        if installed_ask "rootkitcheck" "You are going to install ROOTKIT checkers, it will run daily verifiers of the server. Continue?" ; then
-            install_rootkitcheck
-        fi
-    fi
-    # }}}
-
     # install wordpress {{{
     if ((is_wanted_wordpress)) ; then
         if el_confirm "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
@@ -2880,6 +2873,14 @@ main(){
     if ((is_wanted_exim)) ; then
         if installed_ask "exim" "You are going to install EXIM mail server, it will be configured for you with users, dkim keys, etc. Continue?" ; then
             install_exim
+        fi
+    fi
+    # }}}
+
+    # install chkrootkits {{{
+    if ((is_wanted_rootkitcheck)) ; then
+        if installed_ask "rootkitcheck" "You are going to install ROOTKIT checkers, it will run daily verifiers of the server. Continue?" ; then
+            install_rootkitcheck
         fi
     fi
     # }}}
