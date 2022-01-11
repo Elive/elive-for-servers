@@ -980,11 +980,20 @@ EOF
                     #mv -f "$DHOME/$username/.ssh" "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
                 #fi
 
+                if [[ ! -d "$DHOME/$username/.ssh" ]] ; then
+                    su - "$username" <<EOF
+bash -c 'ssh-keygen || true'
+EOF
+                fi
                 mkdir -p "$DHOME/$username/.ssh"
-                cp -a "/root/.ssh/authorized_keys" "$DHOME/$username/.ssh/"
+                if [[ -s "$DHOME/$username/.ssh/authorized_keys" ]] ; then
+                    cat "/root/.ssh/authorized_keys" >> "$DHOME/$username/.ssh/authorized_keys"
+                else
+                    cp -a "/root/.ssh/authorized_keys" "$DHOME/$username/.ssh/"
+                fi
                 chmod 700 "$DHOME/$username/.ssh"
                 chmod 600 "$DHOME/$username/.ssh/authorized_keys"
-                chown -R "$username:$username" "$DHOME/$username/.ssh/authorized_keys"
+                chown -R "$username:$username" "$DHOME/$username/.ssh"
             fi
         fi
 
