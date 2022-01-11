@@ -2448,6 +2448,8 @@ final_steps(){
         packages_remove  packagekit
     fi
 
+    changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub 2>/dev/null || true
+
     # save settings {{{
     if ((has_ufw)) ; then
         ufw reload
