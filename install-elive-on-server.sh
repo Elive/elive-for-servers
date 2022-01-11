@@ -888,7 +888,7 @@ EOF
     fi
     # change ssh port
     if grep -qs "^Port 22" /etc/ssh/sshd_config || ! grep -qs "^Port " /etc/ssh/sshd_config ; then
-        if el_confirm "Do you want to change the default port 22 of your SSH to another one in order?" ; then
+        if el_confirm "Do you want to change the default port 22 of your SSH to another one?" ; then
             echo -e "Insert port number:"
             read port_ssh
             if [[ -n "$port_ssh" ]] && echo "$port_ssh" | grep -qs "[[:digit:]]" ; then
@@ -2098,6 +2098,9 @@ EOF
 
     if el_confirm "Do you want to install the Anti-Spam Spamassasin system? (Important: this feature will use 100 MB of your RAM resources)" ; then
         el_info "Installing SpamAssassin antispam system..."
+        # make a backup so the user can switch from one to other conf
+        cp -a /etc/exim4 /etc/exim4.no-spamassassin
+
         packages_install \
             spamassassin
 
@@ -2809,12 +2812,12 @@ main(){
         fi
 
         if ((is_wanted_swapfile)) ; then
-            if ! [[ -s "/swapfile.swp" ]] ; then
-                dd if=/dev/zero of=/swapfile.swp bs=1M count=1000
-                chmod 0600 /swapfile.swp
-                mkswap /swapfile.swp
-                swapon /swapfile.swp
-                addconfig "/swapfile.swp swap swap defaults 0 0" /etc/fstab
+            if ! [[ -s "/swapfile" ]] ; then
+                dd if=/dev/zero of=/swapfile bs=1M count=1000
+                chmod 0600 /swapfile
+                mkswap /swapfile
+                swapon /swapfile
+                addconfig "/swapfile        swap       swap     defaults    0 0" /etc/fstab
             fi
 
             installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's HD"
