@@ -981,9 +981,7 @@ EOF
                 #fi
 
                 if [[ ! -d "$DHOME/$username/.ssh" ]] ; then
-                    su - "$username" <<EOF
-bash -c 'ssh-keygen || true'
-EOF
+                    su -c "ssh-keygen" $username
                 fi
                 mkdir -p "$DHOME/$username/.ssh"
                 if [[ -s "$DHOME/$username/.ssh/authorized_keys" ]] ; then
@@ -1319,7 +1317,7 @@ install_wordpress(){
     ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place"
     ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place"
     ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc"
-    ask_variable "username" "Insert a desired machine username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
+    ask_variable "username" "Insert a desired system username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
 
     require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username"
 
@@ -2369,9 +2367,6 @@ install_monit(){
 
 install_rootkitcheck(){
     el_info "Installing rootkit checkers..."
-    DEBIAN_FRONTEND="noninteractive" packages_install  \
-        chkrootkit rkhunter unhide
-
     echo -e "chkrootkit\tchkrootkit/run_daily\tboolean\ttrue" | debconf-set-selections
     echo -e "chkrootkit\tchkrootkit/run_daily_opts\tstring\t-q" | debconf-set-selections
     echo -e "chkrootkit\tchkrootkit/diff_mode\tboolean\ttrue" | debconf-set-selections
@@ -2379,6 +2374,9 @@ install_rootkitcheck(){
     echo -e "rkhunter\trkhunter/cron_daily_run\tboolean\ttrue" | debconf-set-selections
     echo -e "rkhunter\trkhunter/cron_db_update\tboolean\ttrue" | debconf-set-selections
     echo -e "rkhunter\trkhunter/apt_autogen\tboolean\ttrue" | debconf-set-selections
+
+    DEBIAN_FRONTEND="noninteractive" packages_install  \
+        chkrootkit rkhunter unhide
 
     dpkg-reconfigure -f noninteractive chkrootkit
     # note: unhide improves rkhunter
@@ -2575,7 +2573,7 @@ final_steps(){
             echo -e "    * Set the Reverse-DNS in your hosting for your IPv6 to be '${mail_hostname}'" 1>&2
         fi
 
-        el_info "If you have DNSSEC, activate it, by configuring it in the advanced dns of your domain and your host service (caution that this doesn't conflicts with shared DNS among multiple hostings)"
+        el_info "If you have DNSSEC activate it (caution that this doesn't conflicts with shared DNS among multiple hostings), by configuring it in the advanced dns of your domain and your host service"
         # TODO: add mta-sts
 
         # SMTP conf
@@ -2818,7 +2816,7 @@ main(){
                 mkswap /swapfile
                 swapon /swapfile
                 sed -i -e '/^\/swapfile/d' /etc/fstab
-                addconfig "/swapfile        swap       swap     defaults    0 0" /etc/fstab
+                addconfig "/swapfile       swap          swap           defaults    0 0" /etc/fstab
             fi
 
             installed_set "swapfile" "Swap file is created and running, special 'swappiness' and 'watermark_scale_factor' configurations added in /etc/sysctl.conf for not bottleneck the server's HD"
