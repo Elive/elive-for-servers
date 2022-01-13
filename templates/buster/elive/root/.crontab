@@ -5,16 +5,13 @@ PATH="/root/packages/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin
 # setup clock # daily
 #5 0 * * *   /usr/sbin/ntpdate -b -s www.debian.org
 
-# reconfigure iptables, just in case # daily
-#0 0 * * *   /root/packages/bin/iptables-restore.sh   1>/dev/null
-
-# run backups each 3 days at 5 am
+# run backups each 3 days at 5 am, if you have them enabled
 #20 5 */5 * * /root/packages/bin/backup-server 1>/dev/null
 #30 5 */5 * * /root/packages/bin/backup-mysqls 1>/dev/null
 
-# renew certbot's letsencrypt ssl certificates # weekly on monday
+# renew certbot's letsencrypt ssl certificates # weekly on monday, # you probably don't need that using systemd's
 #41 0 * * 1  certbot renew 1>/var/log/letsencrypt.log 2>&1
 
-# reload nginx conf every hour to update the configs made by wordpress (like banned ips)
+# reload nginx conf every hour to update the configs made by wordpress (like banned ips, etc)
 #2 * * * * /etc/init.d/nginx reload 1>/dev/null
 

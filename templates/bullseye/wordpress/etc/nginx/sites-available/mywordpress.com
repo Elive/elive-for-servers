@@ -21,6 +21,7 @@ server {
 
     # local user's configurations, also needed for some plugins that writes their own confs
     include /home/elivewp/mywordpress.com/nginx.conf;
+    include /home/elivewp/mywordpress.com/nginx-local.conf;
 
     # custom error pages
     #error_page 404 /404.html;
@@ -41,38 +42,6 @@ server {
         include fastcgi_params;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
-    }
-
-    location = /favicon.ico {
-        access_log off;
-        log_not_found off;
-        expires 365d;
-    }
-    location = /robots.txt {
-        access_log off;
-        log_not_found off;
-    }
-
-    # Cache Static Files For As Long As Possible
-    location ~*
-        \.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
-        {
-            access_log off;
-            #log_not_found off;
-            expires 30d;
-        }
-    # Security Settings For Better Privacy Deny Hidden Files
-    location ^~ /.well-known/        { allow all ; }
-    location ~ /\.          { access_log off; log_not_found off; return 444; }
-    # Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
-    if ($request_uri ~* "^.+(readme|license)\.(txt|html)$") {
-        return 403;
-    }
-    # Disallow PHP In Upload Folder
-    location /wp-content/uploads/ {
-        location ~ \.php$ {
-            deny all;
-        }
     }
 
     # PHP-FPM health service monitoring at /ping

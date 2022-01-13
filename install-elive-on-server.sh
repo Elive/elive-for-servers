@@ -590,6 +590,7 @@ sources_update_adapt(){
     templates="$sources/templates"
 
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
+    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
 
     update_variables
     require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|hostnameshort|hostnamefull|debian_version"
@@ -828,7 +829,7 @@ EOF
     apt-get -q update
 
     # install elive tools
-    packages_extra="vim-colorscheme-elive-molokai elive-security elive-tools elive-skel elive-skel-default-all elive-skel-default-vim vim-common zsh-elive $packages_extra"
+    packages_extra="vim-colorscheme-elive-molokai elive-security elive-tools elive-skel elive-skel-default-all elive-skel-default-vim elive-udev vim-common zsh-elive $packages_extra"
 
     # upgrade possible packages from elive:
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
@@ -858,7 +859,9 @@ EOF
     rm -rf /etc/skel/.e 2>/dev/null || true
 
     # configure root user
-    elive-skel user root
+    if ! grep -qsi "elive" "/root/.tmux.conf" 2>/dev/null ; then
+        elive-skel user root
+    fi
     cat >> "/root/.zshrc" << EOF
 export PATH="\$HOME/packages/bin:\$PATH"
 # show the nice elive logo as welcome
@@ -957,7 +960,9 @@ install_user(){
         fi
 
         # user configs
-        elive-skel user "$username"
+        if ! grep -qsi "elive" "$DHOME/$username/.tmux.conf" 2>/dev/null ; then
+            elive-skel user "$username"
+        fi
 
         cat >> "$DHOME/${username}/.zshrc" << EOF
 export PATH="\$HOME/packages/bin:\$PATH"
@@ -1595,10 +1600,34 @@ location = /.htpasswd { access_log off; log_not_found off; deny all; }
 # disable useless logs
 location = /favicon.ico {
    access_log off;
+   log_not_found off;
+   expires 365d;
 }
 location = /robots.txt {
    allow all;
    access_log off;
+   log_not_found off;
+}
+
+# Cache Static Files For As Long As Possible
+location ~*
+   \\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
+   {
+       access_log off;
+       #log_not_found off;
+       expires 30d;
+   }
+
+# Disallow PHP In Upload Folder
+location /wp-content/uploads/ {
+   location ~ \\.php$ {
+      deny all;
+   }
+}
+
+# Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
+if (\$request_uri ~* "^.+(readme|license)\\.(txt|html)$") {
+   return 403;
 }
 
 # forbid showing hidden files, except the ones in .well-known dir which is needed for verifications and letsencrypt
@@ -1616,16 +1645,18 @@ location ~* \\.(conf)$          { access_log off; log_not_found off; return 444;
 #location ~ (?i).*/(fckeditor|apismtp|console|jsonws|connectors|streaming|uc_server|ioptimization|code87|administrator|mTheme-Unus|data/404|e/data|client_area|stalker_portal|nextcloud|owncloud|old-wp|zoomsounds|awesome-support|pdst\\.fm)/ { access_log off; log_not_found off; return 444; }
 
 
-# allow cache indexing to not give 404 errors
-location /wp-content/uploads/md_cache/ {
-    autoindex on;
-}
+# allow cache indexing to not give 404 errors on the massive-dynamic template
+#location /wp-content/uploads/md_cache/ {
+#    autoindex on;
+#}
 
 # sitemap conf for WP Seo plugin:
 #rewrite ^/sitemap\\.xml$ /sitemap_index.xml last;
 #rewrite ^/([^/]+?)-sitemap([0-9]+)?\\.xml$ /index.php?sitemap=\$1&sitemap_n=\$2 last;
 ## needed for show the xml on firefox visualizing correctly and without error
 #rewrite ^/main-sitemap\\.xsl$ /index.php?xsl=main last;
+
+
 
 # vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf :
 EOF
@@ -1705,8 +1736,6 @@ install_fail2ban(){
 
     require_variables "email_admin|domain_ip|hostnamefull|domain"
     update_variables
-
-    sources_update_adapt
 
     packages_install \
         fail2ban whois python3-pyinotify \
@@ -2449,7 +2478,8 @@ final_steps(){
         packages_remove  packagekit
     fi
 
-    changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub 2>/dev/null || true
+    changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub         2>/dev/null || true
+    addconfig "MAILTO=" "MAILTO=\"${email_admin}\"" /etc/default/crontab    2>/dev/null || true
 
     # save settings {{{
     if ((has_ufw)) ; then
