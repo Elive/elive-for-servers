@@ -42,6 +42,14 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
+        # extra settings
+        #fastcgi_connect_timeout 60s;
+        fastcgi_connect_timeout 120s;
+        #fastcgi_send_timeout 60s;
+        fastcgi_send_timeout 300s;
+        #fastcgi_read_timeout 60s;
+        fastcgi_read_timeout 120s;
+        #fastcgi_read_timeout 600000s; # increase this execution timeout a lot when an extensive task is needed like when using the migrating DB plugin
     }
 
     # PHP-FPM health service monitoring at /ping

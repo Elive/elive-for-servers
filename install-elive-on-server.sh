@@ -2389,6 +2389,9 @@ install_monit(){
     if installed_check "wordpress" ; then
         ln -fs ../conf-available/wordpress /etc/monit/conf-enabled
     fi
+    if installed_check "fail2ban" ; then
+        ln -fs ../conf-available/fail2ban /etc/monit/conf-enabled
+    fi
 
     systemctl restart monit.service
 
@@ -2925,6 +2928,15 @@ main(){
 
     # LAST SERVICES TO INSTALL
 
+    # install fail2ban {{{
+    if ((is_wanted_fail2ban)) ; then
+        if installed_ask "fail2ban" "You are going to install FAIL2BAN, it will include custom templates for your running services, WE RECOMMEND to install first all the services you want to have. Continue?" ; then
+            install_fail2ban
+        fi
+    fi
+
+    # }}}
+
     # install monit {{{
     if ((is_wanted_monit)) ; then
         #if [[ "$debian_version" = "buster" ]] ; then
@@ -2938,20 +2950,19 @@ main(){
     fi
     # }}}
 
-    # install fail2ban {{{
-    if ((is_wanted_fail2ban)) ; then
-        if installed_ask "fail2ban" "You are going to install FAIL2BAN, it will include custom templates for your running services, WE RECOMMEND to install first all the services you want to have. Continue?" ; then
-            install_fail2ban
-        fi
-    fi
-
-    # }}}
-
 
     #
     # END SERVICES INSTALL
     #
 
+    # post fix for fail2ban since is installed before monit {{{
+    if installed_check "fail2ban" ; then
+        if installed_check "monit" ; then
+            changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
+        fi
+    fi
+
+    # }}}
 
 
     #
