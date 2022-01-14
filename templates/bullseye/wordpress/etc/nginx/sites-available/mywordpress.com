@@ -35,13 +35,21 @@ server {
 
     location ~ \.php$ {
         try_files $uri =404;
+        include fastcgi_params;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
+        # extra settings
+        #fastcgi_connect_timeout 60s;
+        fastcgi_connect_timeout 120s;
+        #fastcgi_send_timeout 60s;
+        fastcgi_send_timeout 300s;
+        #fastcgi_read_timeout 60s;
+        fastcgi_read_timeout 120s;
+        #fastcgi_read_timeout 600000s; # increase this execution timeout a lot when an extensive task is needed like when using the migrating DB plugin
     }
 
     # PHP-FPM health service monitoring at /ping
@@ -50,11 +58,11 @@ server {
         allow 127.0.0.1; # localhost
         allow ::1; # IPv6 localhost
         #deny all;
+        include fastcgi_params;
         fastcgi_split_path_info ^(.+.php)(.*)$;
         fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
     }
@@ -68,10 +76,10 @@ server {
         location ~ ^/phpmyadmin/(.+\.php)$ {
             try_files $uri =404;
             root /usr/share/;
+            include /etc/nginx/fastcgi_params;
             fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
             fastcgi_index index.php;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-            include /etc/nginx/fastcgi_params;
             fastcgi_buffers 16 16k;
             fastcgi_buffer_size 32k;
         }

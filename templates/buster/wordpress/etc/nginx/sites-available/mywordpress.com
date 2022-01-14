@@ -35,11 +35,11 @@ server {
 
     location ~ \.php$ {
         try_files $uri =404;
+        include fastcgi_params;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
     }
@@ -50,11 +50,11 @@ server {
         allow 127.0.0.1; # localhost
         allow ::1; # IPv6 localhost
         #deny all;
+        include fastcgi_params;
         fastcgi_split_path_info ^(.+.php)(.*)$;
         fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
     }
@@ -68,10 +68,10 @@ server {
         location ~ ^/phpmyadmin/(.+\.php)$ {
             try_files $uri =404;
             root /usr/share/;
+            include /etc/nginx/fastcgi_params;
             fastcgi_pass unix:/run/php/php7.3-fpm-elivewp.sock;
             fastcgi_index index.php;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-            include /etc/nginx/fastcgi_params;
             fastcgi_buffers 16 16k;
             fastcgi_buffer_size 32k;
         }
