@@ -285,7 +285,7 @@ installed_check(){
 }
 installed_ask(){
     # force mdoe always want to install things when asking
-    if ((is_force)) ;then
+    if ((is_force)) ; then
         return 0
     fi
     # do not install if already installed
@@ -885,19 +885,21 @@ EOF
 
     # disable ssh password logins
     if [[ -s ~/.ssh/authorized_keys ]] ; then
-        if el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead)" ; then
+        if ((is_betatesting)) || el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead)" ; then
             changeconfig "PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
         fi
     fi
     # change ssh port
-    if grep -qs "^Port 22" /etc/ssh/sshd_config || ! grep -qs "^Port " /etc/ssh/sshd_config ; then
-        if el_confirm "Do you want to change the default port 22 of your SSH to another one?" ; then
-            echo -e "Insert port number:"
-            read port_ssh
-            if [[ -n "$port_ssh" ]] && echo "$port_ssh" | grep -qs "[[:digit:]]" ; then
-                changeconfig "Port 22" "Port $port_ssh" /etc/ssh/sshd_config
-                NOREPORTS=1 el_warning "Your SSH port has changed, you CANNOT LOGIN anymore on SSH using the default port, you need to use 'ssh -p ${port_ssh}' now. Press Enter to continue..."
-                read nothing
+    if ! ((is_betatesting)) ; then
+        if grep -qs "^Port 22" /etc/ssh/sshd_config || ! grep -qs "^Port " /etc/ssh/sshd_config ; then
+            if el_confirm "Do you want to change the default port 22 of your SSH to another one?" ; then
+                echo -e "Insert port number:"
+                read port_ssh
+                if [[ -n "$port_ssh" ]] && echo "$port_ssh" | grep -qs "[[:digit:]]" ; then
+                    changeconfig "Port 22" "Port $port_ssh" /etc/ssh/sshd_config
+                    NOREPORTS=1 el_warning "Your SSH port has changed, you CANNOT LOGIN anymore on SSH using the default port, you need to use 'ssh -p ${port_ssh}' now. Press Enter to continue..."
+                    read nothing
+                fi
             fi
         fi
     fi
@@ -978,7 +980,7 @@ EOF
 
 
         if [[ -s "/root/.ssh/authorized_keys" ]] ; then
-            if el_confirm "Do you want to copy the SSH accepted-keys from your root (admin) user to your '$username' user? (this is suggested, so you can login to your user using the same keys as set for root)" ; then
+            if ((is_betatesting)) || el_confirm "Do you want to copy the SSH accepted-keys from your root (admin) user to your '$username' user? (this is suggested, so you can login to your user using the same keys as set for root)" ; then
                 #rm -rf $DHOME/$username/.*.old 2>/dev/null || true
                 #if [[ -d "$DHOME/$username/.ssh" ]] ; then
                     #rm -rf "$DHOME/$username/.ssh.old-$(date +%F)" 2>/dev/null || true
@@ -2484,7 +2486,14 @@ final_steps(){
     fi
 
     changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub         2>/dev/null || true
-    addconfig "MAILTO=" "MAILTO=\"${email_admin}\"" /etc/default/crontab    2>/dev/null || true
+    ed /etc/crontab 1>/dev/null <<EOF
+/^SHELL=
+a
+MAILTO="${email_admin}"
+.
+w
+q
+EOF
 
     # save settings {{{
     if ((has_ufw)) ; then
@@ -2839,7 +2848,7 @@ main(){
     # create a swap file {{{
     if ! installed_check "swapfile" 1>/dev/null 2>&1 && ! swapon -s | grep -qs "^/" ; then
         if [[ "$( cat /proc/meminfo | grep -i memtotal | head -1 | awk '{print $2}' )" -lt 1500000 ]] && ! swapon -s | grep -qs "^/" ; then
-            if el_confirm "\nYour server doesn't has much RAM, do you want to add a swapfile?" ; then
+            if ((is_betatesting)) || el_confirm "\nYour server doesn't has much RAM, do you want to add a swapfile?" ; then
                 is_wanted_swapfile=1
             fi
         fi
@@ -2896,7 +2905,7 @@ main(){
 
     # install wordpress {{{
     if ((is_wanted_wordpress)) ; then
-        if el_confirm "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
+        if ((is_betatesting)) || el_confirm "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
             install_wordpress
         fi
     fi
@@ -2963,6 +2972,8 @@ main(){
     fi
 
     # }}}
+    # TODO: to protect attacks of DDOS from fail2ban, set the priority process much higher (root cronjob?)
+    # TODO  remove nginx-ddos because is very specific? (see other specific ones)
 
 
     #
