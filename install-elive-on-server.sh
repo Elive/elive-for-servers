@@ -430,8 +430,8 @@ prepare_environment(){
             if ! [[ "$( readlink -f "/usr/sbin/update-initramfs" )" = "/bin/true" ]] \
                 && ! [[ -e "/usr/sbin/update-initramfs.orig" ]] ; then
 
-            mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
-            ln -fs /bin/true "/usr/sbin/update-initramfs"
+                mv "/usr/sbin/update-initramfs" "/usr/sbin/update-initramfs.orig"
+                ln -fs /bin/true "/usr/sbin/update-initramfs"
             fi
 
             # stop processes that can annoy us
@@ -439,6 +439,7 @@ prepare_environment(){
             do
                 service stop "$i" 1>/dev/null 2>&1 || true
             done
+
             ;;
         stop)
             if [[ -e /usr/sbin/update-initramfs.orig ]] ; then
@@ -448,7 +449,11 @@ prepare_environment(){
 
             if ((is_packages_installed)) ; then
                 rm -f /boot/initrd.img* 2>/dev/null || true
-                update-initramfs -k all -d -c || true
+                if [[ "$debian_version" = "buster" ]] ; then
+                    for i in /boot/vmlinuz-* ; do update-initramfs -k "${i##*vmlinuz-}" -d -c ; done
+                else
+                    update-initramfs -k all -d -c || true
+                fi
             fi
 
             # restart needed services
@@ -837,7 +842,7 @@ EOF
 
     # install extra features
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
-        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd patchutils procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip vim wget zip zsh ca-certificates
+        packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd patchutils procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip util-linux vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
 
     # clean temporal things
@@ -903,7 +908,7 @@ EOF
             fi
         fi
     fi
-    /etc/init.d/ssh restart
+    service ssh restart
 
     # cronjobs
     if [[ -s /root/.crontab ]] ; then
@@ -988,7 +993,7 @@ EOF
                 #fi
 
                 if [[ ! -d "$DHOME/$username/.ssh" ]] ; then
-                    su -c "ssh-keygen" $username
+                    su -c 'echo -e "\n\n\n" | ssh-keygen 1>/dev/null' $username
                 fi
                 mkdir -p "$DHOME/$username/.ssh"
                 if [[ -s "$DHOME/$username/.ssh/authorized_keys" ]] ; then
@@ -999,6 +1004,8 @@ EOF
                 chmod 700 "$DHOME/$username/.ssh"
                 chmod 600 "$DHOME/$username/.ssh/authorized_keys"
                 chown -R "$username:$username" "$DHOME/$username/.ssh"
+
+                service ssh restart
             fi
         fi
 
@@ -1801,6 +1808,7 @@ install_exim(){
     el_info "Installing Exim mail server..."
     local packages_extra
     systemctl stop  postfix.service  2>/dev/null || true
+    systemctl stop  exim4.service  2>/dev/null || true
     packages_remove  postfix || true
 
     ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
@@ -1823,9 +1831,13 @@ install_exim(){
         #mail_hostname="$domain"
     #fi
     if [[ "$mail_hostname" != "$domain" ]] ; then
-        if el_confirm "Do you want to use this server as your MAIN Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$hostnamefull' domain)" ; then
-            mail_hostname="$domain"
-            # XXX rDNS should point to this one, so domains should be allowed too
+        if ((is_betatesting)) ; then
+            true
+        else
+            if el_confirm "Do you want to use this server as your MAIN Email server for the '$domain' domain? (otherwise, it will be a specific email server for the '$hostnamefull' domain)" ; then
+                mail_hostname="$domain"
+                # XXX rDNS should point to this one, so domains should be allowed too
+            fi
         fi
     fi
 
@@ -1845,7 +1857,7 @@ install_exim(){
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
     # do not allow external connections:
-    if el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
+    if ((is_betatesting)) || el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
         is_external_connections_email_enabled=1
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
     else
@@ -2127,7 +2139,7 @@ EOF
     # restart
     systemctl restart dovecot.service
 
-    if el_confirm "Do you want to install the Anti-Spam Spamassasin system? (Important: this feature will use 100 MB of your RAM resources)" ; then
+    if ((is_betatesting)) || el_confirm "Do you want to install the Anti-Spam Spamassasin system? (Important: this feature will use 100 MB of your RAM resources)" ; then
         el_info "Installing SpamAssassin antispam system..."
         # make a backup so the user can switch from one to other conf
         cp -a /etc/exim4 /etc/exim4.no-spamassassin
@@ -2169,6 +2181,7 @@ EOF
 
     fi
 
+    systemctl restart exim4.service
 
     installed_set "exim"
     is_installed_exim=1
@@ -2600,13 +2613,20 @@ EOF
         if [[ "$wp_webname" != "$mail_hostname" ]] ; then
             el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}'"
         fi
-        for i in ${mail_hostname} ${domain}
-        do
-            [[ -z "$i" ]] && continue
-            [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
-            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${i%%.*}' with these contents:"
-            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
-        done
+        if [[ "$mail_hostname" = "$domain" ]] ; then
+            el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey' with these contents:"
+            echo "k=rsa; p=$(cat /etc/exim4/${domain}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
+        else
+            for i in ${mail_hostname} ${domain}
+            do
+                [[ -z "$i" ]] && continue
+                [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
+                entry="$( echo "$i" | sed -e "s|${domain}||g" -e 's|\.$||g' )"
+                #echo "$i - ${i%%.*}"
+                el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${entry}' with these contents:"
+                echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
+            done
+        fi
         el_info "DNS in your 'reverse DNS', set it to '${mail_hostname}'"
         # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
 
