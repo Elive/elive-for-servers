@@ -454,6 +454,7 @@ prepare_environment(){
                 else
                     update-initramfs -k all -d -c || true
                 fi
+                update-grub
             fi
 
             # restart needed services
