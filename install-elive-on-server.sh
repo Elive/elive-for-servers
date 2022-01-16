@@ -223,7 +223,7 @@ get_args(){
         esac
     done
 
-    if ((is_production)) ; then
+    if ((is_production)) && ! ((is_betatesting)) ; then
         if ((is_extra_service)) ; then
             if ! el_confirm "\nImportant: you wanted to install a service, this tool greatly improves your server by installing Elive features on it, but we cannot guarantee that the extra service will perfectly work in your server settings and with the wanted options, it should work without issues in new servers however. By other side if you can improve this tool to be more compatible for everyone you can send us a pull request, but do NOT report issues about the services. MAKE SURE you do a full backup of your server first and use it AT YOUR OWN RISK. Do you want to continue?" ; then
                 exit 1
