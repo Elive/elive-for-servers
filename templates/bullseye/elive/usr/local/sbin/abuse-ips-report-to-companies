@@ -1,0 +1,112 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+NOREPORTS=1
+set -e
+
+report(){
+    el_info "$1 '$ip', abuse email is: $2"
+    echo "$ip" >> "reports/${1}::${2}::ips-list.txt"
+    grep "${ip//./\.}" "$file_logs" >> "reports/${1}::${2}::${ip}.log" || true
+    #echo "$2" > reports/${1}::${2}-abuseemail.txt
+    # flag
+    echo "$ip" >> reports/AAA-IPs-parsed.txt
+}
+
+main(){
+    #set -x
+
+    #if [[ -t 0 ]] ; then
+        #el_error "This tool is meant to used from a pipe with a list of IPs to input, for example from a command like this:  fail2ban-client status nginx-ddos | grep Banned | sed -e 's|^.*list:||g' | tr ' ' '\\n' | $(basename $0)"
+        #exit 1
+    #fi
+    if [[ -z "$2" ]] ; then
+        el_error "Usage: $(basename $0)  list-of-abuse-ips.txt  logs-server.txt"
+        el_info "You should include to the command a file containing a list of IPs that has been detected as abuse IPs, like in a DDOS attack or hacking attempts, as second parameter, the full logs of your server where these IPs can be found"
+        exit 1
+    fi
+    file_list="$1"
+    shift
+    file_logs="$1"
+    shift
+
+    if ! [[ -s "$file_logs" ]] ; then
+        el_error "You don't have a 'logs-server.txt' file in your actual directory, create it first containing all the logs of your webserver (access & error logs), it will be used for the specific logs to report"
+        exit 1
+    fi
+    mkdir -p reports
+
+    #while IFS= read -r ip ; do
+    while read -ru 3 ip
+    do
+        read -r ip <<< "$ip"
+        [[ -z "$ip" ]] && continue
+        if grep -qs "^${ip}$" reports/AAA-IPs-parsed.txt ; then
+            continue
+        fi
+
+        unset whoised org abuseemail
+        whoised="$( timeout 15 whois "$ip" )"
+        if echo "$whoised" | grep -qsi "alibaba" ; then
+            org=alibaba
+        fi
+        if echo "$whoised" | grep -qsi "microsoft corporation" ; then
+            org=microthing
+        fi
+        if echo "$whoised" | grep -qsiE "oracle (corporation|network)" ; then
+            org=oracle
+        fi
+        if echo "$whoised" | grep -qsiE "amazon (corporation|network|technologies)" ; then
+            org=amazon
+        fi
+        if echo "$whoised" | grep -qsiE "Digitalocean" ; then
+            org=digitalocean
+        fi
+
+        # get names and emails generically
+        if [[ -z "$org" ]] ; then
+            org="$( echo "$whoised" | grep -iE "^(OrgId|org-name|netname):" | awk '{$1 = ""; print $0}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's|_||g' -e 's|:||g' -e 's|"||g' -e "s|'||g" | tr ' ' '_' | head -1 )"
+            read -r org <<< "$org"
+        fi
+        abuseemail="$( echo "$whoised" | grep -iE "(OrgAbuseEmail:|Abuse contact for|abuse-mailbox:)" | tr ' ' '\n' | grep @ | sed -e 's|"||g' -e "s|'||g" )"
+        read -r abuseemail <<< "$abuseemail"
+
+        #el_info "$org - $abuseemail"
+        if [[ -n "$org" ]] && [[ -n "$abuseemail" ]] ; then
+            report "$org" "$abuseemail"
+            continue
+        fi
+
+
+        NOREPORTS=1 el_warning "unknown '$ip', do a 'whois' command to it and fill this script with the extra missing information, you are welcome to send us a push request to improve this tool "
+        exit 1
+    done 3<<< "$( cat "$file_list" | tr ' ' '\n' | grep "\..*\..*\..*\." )"
+    #done
+
+    # generate zip files
+    cd reports
+    el_info "All those organizations has been detected:"
+    ls -1 *::ips-list.txt | sed -e 's|::.*$||g' | sort -u
+
+    if el_confirm "Do you want to send an email to all of them telling about the abuse IPs from their network and including your webserver logs of lines matching these IPs?" ; then
+        for file in *::ips-list.txt
+        do
+            name="${file%::ips-list.txt}"
+            org="${name%::*}"
+            email="${name#*::}"
+            echo "org $org - $email"
+            rm -f "${org}-logs-webserver-from-abuse-ips.zip"
+            zip "${org}-logs-webserver-from-abuse-ips.zip" "${org}"::*log
+
+            email-sender -t "$email" -s "Reporting abuse IPs from your network" -T none -m "Dear Company,<br><br>We have detected abuse from the IP (multiple IPs, listed below) which all of them belongs to your network. We would appreciate if you would investigate and take action as appropriate.<br><br>List of IPs are given below, logs contaning all the records from these IPs as attached file.<br><br><i>(If you are not the correct person to contact about this please accept our apologies - your e-mail address was extracted from the whois record by an automated process.)</i><br><br>ABUSE IPs:<br>$(cat "$org"::*ips-list.txt | sed -e 's|\n|<br>|g' )" -a "${org}-logs-webserver-from-abuse-ips.zip"
+
+        done
+    fi
+
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :
