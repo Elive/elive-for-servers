@@ -1908,8 +1908,8 @@ install_exim(){
         fi
 
         if installed_check "nginx" ; then
-            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
-            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin}
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin}
         else
             if ((has_ufw)) ; then
                 if ! iptables -S | grep -qsE "(\s+|,)80(\s+|,)" ; then
@@ -1921,8 +1921,8 @@ install_exim(){
                 fi
             fi
 
-            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
-            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin} -n
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin}
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin}
         fi
     fi
 
