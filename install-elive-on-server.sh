@@ -681,8 +681,6 @@ EOF
 }
 
 install_templates(){
-    local dir_prev
-    dir_prev="$(pwd)"
     name="$1" ; shift
     dest="$1" ; shift
     user="$1" ; shift

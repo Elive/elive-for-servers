@@ -69,7 +69,8 @@ main(){
     # - domain confs }}}
 
     # clear cache's first
-    "$HOME/packages/bin/caches-clear.sh" full
+    find "$webdir/wp-content/cache/autoptimize/" -type f -iname autoptimize_'*'.js -delete 1>/dev/null 2>&1 || true
+    find "$webdir/wp-content/cache/autoptimize/" -type f -iname autoptimize_'*'.css -delete 1>/dev/null 2>&1 || true
 
 
     case "$mode" in
