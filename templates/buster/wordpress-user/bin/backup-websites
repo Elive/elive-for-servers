@@ -1,0 +1,157 @@
+#!/bin/bash
+source /usr/lib/elive-tools/functions
+set -e
+#set -x
+
+# Usage
+if [[ -z "${2}" ]] ; then
+    echo -e "Usage: $(basename $BASH_SOURCE) save|restore domain [message]"
+    echo -e ""
+    echo -e "    domains:  mywordpress.com otherwebsite"
+    exit 1
+fi
+
+
+main(){
+    # pre {{{
+    local domain mode timestamp state db host pass target user webdir webdirname
+
+    mode="$1"
+    shift
+    domain="$1"
+    shift
+    if [[ -n "$1" ]] ; then
+        #description="${3-}"
+        description="${@}"
+        shift
+    fi
+    timestamp="$(date +%F_%R:%S)"
+
+
+    if ! el_dependencies_check "rdiff-backup" 1>/dev/null 2>&1 ; then
+        el_dependencies_install "rdiff-backup"
+    fi
+
+    # }}}
+
+    # domain confs {{{
+
+    # all / generic
+    target="$HOME/backups/$domain"
+
+
+    # target:	    dest location for backups
+    # webdir:	    orig location of installed site
+    # webdirname:   name of the site (domain url)
+    # host:	    host for mysql access
+    # user:	    user for mysql access
+    # db:	    db for the site (all tables)
+    # pass:	    pass for the mysql db access
+
+    case "$domain" in
+        #"otherwebsite")
+            #;;
+        "mywordpress.com")
+            webdir="$HOME/mywordpress.com"
+            webdirname="mywordpress.com"
+            host="localhost"
+            user="replacemedbusername"
+            db="replacemedbname"
+            pass="replacemedbpassword"
+            ;;
+        *)
+            echo -e "Domain '$domain' has not a configuration made yet, fill it first in the tool itself, aborting..."
+            exit 1
+            ;;
+    esac
+
+
+    # - domain confs }}}
+
+    # clear cache's first
+    "$HOME/packages/bin/caches-clear.sh" full
+
+
+    case "$mode" in
+        save)
+            mkdir -p "$target/db" "${target}/files.rdiff"
+
+            echo -e "Saving Database"
+            mysqldump --skip-lock-tables -u "$user" --password="$pass" --host="$host" "$db" | gzip -fc > "${target}/db/${timestamp}.sql.gz"
+
+            echo -e "Saving Files"
+            rdiff-backup "$webdir/" "$target/files.rdiff/"
+
+            rdiff-backup --parsable-output -l "$target/files.rdiff/" | awk '{print $1}' | tail -1 | awk -v timestamp="$timestamp" '{print $0":::"timestamp}' >> "${target}/references.txt"
+
+            if [[ -z "$description" ]] ; then
+                echo -e "\nDescribe state:"
+                read -e description
+            fi
+
+            if [[ -n "$description" ]] ; then
+                echo "    \ $description" >> "${target}/references.txt"
+            fi
+
+            echo -e "\nStates saved:"
+            cat "$target/references.txt"
+
+            ;;
+        restore)
+            echo -e ""
+            #set -x
+
+            if pidof nginx 1>/dev/null ; then
+                echo -e "ERR: first you should disable 'nginx', 'php', 'monit', then restart 'mysql', to not lock tables, run from ROOT:"
+                echo -e "killall daemon-restart-webserver-trigger ; systemctl stop php8.0-fpm.service nginx.service monit.service fail2ban.service ; sync ; sleep 2 ; systemctl restart mariadb.service"
+                echo -e "AFTER recover: reload_webserver ; systemctl restart monit.service fail2ban.service ; daemon-restart-webserver-trigger &"
+                echo -e "Press Enter to continue AFTER you have disabled the daemons"
+                read nothing
+            fi
+
+            cat "$target/references.txt"
+            echo -e "\nCopy-paste the state to recover"
+            read -e state
+
+            timestamp="$(echo "$state" | awk -v FS=":::" '{print $2}' )"
+            rdiffstamp="$(echo "$state" | awk -v FS=":::" '{print $1}' )"
+
+            echo -e "\nRestoring snapshot"
+            rm -rf "${webdir}.rdiff-recovering" "${webdir}.tmp"
+            mkdir -p "${webdir}.rdiff-recovering" "${webdir}"
+
+            rdiff-backup -r "$rdiffstamp" "${target}/files.rdiff" "${webdir}.rdiff-recovering"
+            echo -e "Recovering files"
+            mv -f "$webdir" "${webdir}.tmp"
+            rsync -aq --delete "${webdir}.rdiff-recovering/" "${webdir}.tmp/"
+            rm -rf "${webdir}.rdiff-recovering"
+
+            echo -e "Recovering database (wait for DONE)"
+
+        # clean the full database before to import the new one, removing all tables on it
+        while read -ru 3 table
+        do
+            [[ -z "$table" ]] && continue
+            mysql -u "$user" -p"$pass" "$db" -e "drop table $table"
+        done 3<<< "$( mysql -u "$user" -p"$pass" "$db" -e 'show tables' | awk '{print $1}' | grep -v '^Tables' )"
+
+
+        # note: max_allowed_packet is needed to avoid error "ERROR 2006 (HY000): MySQL server has gone away", if this not works, use the my.cnf mysql conf file
+        zcat "${target}/db/${timestamp}.sql.gz" | mysql -u "$user" --password="$pass" --max_allowed_packet=1073741824  --host="$host" "$db"
+        mv -f "${webdir}.tmp" "${webdir}"
+
+        #set +x
+
+        echo -e "\n=== Done ===\n"
+
+        ;;
+esac
+
+}
+
+#
+#  MAIN
+#
+main "$@"
+
+# vim: set foldmethod=marker :
