@@ -31,6 +31,8 @@ _:warning: Note: Ubuntu installs are added for compatibility, but we **strongly*
   * directories history and switch, multiple sub-dirs as '...' featured
   * many, MANY more, just type "help" and check the dotfiles to know more details...
 
+### _TODO: Document the many extra features and ways to use it, special tools included, etc..._
+
 ### Elive shell
 ![screenshot login](screenshots/screenshot-login.png)
 

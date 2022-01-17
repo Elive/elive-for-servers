@@ -7,6 +7,8 @@ report(){
     el_info "$1 '$ip', abuse email is: $2"
     echo "$ip" >> "reports/${1}::${2}::ips-list.txt"
     grep "${ip//./\.}" "$file_logs" >> "reports/${1}::${2}::${ip}.log" || true
+    # delete log file if nothing was included on it
+    [[ ! -s "reports/${1}::${2}::${ip}.log" ]] && rm -f "reports/${1}::${2}::${ip}.log"
     #echo "$2" > reports/${1}::${2}-abuseemail.txt
     # flag
     echo "$ip" >> reports/AAA-IPs-parsed.txt
@@ -97,9 +99,13 @@ main(){
             email="${name#*::}"
             echo "org $org - $email"
             rm -f "${org}-logs-webserver-from-abuse-ips.zip"
-            zip "${org}-logs-webserver-from-abuse-ips.zip" "${org}"::*log
 
-            email-sender -t "$email" -s "Reporting abuse IPs from your network" -T none -m "Dear Company,<br><br>We have detected abuse from the IPs listed below, which belongs to your network. We would appreciate if you would investigate and take action as appropriate.<br><br>Logs contaning all the records from these IPs as attached file, note that my server is located at $(showmylocation | grep country_name | sed -e 's|^.*::||g') and so the timezone of the attached logs are $(showmytimezone), the exact time of the sending of this email is $(date).<br><br><i>(If you are not the correct person to contact about this please accept our apologies - your e-mail address was extracted from the whois record by an automated process.)</i><br><br>ABUSE IPs:<br>$(cat "$org"::*ips-list.txt | sed -e 's|\n|<br>|g' )" -a "${org}-logs-webserver-from-abuse-ips.zip"
+            # only if we have any logs to send
+            if ls "${org}"::*log 1>/dev/null 2>&1 ; then
+                zip "${org}-logs-webserver-from-abuse-ips.zip" "${org}"::*log
+
+                email-sender -t "$email" -s "Reporting abuse IPs from your network" -T none -m "Dear Company,<br><br>We have detected abuse from the IPs listed below, which belongs to your network. We would appreciate if you would investigate and take action as appropriate.<br><br>Logs contaning all the records from these IPs as attached file, note that my server is located at $(showmylocation | grep country_name | sed -e 's|^.*::||g') and so the timezone of the attached logs are $(showmytimezone), the exact time of the sending of this email is $(date).<br><br><i>(If you are not the correct person to contact about this please accept our apologies - your e-mail address was extracted from the whois record by an automated process.)</i><br><br>ABUSE IPs:<br>$(cat "$org"::*ips-list.txt | sed -e 's|\n|<br>|g' )" -a "${org}-logs-webserver-from-abuse-ips.zip"
+            fi
 
         done
     fi
