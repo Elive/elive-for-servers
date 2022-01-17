@@ -659,6 +659,17 @@ EOF
         find "$templates" -type f -exec sed -i "s|mywordpress.com|${wp_webname}|g" "{}" \;
     fi
 
+    if [[ -n "$wp_db_name" ]] ; then
+        find "$templates" -type f -exec sed -i "s|replacemedbname|${wp_db_name}|g" "{}" \;
+    fi
+    if [[ -n "$wp_db_user" ]] ; then
+        find "$templates" -type f -exec sed -i "s|replacemedbusername|${wp_db_user}|g" "{}" \;
+    fi
+    if [[ -n "$wp_db_pass" ]] ; then
+        find "$templates" -type f -exec sed -i "s|replacemedbpassword|${wp_db_pass}|g" "{}" \;
+    fi
+
+
 
 
     # checks
@@ -674,6 +685,7 @@ install_templates(){
     dir_prev="$(pwd)"
     name="$1" ; shift
     dest="$1" ; shift
+    user="$1" ; shift
 
     require_variables "name|dest"
 
@@ -683,6 +695,11 @@ install_templates(){
         set +x
         el_error "Templates missing: '$name'. Service install unable to be completed"
         exit 1
+    fi
+
+    # change the user ID if wanted (remember that sources are always temporal)
+    if [[ -n "$user" ]] ; then
+        chown -R "${user}:${user}" "${templates}/${debian_version}/$name"
     fi
 
     cd "${templates}/${debian_version}/$name"
@@ -1491,6 +1508,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
     fi
 
     install_templates "wordpress" "/"
+    install_templates "wordpress-user" "$DHOME/${username}" "$username"
 
     # configure WP in nginx {{{
     require_variables "php_version"
@@ -2951,7 +2969,7 @@ main(){
 
     # install iptables {{{
     if ((is_wanted_iptables)) ; then
-        if installed_ask "iptables" "You are going to install IPTABLES (or use the installed UFW), it will include some default settings. Continue?" ; then
+        if installed_ask "iptables" "You are going to install a firewall (install IPTABLES or use an installed UFW), it will include some default settings. Continue?" ; then
             install_iptables
         fi
     fi
