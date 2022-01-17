@@ -412,7 +412,7 @@ exit_error(){
     prepare_environment stop
 
     # mark a failed step
-    rm -f "/tmp/.${SOURCE}.failed"
+    echo $$ > "/tmp/.${SOURCE}.failed"
 
     exit 1
 }
@@ -995,6 +995,7 @@ EOF
 
                 if [[ ! -d "$DHOME/$username/.ssh" ]] ; then
                     su -c 'echo -e "\n\n\n" | ssh-keygen 1>/dev/null' $username
+                    echo
                 fi
                 mkdir -p "$DHOME/$username/.ssh"
                 if [[ -s "$DHOME/$username/.ssh/authorized_keys" ]] ; then
@@ -2598,21 +2599,21 @@ EOF
             el_info "DNS type A record named 'imap' with data '${domain_ip}'"
             el_info "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'"
             el_info "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'"
-            el_info "DNS type MX record with (empty) name '' with data 'smtp.${domain}'"
+            el_info "DNS type MX record with (empty) name '' with data 'smtp.${domain}' and priority '10'"
         else
             el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
             el_info "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'"
             el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
             el_info "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'"
             el_info "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'"
-            el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
+            el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}' and priority '10'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         fi
         #el_info "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed?
         #el_info "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
         #el_info "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         #el_info "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         if [[ "$wp_webname" != "$mail_hostname" ]] ; then
-            el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}'"
+            el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}' and priority '10'"
         fi
         if [[ "$mail_hostname" = "$domain" ]] ; then
             el_info "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey' with these contents:"
