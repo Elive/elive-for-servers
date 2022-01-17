@@ -7,7 +7,7 @@ set -e
 if [[ -z "${2}" ]] ; then
     echo -e "Usage: $(basename $BASH_SOURCE) save|restore domain [message]"
     echo -e ""
-    echo -e "    domains:  mywordpress.com otherwebsite"
+    echo -e "    domains:  mywordpress.com / otherwebsite / etc"
     exit 1
 fi
 

@@ -45,7 +45,9 @@ main(){
         fi
 
         unset whoised org abuseemail
-        whoised="$( timeout 15 whois "$ip" )"
+        whoised="$( timeout 15 whois "$ip" || true )"
+        [[ -z "$whoised" ]] && continue
+
         if echo "$whoised" | grep -qsi "alibaba" ; then
             org=alibaba
         fi
@@ -79,7 +81,7 @@ main(){
 
         el_warning "unknown '$ip', do a 'whois' command to it and fill this script with the extra missing information, you are welcome to send us a push request to improve this tool "
         exit 1
-    done 3<<< "$( cat "$file_list" | tr ' ' '\n' | grep "\..*\..*\..*\." )"
+    done 3<<< "$( cat "$file_list" | tr ' ' '\n' | grep "\..*\..*\." )"
     #done
 
     # generate zip files
