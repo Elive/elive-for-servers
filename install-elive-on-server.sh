@@ -277,7 +277,7 @@ installed_check(){
             fi
         fi
         # marked as installed:
-        EL_DEBUG=3 el_debug "'$1' already set up, use --force to reinstall it"
+        echo -e "Note: '$1' already installed, use --force to reinstall it" 1>&2
         return 0
     else
         return 1
