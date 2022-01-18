@@ -1090,6 +1090,17 @@ install_php(){
     # default version provided ?
     php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
 
+    # if we have already php installed
+    if which php 1>/dev/null 2>&1 ; then
+        # and is a different version of php installed
+        _php_version="$( php -i 2>&1 | grep -iE "^PHP Version => [[:digit:]]+\.[[:digit:]]+\." | sed -e 's|^.*=> ||g' | head -1 )"
+        if [[ "$php_version" != "$_php_version" ]] ; then
+            if el_confirm "Do you have already a version of php installed, do you want to remove it first? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
+                apt-get remove $apt_options php${_php_version}\*
+            fi
+        fi
+    fi
+
     if [[ "$debian_version" != "buster" ]] && ! ((is_ubuntu)) ; then
         if el_confirm "\nDo you want to use the default provided PHP version? ($php_version) ?" ; then
             rm -f "/etc/apt/sources.list.d/php.list"
@@ -1225,7 +1236,7 @@ install_php(){
     addconfig "soft nofile 4096" /etc/security/limits.conf
     addconfig "hard nofile 4096" /etc/security/limits.conf
 
-    # reconfigure other possible versions previously configured of php
+    # reconfigure other possible versions previously configured of php to be set to our new version
     sed -i -e "s|php...-fpm|php${php_version}-fpm|g" /etc/nginx/sites-available/* /etc/monit/conf-available/* 2>/dev/null || true
 
     if ((is_ubuntu)) ; then
