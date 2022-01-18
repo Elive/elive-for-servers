@@ -1096,9 +1096,12 @@ install_php(){
     if which php 1>/dev/null 2>&1 ; then
         # and is a different version of php installed
         _php_version="$( php -i 2>&1 | grep -iE "^PHP Version => [[:digit:]]+\.[[:digit:]]+\." | sed -e 's|^.*=> ||g' | head -1 )"
+        # get x.x from x.x.x version
+        _php_version="$( echo "$_php_version" | awk -v FS="." '{print $1"."$2}' )"
+
         if [[ "$php_version" != "$_php_version" ]] ; then
             if el_confirm "You have already PHP ${_php_version} installed, do you want to remove it first? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
-                apt-get remove $apt_options php${_php_version}*
+                apt-get remove $apt_options php${_php_version}\*
             fi
         fi
     fi
