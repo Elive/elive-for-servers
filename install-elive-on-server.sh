@@ -180,6 +180,10 @@ get_args(){
                 is_wanted_fail2ban=1
                 is_extra_service=1
                 ;;
+            "--install=phpmyadmin")
+                is_wanted_phpmyadmin=1
+                is_extra_service=1
+                ;;
             "--install=rootkitcheck")
                 is_wanted_rootkitcheck=1
                 ;;
@@ -2966,6 +2970,14 @@ main(){
     if ((is_wanted_wordpress)) ; then
         if ((is_betatesting)) || el_confirm "You are going to install WORDPRESS, it will include nice optimizations to have it fast and responsive, will use nginx + php-fpm + mariadb, everything installed in a specific own user for security. Continue?" ; then
             install_wordpress
+        fi
+    fi
+    # }}}
+
+    # install phpmyadmin {{{
+    if ((is_wanted_phpmyadmin)) ; then
+        if ((is_betatesting)) || el_confirm "You are going to install PHPMyAdmin. Continue?" ; then
+            install_phpmyadmin
         fi
     fi
     # }}}
