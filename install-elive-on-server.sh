@@ -277,7 +277,7 @@ installed_check(){
             fi
         fi
         # marked as installed:
-        echo -e "Note: '$1' already installed, use --force to reinstall it" 1>&2
+        echo -e "${el_c_c2}Note: '${el_c_c}$1${el_c_c2}' already installed, use --force to reinstall it${el_c_n}" 1>&2
         return 0
     else
         return 1
