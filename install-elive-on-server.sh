@@ -2871,12 +2871,11 @@ main(){
 
     # install Elive features {{{
     #if ! [[ -e /var/lib/dpkg/info/elive-tools.list ]] ; then
-    if ((is_wanted_elive)) ; then
-        if ! installed_check "elive" ; then
+    if ! installed_check "elive" ; then
+        if ((is_wanted_elive)) ; then
             install_elive
         fi
     else
-        #if ! [[ -s /etc/elive-version ]] ; then
         if installed_ask "elive" "This server has not yet Elive superpowers. Install them? (required)" ; then
             install_elive
         fi
