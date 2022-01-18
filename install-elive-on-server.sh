@@ -1732,8 +1732,8 @@ install_phpmyadmin(){
     el_info "Installing PHPMyAdmin..."
     local packages_extra
     # configure & install {{{
-    packages_remove --purge phpmyadmin\*
     rm -rf /usr/share/phpmyadmin 1>/dev/null 2>&1 || true
+    packages_remove --purge phpmyadmin\*
     echo -e "phpmyadmin\tphpmyadmin/dbconfig-install\tboolean\tfalse" | debconf-set-selections
 
     if [[ "$debian_version" = "buster" ]] && ! ((is_ubuntu)) ; then
