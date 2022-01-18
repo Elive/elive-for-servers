@@ -278,7 +278,7 @@ installed_check(){
         fi
         # marked as installed:
         if [[ "$2" = "info" ]] ; then
-            echo -e "${el_c_c2}Note: '${el_c_c}$1${el_c_c2}' already installed, use --force to reinstall it${el_c_n}" 1>&2
+            echo -e "${el_c_c2}Note: ${el_c_c}$1${el_c_c2} already installed, use --force to reinstall it${el_c_n}" 1>&2
         fi
         return 0
     else
@@ -1097,8 +1097,8 @@ install_php(){
         # and is a different version of php installed
         _php_version="$( php -i 2>&1 | grep -iE "^PHP Version => [[:digit:]]+\.[[:digit:]]+\." | sed -e 's|^.*=> ||g' | head -1 )"
         if [[ "$php_version" != "$_php_version" ]] ; then
-            if el_confirm "Do you have already a version of php installed, do you want to remove it first? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
-                apt-get remove $apt_options php${_php_version}\*
+            if el_confirm "You have already PHP ${_php_version} installed, do you want to remove it first? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
+                apt-get remove $apt_options php${_php_version}*
             fi
         fi
     fi
