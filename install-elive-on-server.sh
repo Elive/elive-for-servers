@@ -277,7 +277,7 @@ installed_check(){
             fi
         fi
         # marked as installed:
-        EL_DEBUG=2 el_debug "'$1' already set up, use --force to reinstall it"
+        EL_DEBUG=3 el_debug "'$1' already set up, use --force to reinstall it"
         return 0
     else
         return 1
@@ -1106,11 +1106,6 @@ install_php(){
             rm -f "/etc/apt/sources.list.d/php.list"
             unset php_version
         else
-            if which php 1>/dev/null ; then
-                #if el_confirm "\nPHP already installed, do you want to remove it first?" ; then
-                    packages_remove --purge php\*
-                #fi
-            fi
 
             if [[ "$debian_version" = "bullseye" ]] ; then
 
