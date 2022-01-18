@@ -1497,7 +1497,7 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 #echo -e "// Set httpS (ssl) mode\ndefine('FORCE_SSL_ADMIN', true);\ndefine('WP_HOME', 'https://www.elivecd.org');\ndefine('WP_SITEURL', 'https://www.elivecd.org');\ndefine('WP_CONTENT_URL', 'https://www.elivecd.org/wp-content' );" >> "$DHOME/${username}/${wp_webname}/wp-config.php"
 
     # configure root crontab to reload nginx every hour so plugins can work
-    if grep -qs "nginx reload"  /root/.crontab ; then
+    if grep -qs "nginx reload"  /root/.crontab 2>/dev/null ; then
         sed -i -e 's|^.*nginx reload.*$|5 * * * * /etc/init.d/nginx reload 1>/dev/null|g' /root/.crontab
     else
         echo -e "# reload nginx every hour to update the confs, for example from WP\n5 * * * * /etc/init.d/nginx reload 1>/dev/null" >> /root/.crontab
@@ -2520,7 +2520,9 @@ final_steps(){
         systemctl stop unattended-upgrades.service
         systemctl disable unattended-upgrades.service
         # run lighter upgrades without daemon
-        echo -e "\n# Run unattended-upgrades in one shot daily instead of a waste-resources daemon\n0 8 * * * /usr/local/sbin/unattended-upgrades-light 1>/dev/null" >> /root/.crontab
+        if [[ -s /root/.crontab ]] ; then
+            echo -e "\n# Run unattended-upgrades in one shot daily instead of a waste-resources daemon\n0 8 * * * /usr/local/sbin/unattended-upgrades-light 1>/dev/null" >> /root/.crontab
+        fi
     fi
     # seems like this package is entirely useless in our server and also uses some RAM resources so let's remove it
     if [[ -e /var/lib/dpkg/info/packagekit.list ]] ; then
@@ -2550,7 +2552,9 @@ EOF
         fi
     fi
 
-    crontab /root/.crontab
+    if [[ -s /root/.crontab ]] ; then
+        crontab /root/.crontab
+    fi
 
     # save a backup of the full etc created
     rm -rf /etc.bak-after-elive-setup 2>/dev/null || true
