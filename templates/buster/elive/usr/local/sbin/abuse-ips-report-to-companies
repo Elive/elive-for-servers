@@ -106,8 +106,9 @@ main(){
 
                 email-sender -t "$email" -s "Reporting abuse IPs from your network" -T none -m "Dear Company,<br><br>We have detected abuse from the IPs listed below, which belongs to your network. We would appreciate if you would investigate and take action as appropriate.<br><br>Logs contaning all the records from these IPs as attached file, note that my server is located at $(showmylocation | grep country_name | sed -e 's|^.*::||g') and so the timezone of the attached logs are $(showmytimezone), the exact time of the sending of this email is $(date).<br><br><i>(If you are not the correct person to contact about this please accept our apologies - your e-mail address was extracted from the whois record by an automated process.)</i><br><br>ABUSE IPs:<br>$(cat "$org"::*ips-list.txt | sed -e 's|\n|<br>|g' )" -a "${org}-logs-webserver-from-abuse-ips.zip"
             fi
-
         done
+
+        el_info "You can remove the directory 'reports' now"
     fi
 
 }

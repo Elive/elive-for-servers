@@ -6,5 +6,6 @@ check process fail2ban with pidfile /run/fail2ban/fail2ban.pid
     if 5 restarts within 5 cycles then timeout
 
 check file fail2ban_log with path /var/log/fail2ban.log
-    if match "ERROR|WARNING" then alert
+    #if match "ERROR|WARNING" then alert
+    if match "ERROR" then alert
 
