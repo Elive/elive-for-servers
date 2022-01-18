@@ -253,7 +253,7 @@ get_args(){
 
     if [[ -e "/tmp/.${SOURCE}.failed" ]] ; then
         if el_confirm "A previous attempt of use this tool failed, do you want to add extra debug? (suggested)" ; then
-        set -x
+            set -x
         fi
     fi
 
@@ -1099,11 +1099,6 @@ install_php(){
         # get x.x from x.x.x version
         _php_version="$( echo "$_php_version" | awk -v FS="." '{print $1"."$2}' )"
 
-        if [[ "$php_version" != "$_php_version" ]] ; then
-            if el_confirm "You have already PHP ${_php_version} installed, do you want to remove it first? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
-                apt-get remove $apt_options php${_php_version}\*
-            fi
-        fi
     fi
 
     if [[ "$debian_version" != "buster" ]] && ! ((is_ubuntu)) ; then
@@ -1238,6 +1233,13 @@ install_php(){
 
     # reconfigure other possible versions previously configured of php to be set to our new version
     sed -i -e "s|php...-fpm|php${php_version}-fpm|g" /etc/nginx/sites-available/* /etc/monit/conf-available/* 2>/dev/null || true
+
+    # remove a possible previous install of php to not conflict with ours new one
+    if [[ -n "$_php_version" ]] && [[ "$php_version" != "$_php_version" ]] ; then
+        if el_confirm "You had already another version of PHP ${_php_version} installed, do you want to remove it in order to not conflict with the new one? (recommended). Warning: make sure other needed packages are not removed, or you will need to reinstall them later" ; then
+            packages_remove php${_php_version}\*
+        fi
+    fi
 
     if ((is_ubuntu)) ; then
         systemctl stop apache2.service 2>/dev/null || true
@@ -1726,6 +1728,7 @@ install_phpmyadmin(){
     el_info "Installing PHPMyAdmin..."
     local packages_extra
     # configure & install {{{
+    packages_remove --purge phpmyadmin\*
     echo -e "phpmyadmin\tphpmyadmin/dbconfig-install\tboolean\tfalse" | debconf-set-selections
 
     if [[ "$debian_version" = "buster" ]] && ! ((is_ubuntu)) ; then
@@ -2530,7 +2533,8 @@ final_steps(){
     fi
 
     changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub         2>/dev/null || true
-    ed /etc/crontab 1>/dev/null <<EOF
+    if [[ -n "$email_admin" ]] && ! grep -qs "MAILTO=\"" /etc/crontab ; then
+        ed /etc/crontab 1>/dev/null <<EOF
 /^SHELL=
 a
 MAILTO="${email_admin}"
@@ -2538,6 +2542,7 @@ MAILTO="${email_admin}"
 w
 q
 EOF
+    fi
 
     # save settings {{{
     if ((has_ufw)) ; then
@@ -2564,7 +2569,7 @@ EOF
     swapoff -a 1>/dev/null 2>&1 || true
     swapon -a 1>/dev/null 2>&1 || true
 
-    # unmark a possible previously failed attempt
+    # unmark a possible previously failed attempt because we finished good now
     rm -f "/tmp/.${SOURCE}.failed"
 
     # }}}
