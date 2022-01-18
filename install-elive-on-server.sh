@@ -277,7 +277,9 @@ installed_check(){
             fi
         fi
         # marked as installed:
-        echo -e "${el_c_c2}Note: '${el_c_c}$1${el_c_c2}' already installed, use --force to reinstall it${el_c_n}" 1>&2
+        if [[ "$2" = "info" ]] ; then
+            echo -e "${el_c_c2}Note: '${el_c_c}$1${el_c_c2}' already installed, use --force to reinstall it${el_c_n}" 1>&2
+        fi
         return 0
     else
         return 1
@@ -289,7 +291,7 @@ installed_ask(){
         return 0
     fi
     # do not install if already installed
-    if installed_check "$1" ; then
+    if installed_check "$1" "info" ; then
         return 1
     else
         if ((is_betatesting)) ; then
