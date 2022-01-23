@@ -15,3 +15,5 @@ PATH="/root/packages/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin
 # reload nginx conf every hour to update the configs made by wordpress (like banned ips, etc)
 #2 * * * * /etc/init.d/nginx reload 1>/dev/null
 
+# make fail2ban a priority:
+@daily  if test -s /run/fail2ban/fail2ban.pid ; then renice -n -10 -p $( cat /run/fail2ban/fail2ban.pid ) 1>/dev/null ; ionice -c3 -p$( cat /run/fail2ban/fail2ban.pid ) 1>/dev/null ; fi
