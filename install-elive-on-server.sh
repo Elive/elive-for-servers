@@ -857,7 +857,6 @@ EOF
 
     # install elive tools
     packages_extra="vim-colorscheme-elive-molokai elive-security elive-tools elive-skel elive-skel-default-all elive-skel-default-vim elive-udev vim-common zsh-elive $packages_extra"
-
     # upgrade possible packages from elive:
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
         apt-get dist-upgrade $apt_options -qq
@@ -866,6 +865,15 @@ EOF
     TERM=linux DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical DEBCONF_NONINTERACTIVE_SEEN=true DEBCONF_NOWARNINGS=true \
         packages_install $packages_extra ack apache2-utils bc binutils bzip2 colordiff command-not-found coreutils curl daemontools debian-keyring debsums diffutils dnsutils dos2unix dpkg-dev ed exuberant-ctags gawk git gnupg grep gzip htop inotify-tools iotop liburi-perl lsof lynx lzma ncurses-term net-tools netcat-openbsd patchutils procinfo rdiff-backup rename rsync rsyslog sed sharutils tar telnet tmux tofrodos tree unzip util-linux vim wget zip zsh ca-certificates
     # obsolete ones: tidy zsync
+
+    # we always want to have a firewall
+    if ! which iptables 1>/dev/null 2>&1 && ! which ufw 1>/dev/null 2>&1 ; then
+        packages_install ufw
+        changeconfig "IPT_MODULES=" "IPT_MODULES=\"\"" /etc/default/ufw
+        changeconfig "ENABLED=" "ENABLED=yes" /etc/ufw/ufw.conf
+        has_ufw=1
+    fi
+
 
     # clean temporal things
     rm -f "/etc/apt/apt.conf.d/temporal.conf"
@@ -893,8 +901,8 @@ EOF
 export PATH="\$HOME/packages/bin:\$PATH"
 # show the nice elive logo as welcome
 elive-logo-show --no-newline ; lsb_release -d -s ; echo
-# suggest to donate to Elive once per every 8 random logins:
-if [[ "\${RANDOM:0:1}" = 5 ]] || [[ "\${RANDOM:0:1}" = 6 ]] ; then
+# suggest to donate to Elive once per every 10 random logins:
+if [[ "\${RANDOM:0:1}" = 5 ]] ; then
     echo -e "\${el_c_g}\${el_c_blink}Help Elive to continue making amazing things! - https://www.elivecd.org/donate/?id=elive-for-servers\${el_c_n}"
 fi
 echo
@@ -912,7 +920,7 @@ EOF
 
     # disable ssh password logins
     if [[ -s ~/.ssh/authorized_keys ]] ; then
-        if ((is_betatesting)) || el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead)" ; then
+        if ((is_betatesting)) || el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead, strongly suggested)" ; then
             changeconfig "PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
         fi
     fi
@@ -924,8 +932,26 @@ EOF
                 read port_ssh
                 if [[ -n "$port_ssh" ]] && echo "$port_ssh" | grep -qs "[[:digit:]]" ; then
                     changeconfig "Port 22" "Port $port_ssh" /etc/ssh/sshd_config
+                    if ((has_ufw)) ; then
+                        ufw allow "${port_ssh}/tcp"
+                        # Note: to have it enabled is not a problem if we don't have anything listening, by other side if we deny it this can kick out the user while working
+                        #ufw deny 22
+                    else
+                        if ((has_iptables)) ; then
+                            iptables -A INPUT -p tcp -m tcp --dport ${port_ssh} -j ACCEPT
+                            #iptables -A INPUT -p tcp -m tcp --dport 22 -j DENY
+                        fi
+                    fi
                     NOREPORTS=1 el_warning "Your SSH port has changed, you CANNOT LOGIN anymore on SSH using the default port, you need to use 'ssh -p ${port_ssh}' now. Press Enter to continue..."
                     read nothing
+                fi
+            else
+                if ((has_ufw)) ; then
+                    ufw allow '22/tcp'
+                else
+                    if ((has_iptables)) ; then
+                        iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+                    fi
                 fi
             fi
         fi
