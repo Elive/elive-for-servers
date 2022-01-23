@@ -1228,7 +1228,7 @@ install_php(){
     addconfig "net.core.somaxconn = 16384" /etc/sysctl.conf
     addconfig "net.ipv4.tcp_max_tw_buckets = 1440000" /etc/sysctl.conf
     addconfig "# Timeout for a port to be freed before to be used as a new one:" /etc/sysctl.conf
-    addconfig "net.ipv4.tcp_fin_timeout 30" /etc/sysctl.conf
+    addconfig "net.ipv4.tcp_fin_timeout = 30" /etc/sysctl.conf
     addconfig "net.ipv4.tcp_window_scaling = 1" /etc/sysctl.conf
     addconfig "net.ipv4.tcp_max_syn_backlog = 2048" /etc/sysctl.conf
 
