@@ -939,7 +939,7 @@ EOF
                     else
                         if ((has_iptables)) ; then
                             iptables -A INPUT -p tcp -m tcp --dport ${port_ssh} -j ACCEPT
-                            #iptables -A INPUT -p tcp -m tcp --dport 22 -j DENY
+                            #iptables -A INPUT -p tcp -m tcp --dport 22 -j DROP
                         fi
                     fi
                     NOREPORTS=1 el_warning "Your SSH port has changed, you CANNOT LOGIN anymore on SSH using the default port, you need to use 'ssh -p ${port_ssh}' now. Press Enter to continue..."
@@ -1638,6 +1638,9 @@ EOF
     sed -i -e 's|listen [::]:443 ssl; # managed by Certbot|listen [::]:443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
 
     # - configure SSL }}}
+
+    # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
+    rm -f /etc/nginx/sites-enabled/default
 
     # security
     el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
