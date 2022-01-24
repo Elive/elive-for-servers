@@ -153,7 +153,7 @@ get_args(){
                 is_extra_service=1
                 ;;
             "--install=exim"|"--install=email")
-                is_wanted_exim=1
+                is_wanted_email=1
                 is_extra_service=1
                 ;;
             "--install=wordpress")
@@ -163,7 +163,7 @@ get_args(){
             "--install=all")
                 # used for debug purposes, nobody is meant to want all
                 is_wanted_wordpress=1
-                is_wanted_exim=1
+                is_wanted_email=1
                 is_wanted_elive=1
                 is_wanted_fail2ban=1
                 is_wanted_monit=1
@@ -1077,6 +1077,94 @@ EOF
         el_info "Created user '$username'"
     fi
 
+    install_user_email_smtp
+    install_user_email_dovecot
+
+}
+
+install_user_email_smtp(){
+    if installed_check "exim" || [[ "$1" = "force" ]] ; then
+        require_variables "username|mail_hostname|email_smtp_password|email_username|email_imap_password|hostname"
+
+        # add login
+        sed -i -e "/^${email_username}: /d" /etc/exim4/passwd 2>/dev/null || true
+        echo -e "\n${email_username}: $( echo "${email_smtp_password}" | mkpasswd -s )" >> /etc/exim4/passwd
+
+        # configure mailx-send to work from user
+        mkdir -p "$DHOME/${username}/bin"
+        cp /usr/local/bin/mailx-send "$DHOME/${username}/bin/"
+        chown -R "${username}:${username}" "$DHOME/${username}/bin"
+
+        changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" "$DHOME/${username}/bin/mailx-send"
+        changeconfig "password=" "password=\"$email_smtp_password\"" "$DHOME/${username}/bin/mailx-send"
+        changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" "$DHOME/${username}/bin/mailx-send"
+        changeconfig "smtp_port=" "smtp_port=\"587\"" "$DHOME/${username}/bin/mailx-send"
+        changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" "$DHOME/${username}/bin/mailx-send"
+
+        # configure our tool email-sender too
+        su - "$username" <<EOF
+bash -c '
+set -e
+mkdir -p \$HOME/.config
+rm -f \$HOME/.config/email-sender
+echo -e "email_account=\"${email_username}\"" >> \$HOME/.config/email-sender
+echo -e "email_password=\"${email_smtp_password}\"" >> \$HOME/.config/email-sender
+mkdir -p \$HOME/.mutt/accounts
+rm -f \$HOME/.mutt/accounts/elive-sender
+echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set smtp_pass = \"${email_smtp_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set realname = \"${username^} from ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set copy = no" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set timeout = 60" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_user = \"${username}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_pass = \"${email_imap_password}\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set postponed = \"=Drafts\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set imap_keepalive = 10" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "set ssl_force_tls = yes" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# Set default editor\n#set editor=\"vim\"" >> \$HOME/.mutt/accounts/elive-sender
+echo -e "# sort messages by thread\nset sort=threads" >> \$HOME/.mutt/accounts/elive-sender
+# make it default if we had not another config previously
+if [[ ! -e "\$HOME/.muttrc" ]] ; then
+    ln -fs "\$HOME/.mutt/accounts/elive-sender" "\$HOME/.muttrc"
+fi
+# symlink the user mail location to make it compatible with mutt or other tools
+ln -fs \$HOME/Maildir /var/mail/\$USER || true
+'
+EOF
+
+        is_installed_exim=1
+    fi
+}
+
+install_user_email_dovecot(){
+    if installed_check "dovecot" || [[ "$1" = "force" ]] ; then
+        require_variables "username|mail_hostname|email_imap_password|email_username"
+        # add credentials
+        touch /etc/dovecot/users
+        # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
+        sed -i -e "/^${username}@${mail_hostname}:/d" /etc/dovecot/users 2>/dev/null || true
+        echo -e "${username}@${mail_hostname}:{SHA512-CRYPT}$( perl -e "print crypt("${email_imap_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
+
+        # redirect emails to your website's user email
+        if [[ "${email_username%@*}" != "$username" ]] ; then
+            sed -i -e "/^${email_username%@*}: /d" /etc/aliases 2>/dev/null || true
+            echo "${email_username%@*}: ${username}" >> /etc/aliases
+        fi
+        sed -i -e "/^no-reply: ${username}$/d" /etc/aliases 2>/dev/null || true
+        echo "no-reply: ${username}" >> /etc/aliases
+        #echo "notification: ${username}" >> /etc/aliases
+
+        is_installed_dovecot=1
+    fi
 }
 
 
@@ -1865,7 +1953,7 @@ install_fail2ban(){
     installed_set "fail2ban"
 }
 
-install_exim(){
+install_email(){
     # Howto's used as base:
     # * https://transang.me/setup-a-production-ready-exim-dovecot-server/
     # other nice howto's:
@@ -2002,8 +2090,6 @@ install_exim(){
 
     # be able to send from this domain, add a dkim signature
     /usr/local/sbin/exim_adddkim "${mail_hostname}"
-    sed -i -e "/^${email_username}: /d" /etc/exim4/passwd 2>/dev/null || true
-    echo -e "\n${email_username}: $( echo "${email_smtp_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
     # our server settings
     cat >> /etc/exim4/conf.d/main/000_localmacros << EOF
@@ -2100,52 +2186,15 @@ EOF
     #grep -R Subject /var/spool/exim4/input/* | sed -e 's/^.*Subject:\ //' | sort | uniq -c | sort -n   # show Subjects of Emails in the queue
     exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
 
-    # configure mailx-send to work
+    # configure mailx-send to work (this will be a generic one from the first install for all the users)
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
     changeconfig "password=" "password=\"$email_smtp_password\"" /usr/local/bin/mailx-send
     changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
     changeconfig "smtp_port=" "smtp_port=\"587\"" /usr/local/bin/mailx-send
     changeconfig "args_snail_extra=" "args_snail_extra=\"-S smtp-use-starttls -S smtp-auth=login\"" /usr/local/bin/mailx-send
 
-    # configure our tool email-sender too
-    su - "$username" <<EOF
-bash -c '
-set -e
-mkdir -p \$HOME/.config
-rm -f \$HOME/.config/email-sender
-echo -e "email_account=\"${email_username}\"" >> \$HOME/.config/email-sender
-echo -e "email_password=\"${email_smtp_password}\"" >> \$HOME/.config/email-sender
-mkdir -p \$HOME/.mutt/accounts
-rm -f \$HOME/.mutt/accounts/elive-sender
-echo -e "# smtp, sending of emails:" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set smtp_url = \"smtp://${email_username}@smtp.${mail_hostname}:587/\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set smtp_pass = \"${email_smtp_password}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set from = \"${username}@${mail_hostname}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set realname = \"${username^} from ${hostname} (EliveServer)\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set copy = no" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set timeout = 60" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "# imap settings:" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set imap_user = \"${username}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set imap_pass = \"${email_imap_password}\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set spoolfile = \"imaps://imap.${mail_hostname}/\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set folder = \"imaps://imap.${mail_hostname}/INBOX/\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set record  = \"=Sent\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set postponed = \"=Drafts\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set mail_check = 60" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set imap_keepalive = 10" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "set ssl_force_tls = yes" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "# Set default editor\n#set editor=\"vim\"" >> \$HOME/.mutt/accounts/elive-sender
-echo -e "# sort messages by thread\nset sort=threads" >> \$HOME/.mutt/accounts/elive-sender
-# make it default if we had not another config previously
-if [[ ! -e "\$HOME/.muttrc" ]] ; then
-    ln -fs "\$HOME/.mutt/accounts/elive-sender" "\$HOME/.muttrc"
-fi
-# symlink the user mail location to make it compatible with mutt or other tools
-ln -fs \$HOME/Maildir /var/mail/\$USER || true
-'
-EOF
+    # install user login data
+    install_user_email_smtp "force"
 
 
 
@@ -2168,21 +2217,6 @@ EOF
     changeconfig "mail_location =" "mail_location = maildir:~/Maildir" /etc/dovecot/conf.d/10-mail.conf
     changeconfig "#log_path = syslog" "log_path = syslog" /etc/dovecot/conf.d/10-logging.conf
 
-    # add credentials
-    touch /etc/dovecot/users
-    # example: me:{CRYPT}$2y$05$pFZ8zDO.o.FtcTIWNOTqdeTgRj0OmoxzK2HineVAKEv91DEP4DXY6:1000:1000::/home/foo:/bin/bash:userdb_mail=maildir:/home/foo/Maildir
-    sed -i -e "/^${username}@${mail_hostname}:/d" /etc/dovecot/users 2>/dev/null || true
-    echo -e "${username}@${mail_hostname}:{SHA512-CRYPT}$( perl -e "print crypt("${email_imap_password}",'\$6\$saltsalt\$')" ):$( grep "^${username}:" /etc/passwd | sed -e "s|^${username}:.:||g" ):userdb_mail=maildir:$( awk -F: -v user="$username" '{if ($1 == user) print $6}' /etc/passwd )/Maildir" >> /etc/dovecot/users
-
-    # redirect emails to your website's user email
-    if [[ "${email_username%@*}" != "$username" ]] ; then
-        sed -i -e "/^${email_username%@*}: /d" /etc/aliases 2>/dev/null || true
-        echo "${email_username%@*}: ${username}" >> /etc/aliases
-    fi
-    sed -i -e "/^no-reply: ${username}$/d" /etc/aliases 2>/dev/null || true
-    echo "no-reply: ${username}" >> /etc/aliases
-    #echo "notification: ${username}" >> /etc/aliases
-
 
     # open ports: POP3, port 995
     if ((is_external_connections_email_enabled)) ; then
@@ -2199,6 +2233,7 @@ EOF
         fi
     fi
 
+    install_user_email_dovecot "force"
     # TODO: include a stat system to know how many people installed the server
 
 
@@ -2251,6 +2286,10 @@ EOF
 
     installed_set "exim"
     is_installed_exim=1
+
+    installed_set "dovecot"
+    is_installed_dovecot=1
+
 }
 
 install_iptables(){
@@ -2666,14 +2705,18 @@ EOF
 
         if [[ "$mail_hostname" = "$domain" ]] ; then
             el_info "DNS type A record named 'smtp' with data '${domain_ip}'"
-            el_info "DNS type A record named 'imap' with data '${domain_ip}'"
+            if ((is_installed_dovecot)) ; then
+                el_info "DNS type A record named 'imap' with data '${domain_ip}'"
+            fi
             el_info "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'"
             el_info "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'"
             el_info "DNS type MX record with (empty) name '' with data 'smtp.${domain}' and priority '10'"
         else
             el_info "DNS type A record named '${mail_hostname}' with data '${domain_ip}'"
             el_info "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'"
-            el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
+            if ((is_installed_dovecot)) ; then
+                el_info "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'"
+            fi
             el_info "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'"
             el_info "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'"
             el_info "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}' and priority '10'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
@@ -2713,9 +2756,13 @@ EOF
         # TODO: add mta-sts
 
         # SMTP conf
-        el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587' (TLS), username '${email_username}', password (plain) '${email_smtp_password}'"
-        el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
-        el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
+        if ((is_installed_exim)) ; then
+            el_info "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587' (TLS), username '${email_username}', password (plain) '${email_smtp_password}'"
+        fi
+        if ((is_installed_dovecot)) ; then
+            el_info "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system"
+            el_info "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server"
+        fi
         #if [[ "$mail_hostname" != "$domain" ]] ; then
             # TODO: tell that we need to add more same dns's for the main domain
         #fi
@@ -3013,9 +3060,9 @@ main(){
     # }}}
 
     # install email server {{{
-    if ((is_wanted_exim)) ; then
+    if ((is_wanted_email)) ; then
         if installed_ask "exim" "You are going to install EXIM mail server, it will be configured for you with users, dkim keys, etc. Continue?" ; then
-            install_exim
+            install_email
         fi
     fi
     # }}}
