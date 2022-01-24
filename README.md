@@ -101,7 +101,6 @@ You are welcome to send push commits for fixes and improvements, especially dyna
 
 ## Testimonials:
 
-> As I was a trainee in IT, we need to setup a LAMP and use HeidiSQL under windows. Since I was using Linux quite a time, I brought my laptop and got a fully functional server in 5 minutes. The rest of the class needed up to a whole day for the setup and understanding.
-     _[https://blog.lupuse.org/cv_de.html](Benjamin Møller)_
+> _"As I was a trainee in IT, we need to setup a LAMP and use HeidiSQL under windows. Since I was using Linux quite a time, I brought my laptop and got a fully functional server in 5 minutes. The rest of the class needed up to a whole day for the setup and understanding._" - _[Benjamin Møller](https://blog.lupuse.org/cv_de.html)_
 
 
