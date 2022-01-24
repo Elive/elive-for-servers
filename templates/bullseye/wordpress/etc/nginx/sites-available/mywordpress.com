@@ -2,6 +2,7 @@
 
 # limit the requests to 50 per second
 limit_req_zone $binary_remote_addr zone=wordpress:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
 
 server {
     listen 80;
@@ -14,10 +15,17 @@ server {
     # but allow shots of 1000 requests to not delay normal page loads
     limit_req zone=wordpress burst=1000 nodelay;
 
+    # limit connections per ip
+    limit_conn conn_limit_per_ip 32;
+
+
     server_name  mywordpress.com;
     root /home/elivewp/mywordpress.com;
 
     index index.php index.html index.htm;
+
+    # set a default expires header for everything in order to improve performance
+    expires 30d;
 
     # local user's configurations, also needed for some plugins that writes their own confs
     include /home/elivewp/mywordpress.com/nginx.conf;

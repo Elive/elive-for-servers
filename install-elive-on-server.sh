@@ -919,7 +919,7 @@ EOF
     #chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys
 
     # disable ssh password logins
-    if [[ -s ~/.ssh/authorized_keys ]] ; then
+    if [[ -s ~/.ssh/authorized_keys ]] && ! grep-qs "^PasswordAuthentication no" /etc/ssh/sshd_config ; then
         if ((is_betatesting)) || el_confirm "Do you want to disable password-based SSH logins? (use SSH keys instead, strongly suggested)" ; then
             changeconfig "PasswordAuthentication" "PasswordAuthentication no" /etc/ssh/sshd_config
         fi

@@ -88,7 +88,20 @@ ___Note: it's important to set all the options wanted in a single command, so th
  * --force                  - _it will force the reinstall of the services / options, even if was installed previously_
  * --freespace-system       - _it will clean up your system with unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux_
 
+## Details:
+ * you can install many wordpress websites as you want, each one will be isolated on its own userspace and it will not require extra resources
+ * if you have SSH keys to login included, the installation asks you if you want to disable password-based logins on ssh (so use only ssh-keys), and also asks if you want to change the port
+ * phpinfo is not enabled by default, also nginx tokens (nginx version / info etc) are disabled
+ * firewall is included and input ports closed by default, DURING the installation of services on elive-for-servers, the needed ports for these services are then configured to be open (so yeah, all working by default but only enabled for the wanted things)
+
 
 
 ## Collaboration:
 You are welcome to send push commits for fixes and improvements, especially dynamic compatibility, but changing the behaviour of the tool will require a previous debate / brainstorm since some things can break if done differently. There's many different operating systems (and so different way to set up things, file locations, compatibilities, versions, etc...) so it's sometimes better to just stick to a debian base of which we know works well and is made for it.
+
+## Testimonials:
+
+> As I was a trainee in IT, we need to setup a LAMP and use HeidiSQL under windows. Since I was using Linux quite a time, I brought my laptop and got a fully functional server in 5 minutes. The rest of the class needed up to a whole day for the setup and understanding.
+     _[https://blog.lupuse.org/cv_de.html](Benjamin Møller)_
+
+
