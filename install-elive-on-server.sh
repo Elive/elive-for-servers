@@ -516,11 +516,36 @@ el_confirm(){
 }
 
 require_variables(){
-    if ! el_check_variables "$@" ; then
-        set +x
-        el_error "Needed variable '$@' is not set, function '${FUNCNAME[1]}'. See the --help to show the available options"
-        exit 1
-    fi
+    update_variables
+
+    while read -ru 3 _var
+    do
+        if [[ ! -n "${!_var}" ]] ; then
+            case "$_var" in
+                "domain")              ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)" ; ;;
+                "username")            ask_variable "username" "Insert a desired system username to use, it will be created (suggested) if doesn't exist yet" ; ;;
+                "email_admin")         ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)" ; ;;
+                "pass_mariadb_root")   ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place" ; ;;
+                "httaccess_password")  ask_variable "httaccess_password" "Insert an 'htpasswd' Password" ; ;;
+                "httaccess_user")      ask_variable "httaccess_user" "Insert an 'htpasswd' Username" ; ;;
+                "wp_webname")          ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc" ; ;;
+                "wp_db_name")          ask_variable "wp_db_name" "Insert a Name for your Wordpress Database, keep it in a safe place" ; ;;
+                "wp_db_user")          ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place" ; ;;
+                "wp_db_pass")          ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place" ; ;;
+                "email_imap_password") ask_variable "email_imap_password" "Insert a password for the email of your '${username}' username" ; ;;
+                "email_smtp_password") ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')" ; ;;
+
+            esac
+
+            if [[ ! -n "${!_var}" ]] ; then
+                set +x
+                el_error "Needed variable '$@' is not set, function '${FUNCNAME[1]}'. See the --help to show the available options"
+                exit 1
+            fi
+        fi
+    done 3<<< "$( echo "${@}" | tr '|' '\n' )"
+
+    update_variables
 }
 
 ask_variable(){
@@ -532,6 +557,7 @@ ask_variable(){
             echo -e "${el_c_c2}${2}${el_c_n}" 1>&2
             read $1
             if [[ -z "${!1}" ]] ; then
+                set +x
                 NOREPORTS=1 el_error "You didn't inserted any value, aborting..."
                 exit_error
             fi
@@ -601,11 +627,7 @@ packages_remove(){
 sources_update_adapt(){
     templates="$sources/templates"
 
-    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
-    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
-
-    update_variables
-    require_variables "sources|templates|domain_ip|previous_ip|domain|hostname|hostnameshort|hostnamefull|debian_version"
+    require_variables "domain|email_admin|sources|templates|domain_ip|previous_ip|hostname|hostnameshort|hostnamefull|debian_version"
 
     rm -rf "$sources" 1>/dev/null 2>&1 || true
     cd "$( dirname "$sources" )"
@@ -963,7 +985,6 @@ EOF
         crontab /root/.crontab
     fi
 
-    update_variables
     require_variables "debian_version|elive_version"
 
     # elive version conf
@@ -986,7 +1007,6 @@ EOF
 
 install_user(){
     el_info "Installing User..."
-    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet"
     require_variables "username|DHOME"
 
     if [[ -d "$DHOME/${username}" ]] ; then
@@ -1192,7 +1212,7 @@ install_nginx(){
     addconfig "<h2><i>With Elive super-powers</i></h2>" /var/www/html/index.nginx-debian.html
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" /etc/nginx/sites-enabled/default
 
-    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
+    require_variables "email_admin"
 
     install_templates "nginx" "/"
 
@@ -1285,7 +1305,6 @@ install_php(){
 
     # get php version
     unset php_version
-    update_variables
     require_variables "php_version"
 
     # configure php default options
@@ -1378,7 +1397,7 @@ install_mariadb(){
         $NULL
 
     # set root password
-    ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place"
+    require_variables "pass_mariadb_root"
 
     if [[ -n "$pass_mariadb_root" ]] ; then
         #sed -i "s|^password = $|password = ${pass_mariadb_root}|g" /etc/mysql/debian.cnf
@@ -1474,14 +1493,7 @@ install_wordpress(){
 
     # }}}
     # required variables {{{
-    ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place"
-    ask_variable "wp_db_name" "Insert a Name for your Wordpress Database, keep it in a safe place"
-    ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place"
-    ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place"
-    ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc"
-    ask_variable "username" "Insert a desired system username where to install Wordpress, it will be created (suggested) if doesn't exist yet"
-
-    require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username"
+    require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username|wp_webname"
 
     # get the domain (last two . elements) from wp_webname
     if [[ -z "$domain" ]] ; then
@@ -1732,8 +1744,7 @@ EOF
 
     # security
     el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
-    ask_variable "httaccess_user" "Insert an 'htpasswd' Username"
-    ask_variable "httaccess_password" "Insert an 'htpasswd' Password"
+    require_variables "httaccess_user|httaccess_password"
 
     htpasswd -c -b "$DHOME/${username}/${wp_webname}/.htpasswd" "${httaccess_user}" "${httaccess_password}"
     chown "${username}:${username}" "$DHOME/${username}/${wp_webname}/.htpasswd"
@@ -1894,11 +1905,8 @@ install_phpmyadmin(){
 
 install_fail2ban(){
     el_info "Installing Fail2Ban..."
-    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
-    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
 
     require_variables "email_admin|domain_ip|hostnamefull|domain"
-    update_variables
 
     packages_install \
         fail2ban whois python3-pyinotify \
@@ -1965,16 +1973,8 @@ install_email(){
     systemctl stop  exim4.service  2>/dev/null || true
     packages_remove  postfix || true
 
-    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
-    ask_variable "username" "Insert username to use, it will be created if doesn't exist yet"
-    #ask_variable "wp_webname" "Insert the Website name for your email server, for example if you have a Wordpress install can be like: mysite.com, www.mysite.com, blog.mydomain.com. If you don't have any site just leave it empty"
-    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
-    #ask_variable "email_username" "Insert an Email username for SMTP sending, like admin@yourdomain.com"
-    ask_variable "email_imap_password" "Insert a password for the email of your '${username}' username"
+    require_variables "domain|username|email_admin|email_imap_password|hostnamefull"
     email_smtp_password="$email_imap_password"
-    ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')"
-
-    update_variables
 
     if ! [[ -d "$DHOME/${username}" ]] ; then
         install_user "$username"
@@ -1995,7 +1995,6 @@ install_email(){
         fi
     fi
 
-    require_variables "domain|email_admin|username|email_imap_password|email_smtp_password|hostnamefull"
     email_username="${username}@${mail_hostname}"
 
     # cleanup old install and configuration
@@ -2474,11 +2473,8 @@ EOF
 
 install_monit(){
     el_info "Installing Monit..."
-    ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)"
-    ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)"
 
-    update_variables
-    require_variables "hostnamefull|domain|email_admin"
+    require_variables "domain|hostnamefull|email_admin"
 
     install_templates "monit" "/"
 
