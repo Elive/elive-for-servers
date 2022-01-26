@@ -534,7 +534,6 @@ require_variables(){
                 "wp_db_pass")          ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place" ; ;;
                 "email_imap_password") ask_variable "email_imap_password" "Insert a password for the email of your '${username}' username" ; ;;
                 "email_smtp_password") ask_variable "email_smtp_password" "Insert a password for your Email SMTP sending (user will be '${username}')" ; ;;
-
             esac
 
             if [[ ! -n "${!_var}" ]] ; then
@@ -1734,8 +1733,11 @@ EOF
     fi
 
     # enable http2 improvements
-    sed -i -e 's|listen 443 ssl; # managed by Certbot|listen 443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
-    sed -i -e 's|listen [::]:443 ssl; # managed by Certbot|listen [::]:443 ssl http2; # managed by Certbot|g'  "/etc/nginx/sites-available/${wp_webname}"
+    sed -i -e 's|listen 443 ssl;|listen 443 ssl http2;|g'  "/etc/nginx/sites-available/${wp_webname}"
+    sed -i -e 's|listen [::]:443 ssl ipv6only=on;|listen [::]:443 ssl http2 ipv6only=on;|g'  "/etc/nginx/sites-available/${wp_webname}"
+    if ! grep -qs " http2" "/etc/nginx/sites-available/${wp_webname}" ; then
+        el_warning "http2 not enabled for ${wp_webname}?"
+    fi
 
     # - configure SSL }}}
 
@@ -1843,6 +1845,10 @@ EOF
 
     http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' || true )"
     if [[ -n "$http_version" ]] ; then
+        if [[ "$http_version" = 1* ]] ; then
+            el_warning "HTTP version running is '${http_version}'"
+        fi
+
         el_info "HTTP protocol version running is '$http_version'"
         installed_set "wordpress"
         is_installed_wordpress=1

@@ -28,8 +28,8 @@ server {
     expires 30d;
 
     # local user's configurations, also needed for some plugins that writes their own confs
-    include /home/elivewp/mywordpress.com/nginx.conf;
     include /home/elivewp/mywordpress.com/nginx-local.conf;
+    include /home/elivewp/mywordpress.com/nginx.conf;
 
     # custom error pages
     #error_page 404 /404.html;
