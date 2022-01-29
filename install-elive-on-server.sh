@@ -1785,7 +1785,7 @@ location = /robots.txt {
 
 # Cache Static Files For As Long As Possible
 location ~*
-   \\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$
+   \\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|css|rss|atom|js|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)\$
    {
        access_log off;
        #log_not_found off;
@@ -1793,28 +1793,24 @@ location ~*
    }
 
 # Disallow PHP In Upload Folder
-location /wp-content/uploads/ {
-   location ~ \\.php$ {
-      deny all;
-   }
-}
+location ~ ^/wp\\-content/uploads/.*\\.(?:php[1-7]?|pht|phtml?|phps)\$ { deny all; }
 
 # Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
-if (\$request_uri ~* "^.+(readme|license)\\.(txt|html)$") {
+if (\$request_uri ~* "^.+(readme|license)\\.(txt|html)\$") {
    return 403;
 }
 
 # forbid showing hidden files, except the ones in .well-known dir which is needed for verifications and letsencrypt
 location ^~ /.well-known/        { allow all ; }
 location ~ /\\.          { access_log off; log_not_found off; return 444; }
-location ~* \\.(conf)$          { access_log off; log_not_found off; return 444; }
+location ~* \\.(conf)\$          { access_log off; log_not_found off; return 444; }
 
 
 # blacklist common hacks, enable these unless gives you problems
 #location ~* (/data/admin/ver.txt|/templets/default/style/dedecms.css|/data/admin/allowurl.txt|/data/cache/index.htm|/member/space/person/common/css/css.css|/data/admin/quickmenu.txt|/templets/default/images/logo.gif|/data/mysql_error_trace.inc|//data/mysql_error_trace.inc|/member/templets/images/login_logo.gif|/member/images/dzh_logo.gif|/member/images/base.css|/include/data/vdcode.jpg|/api/Uploadify/|/plugins/uploadify/|alexa.jpeg)  { access_log off; log_not_found off; return 444; }
-#location ~ (?i)^/wp\\-content/plugins/.*\\.txt$ { access_log off; log_not_found off; return 444; }
+#location ~ (?i)^/wp\\-content/plugins/.*\\.txt\$ { access_log off; log_not_found off; return 444; }
 # filenames (php mostly)
-#location ~ (?i).*/(autodiscover|eval-stdin|system_api|adminer|connector|adm|IOptimize|blackhat|th3_alpha|vuln|oecache|upload_index|xxx|microsoft.exchange|security|app-ads|newfile|demodata|admins|nginx|apache|wlmanifest|force-download|password)\\.(?:php[1-7]?|pht|phtml?|phps|xml|txt)$ { access_log off; log_not_found off; return 444; }
+#location ~ (?i).*/(autodiscover|eval-stdin|system_api|adminer|connector|adm|IOptimize|blackhat|th3_alpha|vuln|oecache|upload_index|xxx|microsoft.exchange|security|app-ads|newfile|demodata|admins|nginx|apache|wlmanifest|force-download|password)\\.(?:php[1-7]?|pht|phtml?|phps|xml|txt)\$ { access_log off; log_not_found off; return 444; }
 # directories too:
 #location ~ (?i).*/(fckeditor|apismtp|console|jsonws|connectors|streaming|uc_server|ioptimization|code87|administrator|mTheme-Unus|data/404|e/data|client_area|stalker_portal|nextcloud|owncloud|old-wp|zoomsounds|awesome-support|pdst\\.fm)/ { access_log off; log_not_found off; return 444; }
 
@@ -1825,10 +1821,10 @@ location ~* \\.(conf)$          { access_log off; log_not_found off; return 444;
 #}
 
 # sitemap conf for WP Seo plugin:
-#rewrite ^/sitemap\\.xml$ /sitemap_index.xml last;
-#rewrite ^/([^/]+?)-sitemap([0-9]+)?\\.xml$ /index.php?sitemap=\$1&sitemap_n=\$2 last;
+#rewrite ^/sitemap\\.xml\$ /sitemap_index.xml last;
+#rewrite ^/([^/]+?)-sitemap([0-9]+)?\\.xml\$ /index.php?sitemap=\$1&sitemap_n=\$2 last;
 ## needed for show the xml on firefox visualizing correctly and without error
-#rewrite ^/main-sitemap\\.xsl$ /index.php?xsl=main last;
+#rewrite ^/main-sitemap\\.xsl\$ /index.php?xsl=main last;
 
 
 

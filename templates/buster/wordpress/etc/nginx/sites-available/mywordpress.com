@@ -16,7 +16,7 @@ server {
     limit_req zone=wordpress burst=1000 nodelay;
 
     # limit connections per ip
-    limit_conn conn_limit_per_ip 32;
+    limit_conn conn_limit_per_ip 60;
 
 
     server_name  mywordpress.com;

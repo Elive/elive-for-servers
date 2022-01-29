@@ -11,8 +11,8 @@ _Important: this tool installs packages in your server to improve it with Elive 
 _:warning: Note: Ubuntu installs are added for compatibility, but we **strongly** suggest to use Debian instead. If you use Ubuntu we don't accept but reports, only 'Pull requests' if you send the improvements/fixes_
 
 ## Features:
-* Turn an ugly server into a full Elive powered one
-* Set up a very powerful server using the lowest resources! (optimized wordpress & email server, with watchers & protections)
+* Turn an slow or ugly server into a full Elive featured one
+* Set up a very powerful server using the lowest resources! _optimized multiple wordpress websites & strong email server, including security protections and more_ in only  1 GB RAM server machine
 * Install Wordpress with all the dependencies and special customizations, from zero to this in less than 2 minutes
   * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
   * install multiple wordpress websites in the same machine and still being light on resources (3 wordpress sites, full server setup, 171 MB ram)
