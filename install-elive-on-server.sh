@@ -1950,9 +1950,9 @@ install_fail2ban(){
         changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/mysqld.conf
     fi
 
-    if installed_check "monit" ; then
-        changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
-    fi
+    #if installed_check "monit" ; then
+        #changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
+    #fi
 
     # this conf is needed for recidive jail especially, and for "tail" the logs better
     changeconfig "weekly" "monthly" /etc/logrotate.d/fail2ban
@@ -3111,11 +3111,11 @@ main(){
     #
 
     # post fix for fail2ban since is installed before monit {{{
-    if installed_check "fail2ban" ; then
-        if installed_check "monit" ; then
-            changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
-        fi
-    fi
+    #if installed_check "fail2ban" ; then
+        #if installed_check "monit" ; then
+            #changeconfig "enabled = " "enabled = true" /etc/fail2ban/jail.d/monit.conf
+        #fi
+    #fi
 
     # }}}
     # TODO: to protect attacks of DDOS from fail2ban, set the priority process much higher (root cronjob?)

@@ -61,13 +61,13 @@ _This is the login of your server after installing it, where you can see:_
 
  * Add an extra independent Wordpress website
 
-`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --user=user2
+`bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --install=wordpress --user=user2`
 
  * To create a new Elivised user (only):
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --user=johnsmith`
 
- * **Etc**.. See the Help with more options:
+ * **Etc**.. See the Help showing more options:
 
 `bash - <(curl -fsSLg -- "https://raw.githubusercontent.com/Elive/elive-for-servers/main/install-elive-on-server.sh" ) --help`
 
@@ -86,7 +86,7 @@ ___Note: it's important to set all the options wanted in a single command, so th
  * --install=rootkitcheck   - _daemon to check daily your system to find posible rootkits malware_
  * --install=swapfile       - _creates a 1 GB swap file to help your server not having processes killed by memory exhausted_
  * --force                  - _it will force the reinstall of the services / options, even if was installed previously_
- * --freespace-system       - _it will clean up your system with unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux_
+ * --freespace-system       - _it will remove up your system of unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux_
 
 ## Details:
  * you can install many wordpress websites as you want, each one will be isolated on its own userspace and it will not require extra resources
