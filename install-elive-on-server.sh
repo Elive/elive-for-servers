@@ -710,7 +710,9 @@ EOF
 install_templates(){
     name="$1" ; shift
     dest="$1" ; shift
-    user="$1" ; shift
+    if [[ -n "$1" ]] ; then
+        user="$1" ; shift
+    fi
 
     require_variables "name|dest"
 
