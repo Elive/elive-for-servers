@@ -1109,7 +1109,7 @@ install_user_email_smtp(){
 
         # add login
         sed -i -e "/^${email_username}: /d" /etc/exim4/passwd 2>/dev/null || true
-        echo -e "\n${email_username}: $( echo "${email_smtp_password}" | mkpasswd -s )" >> /etc/exim4/passwd
+        echo -e "${email_username}: $( echo "${email_smtp_password}" | mkpasswd -s )" >> /etc/exim4/passwd
 
         # configure mailx-send to work from user
         mkdir -p "$DHOME/${username}/bin"
@@ -1761,7 +1761,7 @@ EOF
 
 # Enable this section if you want to keep your login secured with an extra password
 #location ^~ /wp-login.php {
-#    auth_basic "Restricted";
+#    auth_basic \"Restricted\";
 #    auth_basic_user_file $DHOME/${username}/${wp_webname}/.htpasswd;
 #    include fastcgi_params;
 #    fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;
@@ -1798,7 +1798,7 @@ location ~*
 location ~ ^/wp\\-content/uploads/.*\\.(?:php[1-7]?|pht|phtml?|phps)\$ { deny all; }
 
 # Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
-if (\$request_uri ~* "^.+(readme|license)\\.(txt|html)\$") {
+if (\$request_uri ~* \"^.+(readme|license)\\.(txt|html)\$\") {
    return 403;
 }
 
@@ -1841,7 +1841,7 @@ EOF
     fi
     sleep 5
 
-    http_version="$( curl -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' || true )"
+    http_version="$( curl --max-time 5 -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' || true )"
     if [[ -n "$http_version" ]] ; then
         if [[ "$http_version" = 1* ]] ; then
             el_warning "HTTP version running is '${http_version}'"
@@ -2021,13 +2021,13 @@ install_email(){
         echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.25 " | debconf-set-selections
     fi
     # if you send emails to these domains, accept them:
+    echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
+    echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
     if [[ "$mail_hostname" = "$domain" ]] ; then
         echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${mail_hostname}" | debconf-set-selections
     else
         echo -e "exim4-config\texim4/dc_other_hostnames\tstring\t${mail_hostname} ; ${domain}" | debconf-set-selections
     fi
-    echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
-    echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
 
 
     # packages to install
