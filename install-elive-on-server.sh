@@ -1761,7 +1761,7 @@ EOF
 
 # Enable this section if you want to keep your login secured with an extra password
 #location ^~ /wp-login.php {
-#    auth_basic \"Restricted\";
+#    auth_basic "Restricted";
 #    auth_basic_user_file $DHOME/${username}/${wp_webname}/.htpasswd;
 #    include fastcgi_params;
 #    fastcgi_pass unix:/run/php/php${php_version}-fpm-${username}.sock;
@@ -1798,7 +1798,7 @@ location ~*
 location ~ ^/wp\\-content/uploads/.*\\.(?:php[1-7]?|pht|phtml?|phps)\$ { deny all; }
 
 # Return 403 Forbidden For readme.(txt|html) or license.(txt|html)
-if (\$request_uri ~* \"^.+(readme|license)\\.(txt|html)\$\") {
+if (\$request_uri ~* "^.+(readme|license)\\.(txt|html)$") {
    return 403;
 }
 
@@ -2052,6 +2052,9 @@ install_email(){
 
     rm -f /etc/exim4/exim4.conf.template # since we are using split configurations, delete this file which may be confusing
     update-exim4.conf
+    dpkg-reconfigure -fnoninteractive exim4-config
+    # fix conf:
+    sed -i -e "/^dc_other_hostnames/s|${domain}:.*'$|${domain}'|g" /etc/exim4/update-exim4.conf.conf
     dpkg-reconfigure -fnoninteractive exim4-config
 
     # install certificate
