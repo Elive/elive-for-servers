@@ -1317,8 +1317,8 @@ install_php(){
 
     # increase execution times to 4 min
     changeconfig "max_execution_time" "max_execution_time = 240  ; increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
-    changeconfig "max_execution_time" "default_socket_timeout = 1200  ; increase this value if you have a plugin that requires more time to run. NOTE: we may can this value high since we can manage the total time from max_execution_time" /etc/php/$php_version/fpm/php.ini
-    changeconfig "max_input_time" "max_input_time = 240 ; increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
+    #changeconfig "default_socket_timeout" "default_socket_timeout = 1200  ; increase this value if you have a plugin that requires more time to run. NOTE: we may can this value high since we can manage the total time from max_execution_time" /etc/php/$php_version/fpm/php.ini
+    #changeconfig "max_input_time" "max_input_time = 240 ; increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/php.ini
     changeconfig "memory_limit" "memory_limit = 256M" /etc/php/$php_version/fpm/php.ini
 
     changeconfig "cgi.fix_pathinfo=1" "cgi.fix_pathinfo=0" /etc/php/$php_version/fpm/php.ini
@@ -1346,7 +1346,7 @@ install_php(){
         # do not waste resources
         changeconfig "pm = dynamic" "pm = ondemand" /etc/php/$php_version/fpm/pool.d/www.conf
         # this is needed when running long processes
-        changeconfig "request_terminate_timeout =" "request_terminate_timeout = 1200s ; increase this value if you have a plugin that requires more time to run" /etc/php/$php_version/fpm/pool.d/www.conf
+        #changeconfig "request_terminate_timeout =" "request_terminate_timeout = 1200s" /etc/php/$php_version/fpm/pool.d/www.conf
         # make it more readable on vim
         addconfig "\n\n; vim: set filetype=dosini :" /etc/php/$php_version/fpm/pool.d/www.conf
         #cp /etc/php/$php_version/fpm/pool.d/www.conf /etc/php/$php_version/fpm/pool.d/www.${domain}.conf  # moved to static
