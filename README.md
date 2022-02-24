@@ -15,7 +15,7 @@ _:warning: Note: Ubuntu installs are added for compatibility, but we **strongly*
 * Set up a very powerful server using the **lowest resources**! _optimized multiple wordpress websites & strong email server, including security protections and more_ in only  1 GB RAM server machine
 * Install **Wordpress** with all the dependencies and special customizations, from zero to this in less than 2 minutes
   * _plugins: a selection of good needed plugins are also preinstalled, you can enable or delete them in your setup_
-  * install multiple wordpress websites in the same machine and still being light on resources (3 wordpress sites, full server setup, 171 MB ram)
+  * install multiple wordpress websites & subdomains in the same machine and still being light on resources (3 wordpress sites, full server setup, 171 MB ram)
 * Install PHP / Mariadb / Nginx / or other listed services in one shot, already customized and optimized.
 * Install an Exim **email server** featuring dovecot to read your emails on thunderbird and optional spamassassin
 * Powerful configurations for **server tools** like VIM with plugins and the best color syntax, git status prompt, aliases, lots of handy shell things, etc
