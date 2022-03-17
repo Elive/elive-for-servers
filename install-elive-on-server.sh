@@ -2739,7 +2739,7 @@ EOF
         #el_info "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};"
         #el_info "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
         #el_info "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific?
-        if [[ "$wp_webname" != "$mail_hostname" ]] ; then
+        if [[ -n "$mail_hostname" ]] && [[ -n "$wp_webname" ]] && [[ "$wp_webname" != "$mail_hostname" ]] ; then
             el_info "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}' and priority '10'"
         fi
         if [[ "$mail_hostname" = "$domain" ]] ; then
