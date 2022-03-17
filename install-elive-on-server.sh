@@ -2789,6 +2789,12 @@ EOF
         echo 1>&2
     fi
 
+    if which ufw 1>/dev/null 2>&1 ; then
+        echo -e "If you need to enable specific ports, you can use: ufw allow PORTNUMBER" >> ~/settings-server.txt
+    else
+        echo -e "If you need to enable specific ports, you need to allow them from iptables" >> ~/settings-server.txt
+    fi
+
     if ((is_installed_monit)) ; then
         echo -e "Monit: monit is a daemon that watch the other daemons are correctly running and if is not the case, restarts it. So if a daemon is restarted when you don't expect to, this feature can be the reason." >> ~/settings-server.txt
         echo 1>&2
