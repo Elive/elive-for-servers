@@ -2864,6 +2864,7 @@ Notes:
 }
 #}}}
 main(){
+    source /usr/lib/elive-tools/functions 1>/dev/null 2>&1 || true
     # TODO: set to 1 for release, to 0 for betatesting more automated installs
     is_production=1
     # TODO: comment after release has been debugged
