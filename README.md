@@ -5,6 +5,7 @@ _Important: this tool installs packages in your server to improve it with Elive 
 
 ### Distros supported:
  * **Debian**: Bullseye, Buster
+ * **Elive**: Elive versions on the same debian base versions previously said
  * **Ubuntu**: 21.10 "Impish", 21.04 "Irsute", 20.04 "Focal", 18.04 "Bionic"
 
 
