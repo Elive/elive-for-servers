@@ -1232,7 +1232,7 @@ install_php(){
     local packages_extra
 
     # default version provided ?
-    php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' )"
+    php_version="$( apt-cache madison php-fpm | grep "debian.org" | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -uV | tail -1 )"
 
     # if we have already php installed
     if which php 1>/dev/null 2>&1 ; then
@@ -1259,7 +1259,7 @@ install_php(){
                     apt-get -q update
 
                     # get new version
-                    php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -Vu | tail -1 )"
+                    php_version="$( apt-cache madison php-fpm | awk -v FS="|" '{print $2}' | sed -e 's|\+.*$||g' -e 's|^.*:||g' | sort -uV | tail -1 )"
                     if ! el_confirm "\nDo you want to use the NEW default provided PHP version '$php_version'? (suggested, but if you say no, you will select one from all the versions available)" ; then
                         unset php_version
                     fi
