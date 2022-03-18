@@ -580,7 +580,7 @@ packages_install(){
     el_debug "Packages wanted to be installed: $@"
 
     apt_wait
-    if ! apt-get install $apt_options $@ ; then
+    if ! DEBIAN_FRONTEND=dialog  apt-get install $apt_options $@ ; then
         if ((is_production)) ; then
             el_debug "Unable to install all packages in one shot, looping one to one..."
             for package in $@
@@ -605,7 +605,7 @@ packages_remove(){
     local package
 
     apt_wait
-    if ! apt-get remove $apt_options $@ ; then
+    if ! DEBIAN_FRONTEND=dialog  apt-get remove $apt_options $@ ; then
         if ((is_production)) ; then
             el_debug "Unable to remove all packages in one shot, looping one to one..."
 
@@ -791,7 +791,7 @@ update_variables(){
 }
 
 install_elive(){
-    el_info "Installing Elive..."
+    el_info "Installing Elive for servers..."
     local packages_extra
     mkdir -p /etc/apt/sources.list.d /etc/apt/preferences.d /etc/apt/trusted.gpg.d
 
@@ -2610,7 +2610,7 @@ final_steps(){
         fi
     fi
     # seems like this package is entirely useless in our server and also uses some RAM resources so let's remove it
-    if [[ -e /var/lib/dpkg/info/packagekit.list ]] ; then
+    if [[ -e /var/lib/dpkg/info/packagekit.list ]] && [[ ! -e "/var/lib/dpkg/info/lightdm.list" ]] && [[ ! -e "/var/lib/dpkg/info/e16.list" ]] && [[ ! -e "/var/lib/dpkg/info/enlightenment.list" ]] && [[ ! -e "/var/lib/dpkg/info/entrance.list" ]] ; then
         packages_remove  packagekit
     fi
 
@@ -2806,8 +2806,8 @@ EOF
     echo -e "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. YOU CAN COPY-PASTE EVERYTHING JUST LIKE PASSWORDS AND ALL TO SAVE IT IN A BACKUP SOMEWHERE, DO NOT LOSE THIS INFO" >> ~/settings-server.txt
     echo -e "Remember to subscribe to Elive in order to know about more new amazing things - Donate to the project to keep it alive if it helped you!" >> ~/settings-server.txt
 
-    el_info "There's a generated file in your $USER home directory called settings-server.txt with all the CONFIGURATIONS that you NEED to finish set up and your passwords, you can access it anytime"
-    echo -e "Press Enter to show the configurations needed to finish set up..."
+    el_info "There's a generated file in your $USER home directory called settings-server.txt with all the CONFIGURATIONS that you NEED to finish the set up and your passwords, you can access it anytime"
+    echo -e "Press Enter to show the configurations needed to finish the set up..."
     read nothing
     cat ~/settings-server.txt | less
     echo -e "\n"
