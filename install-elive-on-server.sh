@@ -587,7 +587,7 @@ packages_install(){
             do
                 if ! apt-get install $apt_options $package ; then
                     set +x
-                    el_error "Problem installing package '$package', debian_version '$debian_version' DISTRIB '$DISTRIB_ID - $DISTRIB_CODENAME', aborting..."
+                    el_error "Problem installing package '$package', debian_version '$debian_version' DISTRIB '$DISTRIB_ID - $DISTRIB_CODENAME - $( lsb_release -d -s )', aborting..."
                     message_github
                     exit 1
                 fi
