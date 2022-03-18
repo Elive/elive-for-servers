@@ -408,7 +408,7 @@ letsencrypt_wrapper(){
 exit_error(){
     set +x
     # cleanups
-    rm -rf "$sources"
+    rm -rf "$sources" 1>/dev/null 2>&1 || true
 
     if [[ -s "$logs" ]] && ((is_tool_beta)) ; then
         el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( tail -n 26 "$logs" | sed -e '/^$/d' )"
@@ -423,7 +423,7 @@ exit_error(){
     exit 1
 }
 exit_ok(){
-    rm -rf "$sources" "$logs"
+    rm -rf "$sources" "$logs" 1>/dev/null 2>&1 || true
     sync ; LC_ALL=C sleep 0.5
 }
 trap "exit_error" ERR
@@ -431,6 +431,10 @@ trap "exit_ok" EXIT
 #trap "exit_error" 1 2 3 6 9 11 13 14 15
 
 prepare_environment(){
+    if [[ "$UID" != "0" ]] ; then
+        return
+    fi
+
     case "$1" in
         start)
             if ! [[ "$( readlink -f "/usr/sbin/update-initramfs" )" = "/bin/true" ]] \
@@ -799,7 +803,6 @@ install_elive(){
 
     # we don't need these, so save some space and time
     sed -i 's/^deb-src /#&/' /etc/apt/sources.list
-    rm -f /etc/apt/sources.list.d/aaa-elive.list
 
 
     # upgrade the system first
@@ -849,8 +852,8 @@ install_elive(){
             # Buster is old, backports is suggested, especially since their install is not on priority
             # monit requires install from backports because there's no other candidate
             if ! ((is_ubuntu)) ; then
-                rm -f /etc/apt/sources.list.d/ggg-debian-backports.list
-                if ! grep -qsi "^deb .* buster-backports " /etc/apt/sources.list ; then
+                if ! grep -qsi "^deb .* buster-backports " /etc/apt/sources.list /etc/apt/sources.list.d/debian.list 2>/dev/null ; then
+                    rm -f /etc/apt/sources.list.d/ggg-debian-backports.list
                     echo -e "\n# is good to have backports in the old buster, especially since their installation is not on priority\ndeb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/ggg-debian-backports.list
                 fi
             fi

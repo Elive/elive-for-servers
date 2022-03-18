@@ -1,7 +1,7 @@
 # Elive for Servers, with superpowers!
-Enjoy your server with some Elive super-powers, and you can also optionally install well-tuned services in one shot!
+Enjoy your server with Elive super-powers, where you can also optionally install well-tuned services in one shot!
 
-_Important: this tool installs packages in your server to improve it with Elive features, and you can optionally install full services too_
+_Important: this tool installs packages in your server to improve it with Elive features, and optionally full services too_
 
 ### Distros supported:
  * **Debian**: Bullseye, Buster
