@@ -24,9 +24,6 @@ server {
 
     index index.php index.html index.htm;
 
-    # set a default expires header for everything in order to improve performance
-    expires 30d;
-
     # local user's configurations, also needed for some plugins that writes their own confs
     include /home/elivewp/mywordpress.com/nginx-local.conf;
     include /home/elivewp/mywordpress.com/nginx.conf;

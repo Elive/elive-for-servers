@@ -152,7 +152,7 @@ get_args(){
                 is_wanted_mariadb=1
                 is_extra_service=1
                 ;;
-            "--install=exim"|"--install=email")
+            "--install=exim"*|"--install=email")
                 is_wanted_email=1
                 is_extra_service=1
                 ;;
