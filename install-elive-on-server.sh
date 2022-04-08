@@ -804,6 +804,11 @@ update_variables(){
         hostnamefull="${hostnameshort}.${domain}"
     fi
 
+    mail_hostname="$hostnamefull"
+    if [[ -n "$username" ]] ; then
+        email_username="${username}@${mail_hostname}"
+    fi
+
     conf_send_debug_reports_email="$email_admin"
     unset is_terminal
 
@@ -1044,7 +1049,9 @@ install_user(){
         useradd -m -k /etc/skel -c "${username}" -s /bin/zsh "$username"
 
         adduser "$username" www-data
-        adduser "$username" mail
+        if [[ "$1" != "noemail" ]] ; then
+            adduser "$username" mail
+        fi
         adduser "$username" users
         adduser "$username" adm
         #adduser "$username" Debian-exim
@@ -1120,8 +1127,10 @@ EOF
         el_info "Created user '$username'"
     fi
 
-    install_user_email_smtp
-    install_user_email_dovecot
+    if [[ "$1" != "noemail" ]] ; then
+        install_user_email_smtp
+        install_user_email_dovecot
+    fi
 
 }
 
@@ -1903,7 +1912,7 @@ install_elivemirror_isos(){
     # }}}
     # create user if not exist {{{
     if ! [[ -d "$DHOME/${username}" ]] ; then
-        install_user
+        install_user "noemail"
     fi
     # cleanups
     if [[ -d "$DHOME/${username}/${elivemirror_isos_webname}" ]] ; then
