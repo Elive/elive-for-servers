@@ -39,7 +39,7 @@ if which s-nail 1>/dev/null 2>&1 ; then
     fi
 fi
 if [[ -z "$address_from" ]] ; then
-    address_from="${USER}@$( hostname --all-fqdns )"
+    address_from="${USER}@$( hostname --fqdn )"
 fi
 
 if ((is_snail)) ; then
