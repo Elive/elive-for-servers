@@ -528,7 +528,7 @@ require_variables(){
             case "$_var" in
                 "domain")              ask_variable "domain" "Insert the domain name on this server (like: johnsmith.com)" ; ;;
                 "username")            ask_variable "username" "Insert a desired system username to use, it will be created (suggested) if doesn't exist yet" ; ;;
-                "email_admin")         ask_variable "email_admin" "Insert an email on which you want to receive alert notifications (admin of server)" ; ;;
+                "email_admin")         ask_variable "email_admin" "Insert an email on which you want to receive server notifications (admin for this server)" ; ;;
                 "pass_mariadb_root")   ask_variable "pass_mariadb_root" "Insert a Password for your ROOT user of your database, this password will be used for admin your mariadb server and create/delete databases, keep it in a safe place" ; ;;
                 "httaccess_password")  ask_variable "httaccess_password" "Insert an 'htpasswd' Password" ; ;;
                 "httaccess_user")      ask_variable "httaccess_user" "Insert an 'htpasswd' Username" ; ;;
@@ -669,12 +669,14 @@ EOF
     fi
 
     if [[ -n "$email_admin" ]] ; then
+        # set the real admin email to be the main redirector of all system's emails like hostmater@domain
+        sed -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
         find "$templates" -type f -exec sed -i \
-            -e "s|webmaster@elivecd.org|${email_admin}|g" \
-            -e "s|hostmaster@elivecd.org|${email_admin}|g" \
             -e "s|@hostdo1.elivecd.org|@${hostnamefull}|g" \
             -e "s|@elivecd.org|@${domain}|g" \
             "{}" \;
+            #-e "s|webmaster@elivecd.org|${email_admin}|g" \
+            #-e "s|hostmaster@elivecd.org|${email_admin}|g" \
     fi
 
     if [[ -n "$php_version" ]] ; then
@@ -749,6 +751,11 @@ update_variables(){
         if which showmyip 1>/dev/null ; then
             domain_ip="$( showmyip )"
             domain_ip6="$( showmyip --ipv6 )"
+            if [[ -n "$domain_ip6" ]] ; then
+                has_ipv6=1
+            else
+                unset has_ipv6
+            fi
         else
             domain_ip="$( curl -A 'Mozilla' --max-time 8 -s http://icanhazip.com | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | tail -1 )"
         fi
@@ -1215,8 +1222,6 @@ install_nginx(){
     # set a default page
     addconfig "<h2><i>With Elive super-powers</i></h2>" /var/www/html/index.nginx-debian.html
     addconfig "\n\n# vim: set syn=conf filetype=cfg : #" /etc/nginx/sites-enabled/default
-
-    require_variables "email_admin"
 
     install_templates "nginx" "/"
 
@@ -1916,7 +1921,7 @@ install_phpmyadmin(){
 install_fail2ban(){
     el_info "Installing Fail2Ban..."
 
-    require_variables "email_admin|domain_ip|hostnamefull|domain"
+    require_variables "domain_ip|hostnamefull|domain"
 
     packages_install \
         fail2ban whois python3-pyinotify \
@@ -1934,7 +1939,6 @@ install_fail2ban(){
     #   banaction = nftables-multiport
     #   banaction_allports = nftables-allports
 
-    changeconfig "destemail " "destemail = ${email_admin}" /etc/fail2ban/jail.conf
     changeconfig "sender " "sender = root@${hostnamefull}" /etc/fail2ban/jail.conf
     #changeconfig "" " = " /etc/fail2ban/jail.conf
     #changeconfig "" " = " /etc/fail2ban/jail.conf
@@ -2018,7 +2022,7 @@ install_email(){
     echo "$mail_hostname" > /etc/mailname
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
-    echo -e "exim4-config\texim4/dc_postmaster\tstring\t${email_admin}" | debconf-set-selections
+    echo -e "exim4-config\texim4/dc_postmaster\tstring\tpostmaster@${domain}" | debconf-set-selections
     # do not allow external connections:
     if ((is_betatesting)) || el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
         is_external_connections_email_enabled=1
@@ -2072,8 +2076,8 @@ install_email(){
         fi
 
         if installed_check "nginx" ; then
-            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m ${email_admin}
-            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m ${email_admin}
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --nginx --agree-tos -m "hostmaster@${domain}"
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --nginx --agree-tos -m "hostmaster@${domain}"
         else
             if ((has_ufw)) ; then
                 if ! iptables -S | grep -qsE "(\s+|,)80(\s+|,)" ; then
@@ -2085,8 +2089,8 @@ install_email(){
                 fi
             fi
 
-            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m ${email_admin}
-            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m ${email_admin}
+            letsencrypt_wrapper certonly -d smtp.${mail_hostname} --standalone --agree-tos -m "hostmaster@${domain}"
+            letsencrypt_wrapper certonly -d imap.${mail_hostname} --standalone --agree-tos -m "hostmaster@${domain}"
         fi
     fi
 
@@ -2189,6 +2193,9 @@ EOF
     # note: very nice 'ed' howto: https://www.computerhope.com/unix/ued.htm
     echo -e "/ifdef CHECK_RCPT_IP_DNSBLS\n+1\ns/warn/deny/\nw\nq" | ed /etc/exim4/conf.d/acl/30_exim4-config_check_rcpt 1>/dev/null
 
+    # set the real admin email to be the main redirector of all system's emails like hostmater@domain
+    sed -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
+
     systemctl stop exim4.service
     rm -f /var/log/exim4/paniclog
     rm -rf /var/log/exim4/* /var/log/mail*
@@ -2199,6 +2206,7 @@ EOF
     exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
 
     # configure mailx-send to work (this will be a generic one from the first install for all the users)
+    cp -af "$templates/${debian_version}/elive/usr/local/bin/mailx-send" /usr/local/bin/
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
     changeconfig "password=" "password=\"$email_smtp_password\"" /usr/local/bin/mailx-send
     changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
@@ -2497,7 +2505,7 @@ install_monit(){
     #addconfig "include /etc/monit/monitrc.d/*" /etc/monit/monitrc
     addconfig "set mailserver localhost port 25" /etc/monit/monitrc
     addconfig "set mail-format { from: monit-daemon@$hostnamefull }" /etc/monit/monitrc
-    addconfig "set alert ${email_admin} not {instance}" /etc/monit/monitrc
+    addconfig "set alert hostmaster@${domain} not {instance}" /etc/monit/monitrc
     # enable features like "monit summary" or other commands
     addconfig "# enable http interface so we can use 'monit summary' and other commands\nset httpd port 2811 and\n    use address localhost\n    allow localhost\n    allow admin:monit" /etc/monit/monitrc
 
@@ -2615,11 +2623,11 @@ final_steps(){
     fi
 
     changeconfig "GRUB_TIMEOUT=" "GRUB_TIMEOUT=1" /etc/default/grub         2>/dev/null || true
-    if [[ -n "$email_admin" ]] && ! grep -qs "MAILTO=\"" /etc/crontab ; then
+    if ! grep -qs "MAILTO=\"" /etc/crontab ; then
         ed /etc/crontab 1>/dev/null <<EOF
 /^SHELL=
 a
-MAILTO="${email_admin}"
+MAILTO="hostmaster@${domain}"
 .
 w
 q
@@ -2740,7 +2748,7 @@ EOF
             echo -e "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}' and priority '10'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
         fi
         #echo -e "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed? >> ~/settings-server.txt
-        #echo -e "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:${email_admin};" >> ~/settings-server.txt
+        #echo -e "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:hostmaster@${domain};" >> ~/settings-server.txt
         #echo -e "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
         #echo -e "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
         if [[ -n "$mail_hostname" ]] && [[ -n "$wp_webname" ]] && [[ "$wp_webname" != "$mail_hostname" ]] ; then
