@@ -2748,7 +2748,7 @@ EOF
         fi
         if [[ "$mail_hostname" = "$domain" ]] ; then
             echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey' with these contents:" >> ~/settings-server.txt
-            echo "k=rsa; p=$(cat /etc/exim4/${domain}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
+            echo "k=rsa; p=$(cat /etc/exim4/${domain}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
         else
             for i in ${mail_hostname} ${domain}
             do
@@ -2757,7 +2757,7 @@ EOF
                 entry="$( echo "$i" | sed -e "s|${domain}||g" -e 's|\.$||g' )"
                 #echo "$i - ${i%%.*}"
                 echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${entry}' with these contents:" >> ~/settings-server.txt
-                echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" 1>&2
+                echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
             done
         fi
         echo -e "DNS in your 'reverse DNS', set it to '${mail_hostname}'" >> ~/settings-server.txt
