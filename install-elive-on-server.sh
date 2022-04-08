@@ -2018,9 +2018,6 @@ EOF
     # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
     rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
-    # create and configure local configuration file
-    require_variables "username|elivemirror_isos_webname"
-
     # reload services
     if ! systemctl restart nginx.service ; then
         set +x
@@ -2165,7 +2162,7 @@ install_email(){
     email_smtp_password="$email_imap_password"
 
     if ! [[ -d "$DHOME/${username}" ]] ; then
-        install_user "$username"
+        install_user
     fi
 
     mail_hostname="$hostnamefull"
@@ -3224,12 +3221,6 @@ main(){
         addconfig "vm.watermark_scale_factor = 500" /etc/sysctl.conf
     fi
     # }}}
-
-    # create user if not exist {{{
-    if [[ -n "$username" ]] && ! [[ -d "$DHOME/${username}" ]] ; then
-        install_user
-    fi
-    #}}}
 
     # install nginx {{{
     if ((is_wanted_nginx)) ; then
