@@ -2833,7 +2833,7 @@ EOF
 
     # }}}
 
-    echo -e "\nConf entry at: $(date) -------------------------------------\n" >> ~/settings-server.txt
+    echo -e "\nConfigured results on: $(date) -------------------------------------\n" >> ~/settings-server.txt
     echo -e "\n"
 
     if [[ -s /etc/cloud/cloud.cfg ]] ; then
@@ -2991,8 +2991,10 @@ EOF
 
     # send settings via email
     if installed_check "exim" ; then
-        mailx-send "$email_admin" "Server settings and passwords" "$( cat ~/settings-server.txt )"
-        el_info "Server settings (and passwords) has been sent to '$email_admin'"
+        if echo -e "\x" | timeout 5 openssl s_client -connect localhost:587 -starttls smtp 1>/dev/null 2>&1 ; then
+            mailx-send "$email_admin" "Server settings and passwords" "$( cat ~/settings-server.txt )"
+            el_info "Server settings (and passwords) has been sent to '$email_admin'"
+        fi
     fi
 
     el_info "If this tool has been useful for you or you got benefited from it, please make a donation so we can continue doing amazing things"
