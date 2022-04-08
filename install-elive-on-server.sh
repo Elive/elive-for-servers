@@ -1190,6 +1190,8 @@ if [[ ! -e "\$HOME/.muttrc" ]] ; then
 fi
 # symlink the user mail location to make it compatible with mutt or other tools
 ln -fs \$HOME/Maildir /var/mail/\$USER || true
+
+echo "User install finished"
 '
 EOF
 
@@ -1563,7 +1565,6 @@ install_wordpress(){
     su - "$username" <<EOF
 bash -c '
 set -e
-set -E
 #export PATH="$PATH"
 cd ~
 
@@ -1644,6 +1645,8 @@ echo -e "# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg sy
 touch nginx-local.conf
 # wait remaining processes
 wait
+
+echo "User install finished"
 
 '
 EOF
@@ -1925,7 +1928,6 @@ install_elivemirror_isos(){
     su - "$username" <<EOF
 bash -c '
 set -e
-set -E
 #export PATH="$PATH"
 cd ~
 
@@ -1933,7 +1935,7 @@ cd ~
 HOSTNAME=\$(hostname) ; yes | ssh-keygen -t rsa -C "\$HOSTNAME" -f "\$HOME/.ssh/id_rsa" -P ""
 # add key of elive server
 mkdir -p "\$HOME/.ssh"
-echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAk45j0yfCnHcyi6EKy/tnUOfUKMMeVf1rc/nRPratslLwVVr+bCqjS/KVc5si+8yGsCxQzow2TC3hlymvyxVZhA0Q17G87UQb61nLeG9sl45LyPg5gqLYZUoxaxjT/L/T5XkqpfXhXle5ix0metdSh0sZHMnfhRvMXOAkQHY7YBWMkh9TOLu45GiUW2XKDSZjEWV0NeR06r66KspqsV5jR6HCZ9iQDMoya/6HdTqNDqpza+qqAcHvXCWAbAgr95PXDbSM1KIS9KCRebHVka1437kCU3vrwXKBIb0OF0Rnseqs4icTu2xnu74H2/+uM/C+o4f2QFjJM/CwlQ0w2kL2+Q== elivewebsites@zatara' >> "\$HOME/.ssh/authorized_keys"
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAk45j0yfCnHcyi6EKy/tnUOfUKMMeVf1rc/nRPratslLwVVr+bCqjS/KVc5si+8yGsCxQzow2TC3hlymvyxVZhA0Q17G87UQb61nLeG9sl45LyPg5gqLYZUoxaxjT/L/T5XkqpfXhXle5ix0metdSh0sZHMnfhRvMXOAkQHY7YBWMkh9TOLu45GiUW2XKDSZjEWV0NeR06r66KspqsV5jR6HCZ9iQDMoya/6HdTqNDqpza+qqAcHvXCWAbAgr95PXDbSM1KIS9KCRebHVka1437kCU3vrwXKBIb0OF0Rnseqs4icTu2xnu74H2/+uM/C+o4f2QFjJM/CwlQ0w2kL2+Q== elivewebsites@zatara" >> "\$HOME/.ssh/authorized_keys"
 chmod 744 "\$HOME/.ssh"
 chmod 600 "\$HOME/.ssh/authorized_keys"
 
@@ -1950,6 +1952,8 @@ cd "${elivemirror_isos_webname}"
 
 # configure nginx
 echo -e "# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > .nginx.conf
+
+echo "User install finished"
 
 '
 EOF
