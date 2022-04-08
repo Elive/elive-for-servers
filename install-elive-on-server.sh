@@ -670,7 +670,7 @@ EOF
 
     if [[ -n "$email_admin" ]] ; then
         # set the real admin email to be the main redirector of all system's emails like hostmater@domain
-        sed -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
+        sed -i -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
         find "$templates" -type f -exec sed -i \
             -e "s|@hostdo1.elivecd.org|@${hostnamefull}|g" \
             -e "s|@elivecd.org|@${domain}|g" \
@@ -2194,7 +2194,7 @@ EOF
     echo -e "/ifdef CHECK_RCPT_IP_DNSBLS\n+1\ns/warn/deny/\nw\nq" | ed /etc/exim4/conf.d/acl/30_exim4-config_check_rcpt 1>/dev/null
 
     # set the real admin email to be the main redirector of all system's emails like hostmater@domain
-    sed -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
+    sed -i -e "s|^root:.*$|root: ${email_admin}|g" /etc/aliases
 
     systemctl stop exim4.service
     rm -f /var/log/exim4/paniclog
