@@ -1517,7 +1517,7 @@ install_wordpress(){
 
     # }}}
     # required variables {{{
-    require_variables "wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username|wp_webname"
+    require_variables "domain|wp_db_name|wp_db_user|wp_db_pass|pass_mariadb_root|username|wp_webname"
 
     # get the domain (last two . elements) from wp_webname
     if [[ -z "$domain" ]] ; then
@@ -1893,7 +1893,7 @@ install_elivemirror_isos(){
 
     # }}}
     # required variables {{{
-    require_variables "username|elivemirror_isos_webname"
+    require_variables "domain|username|elivemirror_isos_webname"
 
     # get the domain (last two . elements) from wp_webname
     if [[ -z "$domain" ]] ; then
