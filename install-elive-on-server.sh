@@ -2206,7 +2206,7 @@ EOF
     exim -bp | exiqgrep -i | xargs exim -Mrm  2>/dev/null || true  # delete all the queued emails
 
     # configure mailx-send to work (this will be a generic one from the first install for all the users)
-    cp -af "$templates/${debian_version}/elive/usr/local/bin/mailx-send" /usr/local/bin/
+    cp -af "$sources/templates/${debian_version}/elive/usr/local/bin/mailx-send" /usr/local/bin/
     changeconfig "username=" "username=\"$( echo "${email_username}" | uri-gtk-encode )\" # note: must be converted to uri (uri-gtk-encode)" /usr/local/bin/mailx-send
     changeconfig "password=" "password=\"$email_smtp_password\"" /usr/local/bin/mailx-send
     changeconfig "smtp_connect=" "smtp_connect=\"smtp.${mail_hostname}\"" /usr/local/bin/mailx-send
