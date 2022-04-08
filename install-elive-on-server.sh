@@ -2823,7 +2823,7 @@ EOF
 
     # send settings via email
     if installed_check "exim" ; then
-        cat ~/settings-server.txt | mailx-send "$email_admin" "Server settings and passwords"
+        mailx-send "$email_admin" "Server settings and passwords" "$( cat ~/settings-server.txt )"
         el_info "Server settings (and passwords) has been sent to '$email_admin'"
     fi
 
