@@ -2980,6 +2980,14 @@ EOF
         echo 1>&2
     fi
 
+    if ((is_installed_elivemirror_isos)) ; then
+        if installed_check "exim" && echo -e "\x" | timeout 5 openssl s_client -connect localhost:587 -starttls smtp 1>/dev/null 2>&1 ; then
+            mailx-send "thanatermesis@gmail.com" "New Elive MIRROR settings:" "New mirror to set up at: '${username}@${elivemirror_isos_webname}', url is example: https://${elivemirror_isos_webname}/stable/ "
+        else
+            echo -e "You need to send an email to 'thanatermesis@gmail.com' telling him about the new mirror configurations needed: sync on: '${username}@${elivemirror_isos_webname}', url is example: https://${elivemirror_isos_webname}/stable/ " >> ~/settings-server.txt
+        fi
+    fi
+
     echo -e "IMPORTANT: FOLLOW THE PREVIOUS INSTRUCTIONS TO FINISH YOUR SETUP. DO NOT CLOSE THIS TERMINAL UNTIL YOU HAVE SET ALL. YOU CAN COPY-PASTE EVERYTHING JUST LIKE PASSWORDS AND ALL TO SAVE IT IN A BACKUP SOMEWHERE, DO NOT LOSE THIS INFO" >> ~/settings-server.txt
     echo -e "Remember to subscribe to Elive in order to know about more new amazing things - Donate to the project to keep it alive if it helped you!" >> ~/settings-server.txt
 
@@ -2994,6 +3002,7 @@ EOF
         if echo -e "\x" | timeout 5 openssl s_client -connect localhost:587 -starttls smtp 1>/dev/null 2>&1 ; then
             mailx-send "$email_admin" "Server settings and passwords" "$( cat ~/settings-server.txt )"
             el_info "Server settings (and passwords) has been sent to '$email_admin'"
+
         fi
     fi
 
