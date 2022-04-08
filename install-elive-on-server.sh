@@ -2023,13 +2023,7 @@ install_email(){
     echo -e "exim4-config\texim4/dc_eximconfig_configtype\tselect\tinternet site; mail is sent and received directly using SMTP" | debconf-set-selections
     # this seems to be auto set:
     echo -e "exim4-config\texim4/dc_postmaster\tstring\tpostmaster@${domain}" | debconf-set-selections
-    # do not allow external connections:
-    if ((is_betatesting)) || el_confirm "Do you want to be able to connect to this Email server externally? (if you select no, only localhost connections will be allowed)" ; then
-        is_external_connections_email_enabled=1
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
-    else
-        echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.25 " | debconf-set-selections
-    fi
+    echo -e "exim4-config\texim4/dc_local_interfaces\tstring\t127.0.0.1 ; ::1 ; 127.0.0.1.587 ; 127.0.0.1.25 ; ${domain_ip}.587 ; ${domain_ip}.25 " | debconf-set-selections
     # if you send emails to these domains, accept them:
     echo -e "exim4-config\texim4/dc_localdelivery\tselect\tMaildir format in home directory" | debconf-set-selections
     echo -e "exim4-config\texim4/use_split_config\tboolean\ttrue" | debconf-set-selections
@@ -2240,17 +2234,15 @@ EOF
 
 
     # open ports: POP3, port 995
-    if ((is_external_connections_email_enabled)) ; then
-        if ((has_ufw)) ; then
-            ufw allow 25/tcp
-            ufw allow 587/tcp
-            ufw allow 995/tcp
-        else
-            if ((has_iptables)) ; then
-                iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT
-                iptables -A INPUT -p tcp -m tcp --dport 587 -j ACCEPT
-                iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
-            fi
+    if ((has_ufw)) ; then
+        ufw allow 25/tcp
+        ufw allow 587/tcp
+        ufw allow 995/tcp
+    else
+        if ((has_iptables)) ; then
+            iptables -A INPUT -p tcp -m tcp --dport 25 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 587 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 995 -j ACCEPT
         fi
     fi
 
