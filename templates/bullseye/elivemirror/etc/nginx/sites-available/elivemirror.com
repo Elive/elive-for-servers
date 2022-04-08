@@ -8,7 +8,8 @@ server {
     listen 80;
     listen [::]:80;
     # do not show indexed files by defaul
-    autoindex on;
+    # update: managed by the mirror itself
+    #autoindex off;
     # don't show the nginx version
     server_tokens   off;
 

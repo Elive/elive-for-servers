@@ -2825,9 +2825,6 @@ EOF
     cp -a /etc /etc.bak-after-elive-setup
 
 
-    swapoff -a 1>/dev/null 2>&1 || true
-    swapon -a 1>/dev/null 2>&1 || true
-
     # unmark a possible previously failed attempt because we finished good now
     rm -f "/tmp/.${SOURCE}.failed"
 
