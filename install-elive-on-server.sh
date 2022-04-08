@@ -160,6 +160,10 @@ get_args(){
                 is_wanted_wordpress=1
                 is_extra_service=1
                 ;;
+            "--install=elivemirror-isos")
+                is_wanted_elivemirror_isos=1
+                is_extra_service=1
+                ;;
             "--install=all")
                 # used for debug purposes, nobody is meant to want all
                 is_wanted_wordpress=1
@@ -533,6 +537,7 @@ require_variables(){
                 "httaccess_password")  ask_variable "httaccess_password" "Insert an 'htpasswd' Password" ; ;;
                 "httaccess_user")      ask_variable "httaccess_user" "Insert an 'htpasswd' Username" ; ;;
                 "wp_webname")          ask_variable "wp_webname" "Insert the Website name for your Wordpress install, examples: mysite.com, www.mysite.com, blog.mydomain.com, etc" ; ;;
+                "elivemirror_isos_webname")          ask_variable "elivemirror_isos_webname" "Insert the Website name (subdomain address) for your Elive Mirror, examples: eliveisos.${domain}, eliveisos.mysite.com, etc" ; ;;
                 "wp_db_name")          ask_variable "wp_db_name" "Insert a Name for your Wordpress Database, keep it in a safe place" ; ;;
                 "wp_db_user")          ask_variable "wp_db_user" "Insert a User for your Wordpress Database, keep it in a safe place" ; ;;
                 "wp_db_pass")          ask_variable "wp_db_pass" "Insert a Password for your Wordpress Database, keep it in a safe place" ; ;;
@@ -702,6 +707,13 @@ EOF
         find "$templates" -type f -exec sed -i "s|replacemedbpassword|${wp_db_pass}|g" "{}" \;
     fi
 
+
+    if [[ -n "$elivemirror_isos_webname" ]] ; then
+        zsh <<EOF
+rename "s/elivemirror.com/${elivemirror_isos_webname}/" ${templates}/**/*(.)
+EOF
+        find "$templates" -type f -exec sed -i "s|elivemirror.com|${elivemirror_isos_webname}|g" "{}" \;
+    fi
 
 
 
@@ -1534,7 +1546,7 @@ install_wordpress(){
     # cleanups
     if [[ -d "$DHOME/${username}/${wp_webname}" ]] ; then
         NOREPORTS=1 el_warning "The directory '${wp_webname}' in the '${username}' user's home directory already exists"
-        if el_confirm "\nDo you want to permanently delete it?" ; then
+        if el_confirm "\nDo you want to delete it entirely in order to create a new one?" ; then
             rm -rf "$DHOME/${username}/${wp_webname}"
         fi
     fi
@@ -1755,7 +1767,7 @@ EOF
     # - configure SSL }}}
 
     # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
-    rm -f /etc/nginx/sites-enabled/default
+    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
     # security
     el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
@@ -1868,6 +1880,159 @@ EOF
 
     # set up the extra phpmyadmin
     install_phpmyadmin
+
+}
+
+install_elivemirror_isos(){
+    el_info "Installing Elive Mirror for ISOs..."
+    # dependencies {{{
+    if ! installed_check "nginx" ; then
+        install_nginx
+    fi
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y rsync || true
+
+    # }}}
+    # required variables {{{
+    require_variables "username|elivemirror_isos_webname"
+
+    # get the domain (last two . elements) from wp_webname
+    if [[ -z "$domain" ]] ; then
+        domain="$( echo "$elivemirror_isos_webname" | awk '{n=split($0, a, "."); printf("%s.%s", a[n-1], a[n])}' )"
+    fi
+
+    # }}}
+    # create user if not exist {{{
+    if ! [[ -d "$DHOME/${username}" ]] ; then
+        install_user
+    fi
+    # cleanups
+    if [[ -d "$DHOME/${username}/${elivemirror_isos_webname}" ]] ; then
+        NOREPORTS=1 el_warning "The directory '${elivemirror_isos_webname}' in the '${username}' user's home directory already exists"
+        if el_confirm "\nDo you want to delete it entirely in order to create a new one?" ; then
+            rm -rf "$DHOME/${username}/${elivemirror_isos_webname}"
+        fi
+    fi
+
+    su - "$username" <<EOF
+bash -c '
+set -e
+set -E
+#export PATH="$PATH"
+cd ~
+
+# generate ssh key
+HOSTNAME=\$(hostname) ; yes | ssh-keygen -t rsa -C "\$HOSTNAME" -f "\$HOME/.ssh/id_rsa" -P ""
+# add key of elive server
+mkdir -p "\$HOME/.ssh"
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAk45j0yfCnHcyi6EKy/tnUOfUKMMeVf1rc/nRPratslLwVVr+bCqjS/KVc5si+8yGsCxQzow2TC3hlymvyxVZhA0Q17G87UQb61nLeG9sl45LyPg5gqLYZUoxaxjT/L/T5XkqpfXhXle5ix0metdSh0sZHMnfhRvMXOAkQHY7YBWMkh9TOLu45GiUW2XKDSZjEWV0NeR06r66KspqsV5jR6HCZ9iQDMoya/6HdTqNDqpza+qqAcHvXCWAbAgr95PXDbSM1KIS9KCRebHVka1437kCU3vrwXKBIb0OF0Rnseqs4icTu2xnu74H2/+uM/C+o4f2QFjJM/CwlQ0w2kL2+Q== elivewebsites@zatara' >> "\$HOME/.ssh/authorized_keys"
+chmod 744 "\$HOME/.ssh"
+chmod 600 "\$HOME/.ssh/authorized_keys"
+
+# unused: this was meant to be for apache:
+#mkdir -p "\$HOME/public_html"
+#chgrp -R "www-data" "\$HOME/public_html"  # debian and similar systems uses www-data user for the webserver, make sure that this user is set to the group of the directory recursively
+#chmod -R 750 "\$HOME/public_html"
+#chmod g+s "\$HOME/public_html"
+
+# website
+[[ -d "${elivemirror_isos_webname}" ]] && echo -e "\nE: directory ${elivemirror_isos_webname} already exist, for security remove it first manually" && exit 1
+mkdir -p "${elivemirror_isos_webname}"
+cd "${elivemirror_isos_webname}"
+
+# configure nginx
+echo -e "# vim: foldmarker={{{,}}} foldlevel=0 foldmethod=marker filetype=cfg syn=conf" > .nginx.conf
+
+'
+EOF
+
+
+    # }}}
+
+    if ((has_ufw)) ; then
+        ufw allow 'Nginx Full'
+    else
+        if ((has_iptables)) ; then
+            iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+            iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+        fi
+    fi
+
+    install_templates "elivemirror" "/"
+
+    # configure nginx {{{
+
+    # enable site
+    ln -fs "../sites-available/${elivemirror_isos_webname}" "/etc/nginx/sites-enabled/${elivemirror_isos_webname}"
+    systemctl restart nginx.service
+
+
+    # }}}
+    # configure SSL {{{
+    # reload
+
+    # interactively run the configurator
+    el_info "Letsencrypt SSL (httpS) certificate install request"
+    if [[ -d "/etc/letsencrypt/live/${elivemirror_isos_webname}" ]] ; then
+        # re-install certificate, needed
+        letsencrypt_wrapper --nginx -d "${elivemirror_isos_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+    else
+        if ! ping -c 1 ${elivemirror_isos_webname} 1>/dev/null 2>&1 ; then
+            NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with a record type A as '${elivemirror_isos_webname}' to point to this IP before to continue:"
+            echo -e "Your DNS's should be already propagated before to continue, press Enter when your DNS's are ready"
+            read nothing
+        fi
+        NOREPORTS=1 el_warning "Do not create more than 5 certificates for the same domain or you will be banned for 2 months from Letsencrypt service, use backups of '/etc/letsencrypt' instead of reinstalling entirely the server"
+        NOREPORTS=1 el_warning "You must have your DNS configured to point your domain to this server machine in order to validate the certificates"
+
+        if el_confirm "Do you want to create the certificate now? Note that you are limited to only 5 per week. (if you select no, your server will run on plain http with port 80 instead)" ; then
+            # register first if needed:
+            if [[ ! -d "/etc/letsencrypt/accounts" ]] ; then
+                letsencrypt_wrapper register
+            fi
+
+            if ! letsencrypt_wrapper --nginx -d "${elivemirror_isos_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
+                el_info "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
+                letsencrypt_wrapper --nginx -d "${elivemirror_isos_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+            fi
+        fi
+    fi
+
+    # enable http2 improvements
+    sed -i -e 's|listen 443 ssl;|listen 443 ssl http2;|g'  "/etc/nginx/sites-available/${elivemirror_isos_webname}"
+    sed -i -e 's|listen [::]:443 ssl ipv6only=on;|listen [::]:443 ssl http2 ipv6only=on;|g'  "/etc/nginx/sites-available/${elivemirror_isos_webname}"
+    if ! grep -qs " http2" "/etc/nginx/sites-available/${elivemirror_isos_webname}" ; then
+        el_warning "http2 not enabled for ${elivemirror_isos_webname}?"
+    fi
+
+    # - configure SSL }}}
+
+    # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
+    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+
+    # create and configure local configuration file
+    require_variables "username|elivemirror_isos_webname"
+
+    # reload services
+    if ! systemctl restart nginx.service ; then
+        set +x
+        el_error "failed to restart web services"
+        el_report_to_elive "$(lsb_release -ds) - ${PRETTY_NAME} (version ${VERSION_ID}):\n$( journalctl -xe | tail -n 40 | sed -e '/^$/d' )"
+    fi
+    sleep 5
+
+    http_version="$( curl --max-time 5 -sI https://${elivemirror_isos_webname} -o/dev/null -w '%{http_version}\n' || true )"
+    if [[ -n "$http_version" ]] ; then
+        if [[ "$http_version" = 1* ]] ; then
+            el_warning "HTTP version running is '${http_version}'"
+        fi
+
+        el_info "HTTP protocol version running is '$http_version'"
+        installed_set "elivemirror_isos"
+        is_installed_elivemirror_isos=1
+    else
+        set +x
+        el_error "Your elive mirror seems to not be correctly working"
+    fi
 
 }
 
@@ -3088,6 +3253,15 @@ main(){
         fi
     fi
     # }}}
+
+    # install elivemirrors {{{
+    if ((is_wanted_elivemirror_isos)) ; then
+        if ((is_betatesting)) || el_confirm "You are going to add a mirror for Elive ISOs, it will include the best optimizations to make your server as light as possible, will use nginx alone without extra resources or dependencies, everything installed in a specific own user for security. Continue?" ; then
+            install_elivemirror_isos
+        fi
+    fi
+    # }}}
+
 
     # install phpmyadmin {{{
     if ((is_wanted_phpmyadmin)) ; then
