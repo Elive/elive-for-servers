@@ -2978,10 +2978,12 @@ EOF
     fi
 
     if ((is_installed_elivemirror_isos)) ; then
+        mirror_location="$( showmylocation | grep -E "^(city_name|country_name)" | awk -v FS="::" '{print $2}' | tr '\n' '|' | sed -e 's/|$//g' -e 's/|/ - /g' ; echo )"
+
         if installed_check "exim" && echo -e "\x" | timeout 5 openssl s_client -connect localhost:587 -starttls smtp 1>/dev/null 2>&1 ; then
-            mailx-send "thanatermesis@gmail.com" "New Elive MIRROR settings:" "New mirror to set up at: '${username}@${elivemirror_isos_webname}', url is example: https://${elivemirror_isos_webname}/stable/ "
+            mailx-send "thanatermesis@gmail.com" "New Elive MIRROR settings:" "New mirror to set up at: ${username}@${elivemirror_isos_webname} , dir is ~/${elivemirror_isos_webname}/ , url is example: https://${elivemirror_isos_webname}/stable/ , location is ${mirror_location}, email admin ${email_admin}"
         else
-            echo -e "You need to send an email to 'thanatermesis@gmail.com' telling him about the new mirror configurations needed: sync on: '${username}@${elivemirror_isos_webname}', url is example: https://${elivemirror_isos_webname}/stable/ " >> ~/settings-server.txt
+            echo -e "You need to send an email to 'thanatermesis@gmail.com' telling him about the new mirror configurations needed: sync on: ${username}@${elivemirror_isos_webname} , dir is ~/${elivemirror_isos_webname}/ , url is example: https://${elivemirror_isos_webname}/stable/ , location is ${mirror_location}, email admin ${email_admin}" >> ~/settings-server.txt
         fi
     fi
 
