@@ -1248,8 +1248,6 @@ install_nginx(){
 
     install_templates "nginx" "/"
 
-    ##rm -f /etc/nginx/sites-enabled/default
-
     systemctl restart nginx.service
     installed_set "nginx"
 }
@@ -1779,7 +1777,11 @@ EOF
     # - configure SSL }}}
 
     # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
-    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+    if [[ -e "/etc/nginx/sites-enabled/default" ]] ; then
+        rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+        NOREPORTS=1 el_warning "You had a default nginx conf file, we have removed it from 'sites-enabled', since you have now a real website installed this file would conflict with your server, but IF YOU HAD any important configuration on it, you can found the original one in '/etc/nginx/sites-available/default', so you should rename it to a website name and then link it back to the sites-enabled directory. Press Enter to continue..."
+        read nothing
+    fi
 
     # security
     el_info "We will set now an admin Username and Password in order to strenght your security, it will be used for your admin login or for access to your phpMyAdmin tool at 'yourwebsite.com/phpmyadmin' or to login in your Wordpress, if you want to modify the accesses file like adding more usernames it will be saved in your 'yourwebsite.com/.htpasswd' file"
@@ -1879,7 +1881,7 @@ EOF
     http_version="$( curl --max-time 5 -sI https://${wp_webname} -o/dev/null -w '%{http_version}\n' || true )"
     if [[ -n "$http_version" ]] ; then
         if [[ "$http_version" = 1* ]] ; then
-            el_warning "HTTP version running is '${http_version}'"
+            NOREPORTS=1 el_warning "HTTP version running is '${http_version}'"
         fi
 
         el_info "HTTP protocol version running is '$http_version'"
@@ -2020,7 +2022,11 @@ EOF
     # - configure SSL }}}
 
     # disable default website because includes "default" and redirection may not work correctly in our now-existing website:
-    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+    if [[ -e "/etc/nginx/sites-enabled/default" ]] ; then
+        rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+        NOREPORTS=1 el_warning "You had a default nginx conf file, we have removed it from 'sites-enabled', since you have now a real website installed this file would conflict with your server, but IF YOU HAD any important configuration on it, you can found the original one in '/etc/nginx/sites-available/default', so you should rename it to a website name and then link it back to the sites-enabled directory. Press Enter to continue..."
+        read nothing
+    fi
 
     # reload services
     if ! systemctl restart nginx.service ; then
@@ -2033,7 +2039,7 @@ EOF
     http_version="$( curl --max-time 5 -sI https://${elivemirror_isos_webname} -o/dev/null -w '%{http_version}\n' || true )"
     if [[ -n "$http_version" ]] ; then
         if [[ "$http_version" = 1* ]] ; then
-            el_warning "HTTP version running is '${http_version}'"
+            NOREPORTS=1 el_warning "HTTP version running is '${http_version}'"
         fi
 
         el_info "HTTP protocol version running is '$http_version'"
