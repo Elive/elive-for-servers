@@ -85,6 +85,7 @@ ___Note: it's important to set all the options wanted in a single command, so th
  * --install=monit          - _daemon that watch your services and restarts them in case they stopped to work_
  * --install=rootkitcheck   - _daemon to check daily your system to find posible rootkits malware_
  * --install=swapfile       - _creates a 1 GB swap file to help your server not having processes killed by memory exhausted_
+ * --install=elivemirror-isos   - _Sets up a [mirror for the Elive ISOs](https://forum.elivelinux.org/t/how-to-be-a-mirror-for-elive/1298)_
  * --force                  - _it will force the reinstall of the services / options, even if was installed previously_
  * --freespace-system       - _it will remove up your system of unneeded things, making it faster, use it with CAUTION, it removes manpages, docs, locales, selinux_
 
