@@ -1742,9 +1742,16 @@ EOF
 
     # interactively run the configurator
     el_info "Letsencrypt SSL (httpS) certificate install request"
+
+    if echo "$wp_webname" | grep -qsi "^www\." ; then
+        letsencrypt_domains="-d ${wp_webname#www.} -d ${wp_webname}"
+    else
+        letsencrypt_domains="-d ${wp_webname}"
+    fi
+
     if [[ -d "/etc/letsencrypt/live/${wp_webname}" ]] ; then
         # re-install certificate, needed
-        letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+        letsencrypt_wrapper --nginx ${letsencrypt_domains} --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
     else
         if ! ping -c 1 ${wp_webname} 1>/dev/null 2>&1 ; then
             NOREPORTS=1 el_warning "IMPORTANT: You must have your DNS's configured and already propagated with a record type A as '${wp_webname}' to point to this IP before to continue:"
@@ -1760,9 +1767,9 @@ EOF
                 letsencrypt_wrapper register
             fi
 
-            if ! letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
+            if ! letsencrypt_wrapper --nginx ${letsencrypt_domains} --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp ; then
                 el_info "You must follow the Letsencrypt wizard to enable SSL (httpS) for your website"
-                letsencrypt_wrapper --nginx -d "${wp_webname}" --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
+                letsencrypt_wrapper --nginx ${letsencrypt_domains} --quiet --no-eff-email --agree-tos --redirect --hsts --staple-ocsp
             fi
         fi
     fi
