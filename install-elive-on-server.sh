@@ -1700,6 +1700,9 @@ echo -e "\n/* Set amount of Revisions you wish to have saved */\n//define( 'WP_P
 server {
     server_name ${wp_webname#www.};
     return 301 https://www.${wp_webname#www.}\$request_uri;
+    # add a listener for both ipv4 and ipv6
+    listen 80;
+    listen [::]:80;
 }
 
 EOF
@@ -1710,6 +1713,9 @@ EOF
 server {
     server_name www.${wp_webname#www.};
     return 301 https://${wp_webname#www.}\$request_uri;
+    # add a listener for both ipv4 and ipv6
+    listen 80;
+    listen [::]:80;
 }
 
 EOF
