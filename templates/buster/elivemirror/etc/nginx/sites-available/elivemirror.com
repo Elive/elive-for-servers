@@ -39,9 +39,10 @@ server {
     location ~ "/i18n/"          { access_log off; log_not_found off; }
     location ~ "Packages.*"          { access_log off; log_not_found off; }
     location ~ "favicon.*"          { access_log off; log_not_found off; }
-    # disable logs entirely
-    error_log off;
-    access_log off;
+    # disable logs entirely?
+    #error_log off;
+    #access_log off;
+
     # deny access to .htaccess files, if Apache's document root
     # concurs with nginx's one
     location ~ /\.ht {
