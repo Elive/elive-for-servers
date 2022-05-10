@@ -2905,80 +2905,77 @@ EOF
         echo -e "Your MySQL (mariadb) root password is '$pass_mariadb_root'" >> ~/settings-server.txt
     fi
 
-    if ((is_installed_exim)) ; then
-        # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
-        echo -e "Exim Email server configurations:" >> ~/settings-server.txt
+    # TODO: tell about where to check these settings, like https://mxtoolbox.com/SuperTool.aspx?action=ptr%3a78.141.244.36&run=toolpage
 
-        echo -e "DNS: you must configure your server's dns to follow these entries:" >> ~/settings-server.txt
+    echo -e "DNS: you must configure your server's dns to follow these entries:" >> ~/settings-server.txt
 
-        # SPF & other DNS
-        echo -e "DNS type A record with (empty) name '' with data '${domain_ip}'" >> ~/settings-server.txt
+    # SPF & other DNS
+    echo -e "DNS type A record with (empty) name '' with data '${domain_ip}'" >> ~/settings-server.txt
 
-        if [[ "$mail_hostname" = "$domain" ]] ; then
-            echo -e "DNS type A record named 'smtp' with data '${domain_ip}'" >> ~/settings-server.txt
-            if ((is_installed_dovecot)) ; then
-                echo -e "DNS type A record named 'imap' with data '${domain_ip}'" >> ~/settings-server.txt
-            fi
-            echo -e "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'" >> ~/settings-server.txt
-            echo -e "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'" >> ~/settings-server.txt
-            echo -e "DNS type MX record with (empty) name '' with data 'smtp.${domain}' and priority '10'" >> ~/settings-server.txt
-        else
-            echo -e "DNS type A record named '${mail_hostname}' with data '${domain_ip}'" >> ~/settings-server.txt
-            echo -e "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'" >> ~/settings-server.txt
-            if ((is_installed_dovecot)) ; then
-                echo -e "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'" >> ~/settings-server.txt
-            fi
-            echo -e "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'" >> ~/settings-server.txt
-            echo -e "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'" >> ~/settings-server.txt
-            echo -e "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}' and priority '10'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
-        fi
-        #echo -e "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed? >> ~/settings-server.txt
-        #echo -e "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:hostmaster@${domain};" >> ~/settings-server.txt
-        #echo -e "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
-        #echo -e "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
-        if [[ -n "$mail_hostname" ]] && [[ -n "$wp_webname" ]] && [[ "$wp_webname" != "$mail_hostname" ]] ; then
-            echo -e "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}' and priority '10'" >> ~/settings-server.txt
-        fi
-        if [[ "$mail_hostname" = "$domain" ]] ; then
-            echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey' with these contents:" >> ~/settings-server.txt
-            echo "k=rsa; p=$(cat /etc/exim4/${domain}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
-        else
-            for i in ${mail_hostname} ${domain}
-            do
-                [[ -z "$i" ]] && continue
-                [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
-                entry="$( echo "$i" | sed -e "s|${domain}||g" -e 's|\.$||g' )"
-                #echo "$i - ${i%%.*}"
-                echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${entry}' with these contents:" >> ~/settings-server.txt
-                echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
-            done
-        fi
-        echo -e "DNS in your 'reverse DNS', set it to '${mail_hostname}'" >> ~/settings-server.txt
-        # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
-
-        if ((has_ipv6)) ; then
-            echo -e "For your IPv6 settings, in case you use it:" >> ~/settings-server.txt
-            echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data '${domain_ip6}'" 1>&2
-            echo -e "    * Append 'ip6:${domain_ip6}' to your previous TXT record for SPF" 1>&2
-            echo -e "    * Set the Reverse-DNS in your hosting for your IPv6 to be '${mail_hostname}'" 1>&2
-        fi
-
-        echo -e "If you have DNSSEC activate it (caution that this doesn't conflicts with shared DNS among multiple hostings), by configuring it in the advanced dns of your domain and your host service" >> ~/settings-server.txt
-        # TODO: add mta-sts
-
-        # SMTP conf
-        if ((is_installed_exim)) ; then
-            echo -e "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587' (TLS), username '${email_username}', password (plain) '${email_smtp_password}'" >> ~/settings-server.txt
-        fi
+    if [[ "$mail_hostname" = "$domain" ]] ; then
+        echo -e "DNS type A record named 'smtp' with data '${domain_ip}'" >> ~/settings-server.txt
         if ((is_installed_dovecot)) ; then
-            echo -e "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system" >> ~/settings-server.txt
-            echo -e "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (pop3, ssl/tls), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server" >> ~/settings-server.txt
+            echo -e "DNS type A record named 'imap' with data '${domain_ip}'" >> ~/settings-server.txt
         fi
-        #if [[ "$mail_hostname" != "$domain" ]] ; then
-            # TODO: tell that we need to add more same dns's for the main domain
-        #fi
-        echo 1>&2
+        echo -e "DNS type TXT record named '_dmarc' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${domain};'" >> ~/settings-server.txt
+        echo -e "DNS type TXT record with (empty) name '' with data 'v=spf1 a ip4:${domain_ip} -all'" >> ~/settings-server.txt
+        echo -e "DNS type MX record with (empty) name '' with data 'smtp.${domain}' and priority '10'" >> ~/settings-server.txt
+    else
+        echo -e "DNS type A record named '${mail_hostname}' with data '${domain_ip}'" >> ~/settings-server.txt
+        echo -e "DNS type A record named 'smtp.${hostnameshort}' with data '${domain_ip}'" >> ~/settings-server.txt
+        if ((is_installed_dovecot)) ; then
+            echo -e "DNS type A record named 'imap.${hostnameshort}' with data '${domain_ip}'" >> ~/settings-server.txt
+        fi
+        echo -e "DNS type TXT record named '_dmarc.${hostnameshort}' with data 'v=DMARC1; p=reject; rua=mailto:postmaster@${mail_hostname};'" >> ~/settings-server.txt
+        echo -e "DNS type TXT record named '${hostnameshort}' with data 'v=spf1 a ip4:${domain_ip} -all'" >> ~/settings-server.txt
+        echo -e "DNS type MX record named '${mail_hostname}' with data 'smtp.${mail_hostname}' and priority '10'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
     fi
+    #echo -e "DNS type TXT record named '*._report._dmarc.${mail_hostname}' with data 'v=DMARC1;" # TODO: needed? >> ~/settings-server.txt
+    #echo -e "DNS type TXT record named '*._dmarc.${mail_hostname}' with data 'v=DMARC1; p=reject; rua=mailto:hostmaster@${domain};" >> ~/settings-server.txt
+    #echo -e "DNS type MX record named '@' with data 'mail.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
+    #echo -e "DNS type MX record named '@' with data 'smtp.${mail_hostname}'" # TODO: this one is generic to send all to mail.smtp.yourdomain.com, we should be more specific? >> ~/settings-server.txt
+    if [[ -n "$mail_hostname" ]] && [[ -n "$wp_webname" ]] && [[ "$wp_webname" != "$mail_hostname" ]] ; then
+        echo -e "DNS type MX record named '${wp_webname}' with data 'smtp.${mail_hostname}' and priority '10'" >> ~/settings-server.txt
+    fi
+    if [[ "$mail_hostname" = "$domain" ]] ; then
+        echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey' with these contents:" >> ~/settings-server.txt
+        echo "k=rsa; p=$(cat /etc/exim4/${domain}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
+    else
+        for i in ${mail_hostname} ${domain}
+        do
+            [[ -z "$i" ]] && continue
+            [[ ! -s "/etc/exim4/${i}/dkim_public.key" ]] && continue
+            entry="$( echo "$i" | sed -e "s|${domain}||g" -e 's|\.$||g' )"
+            #echo "$i - ${i%%.*}"
+            echo -e "Email DKIM: Edit your DNS's and add a TXT entry named 'mail._domainkey.${entry}' with these contents:" >> ~/settings-server.txt
+            echo "k=rsa; p=$(cat /etc/exim4/${i}/dkim_public.key | grep -vE "(BEGIN|END)" | tr '\n' ' ' | sed -e 's| ||g' ; echo )" >> ~/settings-server.txt
+        done
+    fi
+    echo -e "DNS in your 'reverse DNS', set it to '${mail_hostname}'" >> ~/settings-server.txt
+    # TODO: is reverse dns meant to be FQHN or it can be the domain itself?
+
+    if ((has_ipv6)) ; then
+        echo -e "For your IPv6 settings, in case you use it:" >> ~/settings-server.txt
+        echo -e "    * Add DNS type AAAA record named '${mail_hostname}' with data '${domain_ip6}'" 1>&2
+        echo -e "    * Append 'ip6:${domain_ip6}' to your previous TXT record for SPF" 1>&2
+        echo -e "    * Set the Reverse-DNS in your hosting for your IPv6 to be '${mail_hostname}'" 1>&2
+    fi
+
+    echo -e "If you have DNSSEC activate it (caution that this doesn't conflicts with shared DNS among multiple hostings), by configuring it in the advanced dns of your domain and your host service" >> ~/settings-server.txt
+    # TODO: add mta-sts
+
+    # SMTP conf
+    if ((is_installed_exim)) ; then
+        echo -e "SMTP connect: to configure your website or other tools to send emails from this server you must use: URL 'smtp.${mail_hostname}', PORT '587' (start)TLS, username '${email_username}', password (plain) '${email_smtp_password}'" >> ~/settings-server.txt
+    fi
+    if ((is_installed_dovecot)) ; then
+        echo -e "Note: When you send emails from no-reply@${mail_hostname}, bounces or reply's will be received with your user '${username}', you can access to these emails using the IMAP system" >> ~/settings-server.txt
+        echo -e "IMAP connect: connect to your email as: URL 'imap.${mail_hostname}', PORT '995' (as POP3, SSL/TLS), username '${email_username}', password (plain) '${email_imap_password}'. So the emails will be received on this user of your server" >> ~/settings-server.txt
+    fi
+    #if [[ "$mail_hostname" != "$domain" ]] ; then
+        # TODO: tell that we need to add more same dns's for the main domain
+    #fi
+    echo 1>&2
 
     if ((is_installed_fail2ban)) ; then
         echo -e "Fail2ban: make sure that you have enabled all the services that you want to watch for attacks and disabled the ones you don't want, from the jail file and directory in /etc/fail2ban, if you are unable to connect to your server it could be by a false positive so make sure your IP is not blacklisted on that moment in fail2ban and improve this tool if needed" >> ~/settings-server.txt
