@@ -2824,6 +2824,9 @@ EOF
 
     # save settings {{{
     if ((has_ufw)) ; then
+        # do not flood logs
+        ufw logging off
+
         ufw reload
     else
         if ((has_iptables)) ; then
