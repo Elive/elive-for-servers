@@ -965,7 +965,7 @@ EOF
     #if ! ssh-keygen ; then
         #ssh-keygen || true
     #fi
-    #addconfig "$ssh_authorized_key" "~/.ssh/authorized_keys"
+    #addconfig "$ssh_authorized_key" ~/.ssh/authorized_keys
     #chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys
 
     # disable ssh password logins
