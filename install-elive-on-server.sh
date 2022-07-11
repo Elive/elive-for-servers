@@ -2838,6 +2838,12 @@ EOF
         fi
     fi
 
+    # make journald smaller:
+    # make journalctl use less space
+    if test -s "/etc/systemd/journald.conf" && ! grep -qs "^SystemMaxFileSize=" /etc/systemd/journald.conf ; then
+        printf "Compress=yes\nSystemMaxFileSize=512K\nRuntimeMaxFileSize=512K\nSystemMaxUse=512K" >> /etc/systemd/journald.conf
+    fi
+
     if [[ -s /root/.crontab ]] ; then
         crontab /root/.crontab
     fi
